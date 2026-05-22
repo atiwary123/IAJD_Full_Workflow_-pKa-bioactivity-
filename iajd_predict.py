@@ -252,19 +252,33 @@ def _rescue_direct_model(bio_bundle) -> bool:
 
 def _stage_pka_artifacts() -> None:
     """The v91 loader resolves molgpka_*.joblib/.npy relative to the pKa xlsx's
-    directory. The xlsx ships in datasets/ but those artifacts ship in
-    bundles_caches/. Symlink them into datasets/ on first run so the loader finds them.
+    directory. The HF Spaces deployment ships these files directly in datasets/;
+    other layouts ship them in bundles_caches/ and we copy them across.
+
+    Defensive against pre-existing broken symlinks (older bundles symlinked to
+    an absolute developer path that doesn't exist on every host).
     """
+    import shutil
     for name in ("molgpka_debias_models.joblib", "molgpka_preds.npy"):
         src = CACHE_DIR / name
         dst = DATA_DIR / name
-        if not dst.exists() and src.exists():
+        # A broken symlink reports is_symlink()==True but exists()==False — bin it.
+        if dst.is_symlink() and not dst.exists():
+            try:
+                dst.unlink()
+            except OSError:
+                pass
+        if dst.exists():
+            continue  # already staged correctly
+        if not src.exists():
+            continue  # nothing to copy from; loader will error later if needed
+        try:
+            shutil.copy2(src, dst)
+        except OSError:
             try:
                 dst.symlink_to(src)
             except OSError:
-                # filesystem might not support symlinks — fall back to copy
-                import shutil
-                shutil.copy2(src, dst)
+                pass
 
 
 def _load_bundle():
