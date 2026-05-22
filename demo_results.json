@@ -1,0 +1,932 @@
+[
+  {
+    "label": "PE-Tris (in-cache training compound)",
+    "family": "PE-Tris",
+    "smiles": "CCCCCCCCOCC(COCCCCCCCC)(COCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+    "result": {
+      "smiles": "CCCCCCCCOCC(COCCCCCCCC)(COCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+      "version": "v15 (count-Tanimoto + analog-delta + global \u03b1)",
+      "warnings": [
+        "DIRECT_MODEL_REFIT: pickled XGBoost predicted nonsense; refit on stored X_train/y_train"
+      ],
+      "canonical_smiles": "CCCCCCCCOCC(COCCCCCCCC)(COCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+      "family_used": "PE-Tris",
+      "pka": {
+        "point": 6.35,
+        "sigma": 0.05,
+        "ci_60": [
+          6.308,
+          6.392
+        ],
+        "ci_90": [
+          6.268,
+          6.432
+        ],
+        "source": "training_set_exact_match",
+        "tier": "MEASURED",
+        "max_tanimoto_to_training": 1.0,
+        "ood_flag": false,
+        "molgpka_debiased": null,
+        "direct_xgb_pred": null,
+        "analog_delta_pred": null,
+        "n_neighbors_used": null,
+        "iajd_id_if_measured": 249,
+        "warnings": []
+      },
+      "bioactivity": {
+        "point": 8.227,
+        "sigma": 0.1,
+        "ci_60": [
+          8.142,
+          8.311
+        ],
+        "ci_90": [
+          8.062,
+          8.391
+        ],
+        "source": "training_set_exact_match",
+        "tier": "MEASURED",
+        "max_tanimoto": 1.0,
+        "alpha_used": null,
+        "pred_direct": null,
+        "pred_analog": null,
+        "n_neighbors_used": null,
+        "block_B_active": true,
+        "block_C_active": true,
+        "block_B_real": null,
+        "lion_live_call": null,
+        "admet_live_call": null,
+        "iajd_id_if_measured": "IAJD_249",
+        "per_organ_measured": {
+          "lung": 7.081675836994219,
+          "liver": 7.567964164488613,
+          "spleen": 7.478161067916223,
+          "LN": 5.886970296688336,
+          "heart": null
+        },
+        "pka_used_in_features": 6.35,
+        "warnings": []
+      },
+      "organ_delivery": {
+        "target_organ": "liver",
+        "target_log10_flux": 7.568,
+        "log10_flux_by_organ": {
+          "lung": 7.082,
+          "liver": 7.568,
+          "spleen": 7.478,
+          "LN": 5.887
+        },
+        "partition_pct": {
+          "lung": 15.1,
+          "liver": 46.3,
+          "spleen": 37.6,
+          "LN": 1.0
+        },
+        "n_neighbors_used": 1,
+        "method": "training-row exact match (measured per-organ values)"
+      },
+      "neighbors": {
+        "pka": [
+          {
+            "iajd_id": "249",
+            "smiles": "CCCCCCCCOCC(COCCCCCCCC)(COCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+            "family": "PE-Tris",
+            "tanimoto": 1.0,
+            "pKa": 6.35
+          },
+          {
+            "iajd_id": "276",
+            "smiles": "CCCCCCCCCOCC(COCCCCCCCCC)(COCCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+            "family": "PE-Tris",
+            "tanimoto": 0.9348,
+            "pKa": 6.44
+          },
+          {
+            "iajd_id": "319",
+            "smiles": "CCCCCCCCOCC(COCCCCCCCC)(COCCCCCCCC)COC(=O)CCCCN1CCN(CCO)CC1",
+            "family": "PE-Tris",
+            "tanimoto": 0.9333,
+            "pKa": 6.38
+          }
+        ],
+        "bioact": [
+          {
+            "iajd_id": "IAJD_249",
+            "smiles": "CCCCCCCCOCC(COCCCCCCCC)(COCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+            "family": "PE-Tris",
+            "tanimoto": 1.0,
+            "log10_flux_total": 8.48000694295715
+          },
+          {
+            "iajd_id": "IAJD_276",
+            "smiles": "CCCCCCCCCOCC(COCCCCCCCCC)(COCCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+            "family": "PE-Tris",
+            "tanimoto": 0.9348,
+            "log10_flux_total": 7.785329835010767
+          },
+          {
+            "iajd_id": "IAJD_319",
+            "smiles": "CCCCCCCCOCC(COCCCCCCCC)(COCCCCCCCC)COC(=O)CCCCN1CCN(CCO)CC1",
+            "family": "PE-Tris",
+            "tanimoto": 0.9333,
+            "log10_flux_total": 8.419955748489757
+          }
+        ]
+      }
+    }
+  },
+  {
+    "label": "GA-Tris (ADMET gate override)",
+    "family": "GA-Tris",
+    "smiles": "CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCCCCCC)c1OCCCCCCCCCCCC",
+    "result": {
+      "smiles": "CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCCCCCC)c1OCCCCCCCCCCCC",
+      "version": "v15 (count-Tanimoto + analog-delta + global \u03b1)",
+      "warnings": [
+        "DIRECT_MODEL_REFIT: pickled XGBoost predicted nonsense; refit on stored X_train/y_train"
+      ],
+      "canonical_smiles": "CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCCCCCC)c1OCCCCCCCCCCCC",
+      "family_used": "GA-Tris",
+      "pka": {
+        "point": 6.596,
+        "sigma": 0.073,
+        "ci_60": [
+          6.534,
+          6.657
+        ],
+        "ci_90": [
+          6.476,
+          6.716
+        ],
+        "source": "v15_predicted",
+        "tier": "HIGH",
+        "max_tanimoto_to_training": 0.9025,
+        "ood_flag": false,
+        "molgpka_debiased": 6.346,
+        "direct_xgb_pred": 6.66,
+        "analog_delta_pred": 6.592,
+        "n_neighbors_used": 8,
+        "iajd_id_if_measured": null,
+        "warnings": []
+      },
+      "bioactivity": {
+        "point": 6.449,
+        "sigma": 0.274,
+        "ci_60": [
+          6.219,
+          6.679
+        ],
+        "ci_90": [
+          5.999,
+          6.899
+        ],
+        "source": "v15_predicted",
+        "tier": "HIGH",
+        "max_tanimoto": 0.9025,
+        "alpha_used": 0.3,
+        "pred_direct": 6.509,
+        "pred_analog": 6.423,
+        "n_neighbors_used": 8,
+        "block_B_active": true,
+        "block_C_active": true,
+        "block_B_real": true,
+        "lion_live_call": false,
+        "admet_live_call": false,
+        "iajd_id_if_measured": null,
+        "per_organ_measured": null,
+        "pka_used_in_features": 6.596,
+        "warnings": []
+      },
+      "organ_delivery": {
+        "target_organ": "liver",
+        "target_log10_flux": 7.998,
+        "log10_flux_by_organ": {
+          "lung": 7.449,
+          "liver": 7.998,
+          "spleen": 7.719,
+          "LN": 7.542
+        },
+        "partition_pct": {
+          "lung": 13.1,
+          "liver": 46.4,
+          "spleen": 24.3,
+          "LN": 16.2
+        },
+        "n_neighbors_used": 30,
+        "method": "Tanimoto^4-weighted (count-Morgan-3) average over analog neighbors"
+      },
+      "neighbors": {
+        "pka": [
+          {
+            "iajd_id": "79",
+            "smiles": "CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCC)c1OCCCCCCCCCCCC",
+            "family": "GA-Tris",
+            "tanimoto": 0.9025,
+            "predicted_delta": 0.104,
+            "estimated_y": 6.354,
+            "pKa": 6.25
+          },
+          {
+            "iajd_id": "310",
+            "smiles": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)ccc1OCCCCCCCCCCCCC",
+            "family": "Dialkoxybenzyl",
+            "tanimoto": 0.7611,
+            "predicted_delta": 0.529,
+            "estimated_y": 6.239,
+            "pKa": 5.71
+          },
+          {
+            "iajd_id": "154",
+            "smiles": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 0.7373,
+            "predicted_delta": 0.287,
+            "estimated_y": 6.767,
+            "pKa": 6.48
+          }
+        ],
+        "bioact": [
+          {
+            "iajd_id": "IAJD_079",
+            "smiles": "CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCC)c1OCCCCCCCCCCCC",
+            "family": "GA-Tris",
+            "tanimoto": 0.9025,
+            "predicted_delta": -1.125,
+            "estimated_y": 6.002,
+            "log10_flux_total": 7.127104798364807
+          },
+          {
+            "iajd_id": "IAJD225",
+            "smiles": "CCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCCCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 0.7373,
+            "predicted_delta": -1.111,
+            "estimated_y": 6.394,
+            "log10_flux_total": 7.505149978319906
+          },
+          {
+            "iajd_id": "IAJD_154",
+            "smiles": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 0.7373,
+            "predicted_delta": -0.997,
+            "estimated_y": 6.381,
+            "log10_flux_total": 7.378397900948138
+          }
+        ]
+      }
+    }
+  },
+  {
+    "label": "sSS-Nonsym (standard)",
+    "family": "sSS-Nonsym",
+    "smiles": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCC)c1",
+    "result": {
+      "smiles": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCC)c1",
+      "version": "v15 (count-Tanimoto + analog-delta + global \u03b1)",
+      "warnings": [
+        "DIRECT_MODEL_REFIT: pickled XGBoost predicted nonsense; refit on stored X_train/y_train"
+      ],
+      "canonical_smiles": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCC)c1",
+      "family_used": "Dialkoxybenzyl",
+      "pka": {
+        "point": 6.19,
+        "sigma": 0.05,
+        "ci_60": [
+          6.148,
+          6.232
+        ],
+        "ci_90": [
+          6.108,
+          6.272
+        ],
+        "source": "training_set_exact_match",
+        "tier": "MEASURED",
+        "max_tanimoto_to_training": 1.0,
+        "ood_flag": false,
+        "molgpka_debiased": null,
+        "direct_xgb_pred": null,
+        "analog_delta_pred": null,
+        "n_neighbors_used": null,
+        "iajd_id_if_measured": 81,
+        "warnings": []
+      },
+      "bioactivity": {
+        "point": 7.365,
+        "sigma": 0.1,
+        "ci_60": [
+          7.281,
+          7.45
+        ],
+        "ci_90": [
+          7.201,
+          7.53
+        ],
+        "source": "training_set_exact_match",
+        "tier": "MEASURED",
+        "max_tanimoto": 1.0,
+        "alpha_used": null,
+        "pred_direct": null,
+        "pred_analog": null,
+        "n_neighbors_used": null,
+        "block_B_active": true,
+        "block_C_active": true,
+        "block_B_real": null,
+        "lion_live_call": null,
+        "admet_live_call": null,
+        "iajd_id_if_measured": "IAJD_081",
+        "per_organ_measured": {
+          "lung": null,
+          "liver": null,
+          "spleen": null,
+          "LN": null,
+          "heart": null
+        },
+        "pka_used_in_features": 6.19,
+        "warnings": []
+      },
+      "neighbors": {
+        "pka": [
+          {
+            "iajd_id": "81",
+            "smiles": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCC)c1",
+            "family": "Dialkoxybenzyl",
+            "tanimoto": 1.0,
+            "pKa": 6.19
+          },
+          {
+            "iajd_id": "147",
+            "smiles": "CCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 1.0,
+            "pKa": 6.32
+          },
+          {
+            "iajd_id": "173",
+            "smiles": "CCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 1.0,
+            "pKa": 5.91
+          }
+        ],
+        "bioact": [
+          {
+            "iajd_id": "IAJD_081",
+            "smiles": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCC)c1",
+            "family": "Dialkoxybenzyl",
+            "tanimoto": 1.0,
+            "log10_flux_total": 7.365487984890899
+          },
+          {
+            "iajd_id": "IAJD205",
+            "smiles": "CCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 1.0,
+            "log10_flux_total": 8.660865478003869
+          },
+          {
+            "iajd_id": "IAJD_173",
+            "smiles": "CCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 1.0,
+            "log10_flux_total": 8.089905111439398
+          }
+        ]
+      }
+    }
+  },
+  {
+    "label": "Dialkoxybenzyl (standard)",
+    "family": "Dialkoxybenzyl",
+    "smiles": "CCCCCCCCCCCCOc1ccc(COC(=O)CCCN2CCN(CCO)CC2)cc1OCCCCCCCCCCCC",
+    "result": {
+      "smiles": "CCCCCCCCCCCCOc1ccc(COC(=O)CCCN2CCN(CCO)CC2)cc1OCCCCCCCCCCCC",
+      "version": "v15 (count-Tanimoto + analog-delta + global \u03b1)",
+      "warnings": [
+        "DIRECT_MODEL_REFIT: pickled XGBoost predicted nonsense; refit on stored X_train/y_train"
+      ],
+      "canonical_smiles": "CCCCCCCCCCCCOc1ccc(COC(=O)CCCN2CCN(CCO)CC2)cc1OCCCCCCCCCCCC",
+      "family_used": "Dialkoxybenzyl",
+      "pka": {
+        "point": 6.562,
+        "sigma": 0.073,
+        "ci_60": [
+          6.501,
+          6.623
+        ],
+        "ci_90": [
+          6.442,
+          6.682
+        ],
+        "source": "v15_predicted",
+        "tier": "HIGH",
+        "max_tanimoto_to_training": 0.877,
+        "ood_flag": false,
+        "molgpka_debiased": 6.346,
+        "direct_xgb_pred": 6.66,
+        "analog_delta_pred": 6.557,
+        "n_neighbors_used": 8,
+        "iajd_id_if_measured": null,
+        "warnings": []
+      },
+      "bioactivity": {
+        "point": 6.62,
+        "sigma": 0.274,
+        "ci_60": [
+          6.39,
+          6.851
+        ],
+        "ci_90": [
+          6.17,
+          7.07
+        ],
+        "source": "v15_predicted",
+        "tier": "HIGH",
+        "max_tanimoto": 0.877,
+        "alpha_used": 0.3,
+        "pred_direct": 6.598,
+        "pred_analog": 6.63,
+        "n_neighbors_used": 8,
+        "block_B_active": true,
+        "block_C_active": true,
+        "block_B_real": true,
+        "lion_live_call": true,
+        "admet_live_call": true,
+        "iajd_id_if_measured": null,
+        "per_organ_measured": null,
+        "pka_used_in_features": 6.562,
+        "warnings": []
+      },
+      "organ_delivery": {
+        "target_organ": null,
+        "reason": "no_organ_values"
+      },
+      "neighbors": {
+        "pka": [
+          {
+            "iajd_id": "78",
+            "smiles": "CCCCCCCCCCCCOc1ccc(COC(=O)CCCN2CCN(C)CC2)cc1OCCCCCCCCCCCC",
+            "family": "sSS-Nonsym",
+            "tanimoto": 0.877,
+            "predicted_delta": 0.127,
+            "estimated_y": 6.587,
+            "pKa": 6.46
+          },
+          {
+            "iajd_id": "310",
+            "smiles": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)ccc1OCCCCCCCCCCCCC",
+            "family": "Dialkoxybenzyl",
+            "tanimoto": 0.8647,
+            "predicted_delta": 0.499,
+            "estimated_y": 6.209,
+            "pKa": 5.71
+          },
+          {
+            "iajd_id": "140",
+            "smiles": "CCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 0.7723,
+            "predicted_delta": 0.216,
+            "estimated_y": 6.646,
+            "pKa": 6.43
+          }
+        ],
+        "bioact": [
+          {
+            "iajd_id": "IAJD_078",
+            "smiles": "CCCCCCCCCCCCOc1ccc(COC(=O)CCCN2CCN(C)CC2)cc1OCCCCCCCCCCCC",
+            "family": "sSS-Nonsym",
+            "tanimoto": 0.877,
+            "predicted_delta": -0.823,
+            "estimated_y": 8.227,
+            "log10_flux_total": 9.049218022670182
+          },
+          {
+            "iajd_id": "IAJD_117",
+            "smiles": "CCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 0.7723,
+            "predicted_delta": -0.994,
+            "estimated_y": 5.943,
+            "log10_flux_total": 6.936513742478893
+          },
+          {
+            "iajd_id": "IAJD219",
+            "smiles": "CCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 0.7723,
+            "predicted_delta": -0.963,
+            "estimated_y": 6.742,
+            "log10_flux_total": 7.705863712283919
+          }
+        ]
+      }
+    }
+  },
+  {
+    "label": "G1-Janus-Dendrimer (pooled debias)",
+    "family": "G1-Janus-Dendrimer",
+    "smiles": "CCCCCCCCCCCCOc1cc(OCCCCCCCCCCCC)c(OCCCCCCCCCCCC)c(COC(=O)CCCN2CCN(C)CC2)c1",
+    "result": {
+      "smiles": "CCCCCCCCCCCCOc1cc(OCCCCCCCCCCCC)c(OCCCCCCCCCCCC)c(COC(=O)CCCN2CCN(C)CC2)c1",
+      "version": "v15 (count-Tanimoto + analog-delta + global \u03b1)",
+      "warnings": [
+        "DIRECT_MODEL_REFIT: pickled XGBoost predicted nonsense; refit on stored X_train/y_train"
+      ],
+      "canonical_smiles": "CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)c(OCCCCCCCCCCCC)c(OCCCCCCCCCCCC)c1",
+      "family_used": "G1-Janus-Dendrimer",
+      "pka": {
+        "point": 6.289,
+        "sigma": 0.095,
+        "ci_60": [
+          6.209,
+          6.369
+        ],
+        "ci_90": [
+          6.133,
+          6.445
+        ],
+        "source": "v15_predicted",
+        "tier": "MED",
+        "max_tanimoto_to_training": 0.834,
+        "ood_flag": false,
+        "molgpka_debiased": 6.296,
+        "direct_xgb_pred": 6.662,
+        "analog_delta_pred": 6.269,
+        "n_neighbors_used": 8,
+        "iajd_id_if_measured": null,
+        "warnings": []
+      },
+      "bioactivity": {
+        "point": 6.517,
+        "sigma": 0.356,
+        "ci_60": [
+          6.218,
+          6.817
+        ],
+        "ci_90": [
+          5.932,
+          7.102
+        ],
+        "source": "v15_predicted",
+        "tier": "MED",
+        "max_tanimoto": 0.834,
+        "alpha_used": 0.3,
+        "pred_direct": 6.275,
+        "pred_analog": 6.621,
+        "n_neighbors_used": 8,
+        "block_B_active": true,
+        "block_C_active": true,
+        "block_B_real": true,
+        "lion_live_call": true,
+        "admet_live_call": true,
+        "iajd_id_if_measured": null,
+        "per_organ_measured": null,
+        "pka_used_in_features": 6.289,
+        "warnings": []
+      },
+      "organ_delivery": {
+        "target_organ": "lung",
+        "target_log10_flux": 7.699,
+        "log10_flux_by_organ": {
+          "lung": 7.699
+        },
+        "partition_pct": {
+          "lung": 100.0
+        },
+        "n_neighbors_used": 30,
+        "method": "Tanimoto^4-weighted (count-Morgan-3) average over analog neighbors"
+      },
+      "neighbors": {
+        "pka": [
+          {
+            "iajd_id": "79",
+            "smiles": "CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCC)c1OCCCCCCCCCCCC",
+            "family": "GA-Tris",
+            "tanimoto": 0.834,
+            "predicted_delta": -0.196,
+            "estimated_y": 6.054,
+            "pKa": 6.25
+          },
+          {
+            "iajd_id": "153",
+            "smiles": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 0.7298,
+            "predicted_delta": 0.012,
+            "estimated_y": 6.432,
+            "pKa": 6.42
+          },
+          {
+            "iajd_id": "224",
+            "smiles": "CCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 0.7298,
+            "predicted_delta": -0.075,
+            "estimated_y": 6.255,
+            "pKa": 6.33
+          }
+        ],
+        "bioact": [
+          {
+            "iajd_id": "IAJD_079",
+            "smiles": "CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCC)c1OCCCCCCCCCCCC",
+            "family": "GA-Tris",
+            "tanimoto": 0.834,
+            "predicted_delta": -1.511,
+            "estimated_y": 5.616,
+            "log10_flux_total": 7.127104798364807
+          },
+          {
+            "iajd_id": "IAJD224",
+            "smiles": "CCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 0.7298,
+            "predicted_delta": -0.564,
+            "estimated_y": 7.5,
+            "log10_flux_total": 8.064457989226918
+          },
+          {
+            "iajd_id": "IAJD_153",
+            "smiles": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 0.7298,
+            "predicted_delta": -0.434,
+            "estimated_y": 7.431,
+            "log10_flux_total": 7.865103974641128
+          }
+        ]
+      }
+    }
+  },
+  {
+    "label": "HTM-Dendrimer (pooled debias)",
+    "family": "HTM-Dendrimer",
+    "smiles": "CCCCCCCCCCCCN(CCO)CCOC(=O)CCCN1CCN(C)CC1",
+    "result": {
+      "smiles": "CCCCCCCCCCCCN(CCO)CCOC(=O)CCCN1CCN(C)CC1",
+      "version": "v15 (count-Tanimoto + analog-delta + global \u03b1)",
+      "warnings": [
+        "DIRECT_MODEL_REFIT: pickled XGBoost predicted nonsense; refit on stored X_train/y_train"
+      ],
+      "canonical_smiles": "CCCCCCCCCCCCN(CCO)CCOC(=O)CCCN1CCN(C)CC1",
+      "family_used": "HTM-Dendrimer",
+      "pka": {
+        "point": 6.42,
+        "sigma": 0.131,
+        "ci_60": [
+          6.309,
+          6.53
+        ],
+        "ci_90": [
+          6.204,
+          6.636
+        ],
+        "source": "v15_predicted",
+        "tier": "LOW",
+        "max_tanimoto_to_training": 0.4971,
+        "ood_flag": true,
+        "molgpka_debiased": 6.296,
+        "direct_xgb_pred": 6.662,
+        "analog_delta_pred": 6.407,
+        "n_neighbors_used": 8,
+        "iajd_id_if_measured": null,
+        "warnings": []
+      },
+      "bioactivity": {
+        "point": 6.618,
+        "sigma": 0.492,
+        "ci_60": [
+          6.204,
+          7.033
+        ],
+        "ci_90": [
+          5.808,
+          7.428
+        ],
+        "source": "v15_predicted",
+        "tier": "LOW",
+        "max_tanimoto": 0.4971,
+        "alpha_used": 0.3,
+        "pred_direct": 6.706,
+        "pred_analog": 6.581,
+        "n_neighbors_used": 8,
+        "block_B_active": true,
+        "block_C_active": true,
+        "block_B_real": true,
+        "lion_live_call": true,
+        "admet_live_call": true,
+        "iajd_id_if_measured": null,
+        "per_organ_measured": null,
+        "pka_used_in_features": 6.42,
+        "warnings": []
+      },
+      "organ_delivery": {
+        "target_organ": null,
+        "reason": "no_organ_values"
+      },
+      "neighbors": {
+        "pka": [
+          {
+            "iajd_id": "181",
+            "smiles": "CCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 0.4971,
+            "predicted_delta": -0.015,
+            "estimated_y": 6.405,
+            "pKa": 6.42
+          },
+          {
+            "iajd_id": "244",
+            "smiles": "CCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 0.4943,
+            "predicted_delta": -0.004,
+            "estimated_y": 6.296,
+            "pKa": 6.3
+          },
+          {
+            "iajd_id": "112",
+            "smiles": "CCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 0.4915,
+            "predicted_delta": 0.002,
+            "estimated_y": 6.402,
+            "pKa": 6.4
+          }
+        ],
+        "bioact": [
+          {
+            "iajd_id": "IAJD181",
+            "smiles": "CCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 0.4971,
+            "predicted_delta": -1.231,
+            "estimated_y": 6.313,
+            "log10_flux_total": 7.544068044350276
+          },
+          {
+            "iajd_id": "IAJD244",
+            "smiles": "CCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 0.4943,
+            "predicted_delta": -1.184,
+            "estimated_y": 6.78,
+            "log10_flux_total": 7.964259630196849
+          },
+          {
+            "iajd_id": "IAJD112",
+            "smiles": "CCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCC)c1",
+            "family": "sSS-Nonsym",
+            "tanimoto": 0.4915,
+            "predicted_delta": -1.315,
+            "estimated_y": 7.291,
+            "log10_flux_total": 8.60530504614111
+          }
+        ]
+      }
+    }
+  },
+  {
+    "label": "TT-Dendrimer (pooled debias)",
+    "family": "TT-Dendrimer",
+    "smiles": "CCCCCCCCCCCCOC(=O)C(NC(=O)CCN(CCO)CCO)(COCCCCCCCCCCCC)COCCCCCCCCCCCC",
+    "result": {
+      "smiles": "CCCCCCCCCCCCOC(=O)C(NC(=O)CCN(CCO)CCO)(COCCCCCCCCCCCC)COCCCCCCCCCCCC",
+      "version": "v15 (count-Tanimoto + analog-delta + global \u03b1)",
+      "warnings": [
+        "DIRECT_MODEL_REFIT: pickled XGBoost predicted nonsense; refit on stored X_train/y_train"
+      ],
+      "canonical_smiles": "CCCCCCCCCCCCOCC(COCCCCCCCCCCCC)(NC(=O)CCN(CCO)CCO)C(=O)OCCCCCCCCCCCC",
+      "family_used": "TT-Dendrimer",
+      "pka": {
+        "point": 6.513,
+        "sigma": 0.131,
+        "ci_60": [
+          6.402,
+          6.623
+        ],
+        "ci_90": [
+          6.297,
+          6.729
+        ],
+        "source": "v15_predicted",
+        "tier": "LOW",
+        "max_tanimoto_to_training": 0.5918,
+        "ood_flag": false,
+        "molgpka_debiased": 6.296,
+        "direct_xgb_pred": 6.656,
+        "analog_delta_pred": 6.505,
+        "n_neighbors_used": 8,
+        "iajd_id_if_measured": null,
+        "warnings": []
+      },
+      "bioactivity": {
+        "point": 6.555,
+        "sigma": 0.492,
+        "ci_60": [
+          6.141,
+          6.969
+        ],
+        "ci_90": [
+          5.745,
+          7.365
+        ],
+        "source": "v15_predicted",
+        "tier": "LOW",
+        "max_tanimoto": 0.5918,
+        "alpha_used": 0.3,
+        "pred_direct": 6.7,
+        "pred_analog": 6.493,
+        "n_neighbors_used": 8,
+        "block_B_active": true,
+        "block_C_active": true,
+        "block_B_real": true,
+        "lion_live_call": true,
+        "admet_live_call": true,
+        "iajd_id_if_measured": null,
+        "per_organ_measured": null,
+        "pka_used_in_features": 6.513,
+        "warnings": []
+      },
+      "organ_delivery": {
+        "target_organ": "liver",
+        "target_log10_flux": 6.702,
+        "log10_flux_by_organ": {
+          "lung": 6.199,
+          "liver": 6.702,
+          "spleen": 6.573,
+          "LN": 5.896
+        },
+        "partition_pct": {
+          "lung": 14.2,
+          "liver": 45.1,
+          "spleen": 33.6,
+          "LN": 7.1
+        },
+        "n_neighbors_used": 30,
+        "method": "Tanimoto^4-weighted (count-Morgan-3) average over analog neighbors"
+      },
+      "neighbors": {
+        "pka": [
+          {
+            "iajd_id": "83",
+            "smiles": "CCCCCCCCCCCCOCC(COCCCCCCCCCCCC)(COCCCCCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+            "family": "PE-Tris",
+            "tanimoto": 0.5918,
+            "predicted_delta": 0.312,
+            "estimated_y": 6.612,
+            "pKa": 6.3
+          },
+          {
+            "iajd_id": "273",
+            "smiles": "CCCCCCCCCCCCOCC(COCCCCCCCCCCCC)(COCCCCCCCCCCCC)COC(=O)CCCN1CCN(C)CC1",
+            "family": "PE-Tris",
+            "tanimoto": 0.5833,
+            "predicted_delta": 0.239,
+            "estimated_y": 6.499,
+            "pKa": 6.26
+          },
+          {
+            "iajd_id": "280",
+            "smiles": "CCCCCCCCCCCCCOCC(COCCCCCCCCCCCCC)(COCCCCCCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+            "family": "PE-Tris",
+            "tanimoto": 0.5663,
+            "predicted_delta": 0.281,
+            "estimated_y": 6.541,
+            "pKa": 6.26
+          }
+        ],
+        "bioact": [
+          {
+            "iajd_id": "IAJD_083",
+            "smiles": "CCCCCCCCCCCCOCC(COCCCCCCCCCCCC)(COCCCCCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+            "family": "PE-Tris",
+            "tanimoto": 0.5918,
+            "predicted_delta": -1.572,
+            "estimated_y": 6.28,
+            "log10_flux_total": 7.851869600729766
+          },
+          {
+            "iajd_id": "IAJD_082",
+            "smiles": "CCCCCCCCCCCCOCC(COCCCCCCCCCCCC)(COCCCCCCCCCCCC)COC(=O)CCCN1CCN(C)CC1",
+            "family": "PE-Tris",
+            "tanimoto": 0.5833,
+            "predicted_delta": 0.283,
+            "estimated_y": 6.492,
+            "log10_flux_total": 6.209515014542631
+          },
+          {
+            "iajd_id": "IAJD_274",
+            "smiles": "CCCCCCCCCCCCOCC(COCCCCCCCCCCCC)(COCCCCCCCCCCCC)COC(=O)CCCN1CCN(CCOCCO)CC1",
+            "family": "PE-Tris",
+            "tanimoto": 0.5663,
+            "predicted_delta": 0.248,
+            "estimated_y": 5.947,
+            "log10_flux_total": 5.698970004336019
+          }
+        ]
+      }
+    }
+  }
+]

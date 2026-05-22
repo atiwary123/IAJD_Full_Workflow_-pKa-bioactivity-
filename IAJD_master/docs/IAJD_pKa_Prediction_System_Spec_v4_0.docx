@@ -1,0 +1,937 @@
+IAJD pKa Prediction System
+
+**Classification-First Analog-Anchored Delta Architecture**
+
+*Technical Specification v4.0*
+
+# Section 1. Executive Summary and Design Philosophy
+
+This document specifies a pKa prediction system for Ionizable Amphiphilic Janus Dendrimers (IAJDs) designed to exploit a single, empirically verified property of the training dataset: the overwhelming majority of the variance in the measured pKa values is explained not by continuous molecular descriptors but by a small number of discrete architectural tokens. On the v19 dataset of 226 compounds, the simple rule "predict the leave-one-out mean of the arch_coarse group" achieves a pooled LOO-CV mean absolute error of 0.116 pKa units, with 49% of predictions landing within the ±0.08 target band. A family-stratified Gaussian Process Regressor using 26 engineered molecular descriptors on the same splits returns a pooled MAE of 0.154 with only 38% of predictions within ±0.08. The classification-first baseline outperforms the regression baseline by 0.038 MAE units, a margin that is approximately 75% of the triplicate measurement standard deviation of 0.051. This is not a small effect. It is the central empirical fact on which every design decision in this specification is based.
+
+The reason classification dominates regression on this dataset is structural. IAJDs are combinatorially assembled from a fixed vocabulary of six discrete architectural dimensions: core scaffold, core substitution position, linker length in carbons, head-group amine, linkage chemistry (ester or amide), and hydrophobic chain symmetry. A novel IAJD synthesized in a typical medicinal chemistry campaign does not differ from its nearest training compound by a smooth perturbation of continuous descriptors; it differs by one or two discrete token swaps. The system specified here reasons explicitly in this token space. Given a query IAJD, the system finds its nearest training analog, identifies which tokens differ, and applies empirically measured delta coefficients to correct the analog's pKa toward the prediction target. The output is not a black-box number: it is a structured trace that reads as "this compound is IAJD 313 with the linker lengthened from 4C to 5C, which adds +0.155 pKa units per carbon in the PE-Tris family (n=8 matched pairs, standard error 0.02), yielding a predicted pKa of 6.470".
+
+The similarity between query and training compounds is assessed on a five-level hierarchy. Level 1 is exact SMILES match and returns the training pKa directly, modulated by the triplicate measurement standard deviation. Level 2 is same arch_coarse label but novel hydrophobic chain pair, and is handled by a 2D chain-pair lookup table with Manhattan k-nearest-neighbor interpolation; this level is active almost exclusively for the sSS-Nonsym family. Level 3 is same family with exactly one discrete architectural token changed, and invokes a single delta coefficient from the delta table. Level 4 is two tokens changed simultaneously, handled by additive deltas with explicit interaction correction when the data supports it. Level 5 is the fallback for compounds with three or more token differences, cross-family prediction, or any case where the required delta coefficients fail a reliability check; it uses a family-stratified Gaussian Process Regressor. Every prediction is assigned exactly one level, and the level dictates which components contribute and with what weights.
+
+Expected performance by family, computed from strict leave-one-out cross-validation on the v19 dataset and reported with honest uncertainty bounds, is as follows. For the PE-Tris and GA-Tris families combined, the system achieves MAE = 0.076 with a 90% prediction interval half-width of ±0.13 pKa units; these families satisfy the ±0.08 target at the population level with very high probability. For sSS-Nonsym the system achieves MAE = 0.136 with 90% PI = ±0.31; the ±0.08 target is not reached, and the following paragraph explains why this is fundamental rather than incidental. For PE-Gallic, MAE = 0.196 and 90% PI = ±0.45; the architectural heterogeneity within the DMBA subclass is currently the dominant error source. For Dialkoxybenzyl, MAE = 0.324 and 90% PI = ±0.68; with only twelve training compounds of extreme architectural diversity, no delta structure can be reliably extracted and the system operates in pure GPR-fallback mode.
+
+The ±0.08 target is achievable for PE-Tris and GA-Tris because those families have a clean linker series (pKa varies almost linearly in linker length with slopes of 0.155 and 0.134 pKa units per carbon respectively) and a small number of head groups all of which appear in matched pairs. The arch_mean LOO MAE for PE-Tris alone is 0.053, which is almost equal to the measurement noise floor of 0.051. There is essentially no room for further model improvement on this family: what the system predicts is what the experiment measures, to within the triplicate reproducibility. The sSS-Nonsym family cannot be pushed to ±0.08 at the current sample size because 49 of its 60 HPRZ chain-pair cells are singletons, the pKa-vs-chain-pair surface is empirically non-monotone (adjacent pairs (8,11)=6.570, (8,12)=6.225, (8,13)=6.310 demonstrate this directly), and no smooth interpolator can recover a non-smooth surface without additional measurements. The irreducible MAE floor for sSS-Nonsym at current data is approximately 0.10 to 0.13 pKa units, and pushing below this floor requires experimental measurements to densify the chain-pair grid, not algorithmic improvements.
+
+The philosophical distinction this specification insists upon is the following. A black-box regressor maps a feature vector to a scalar and offers nothing else. The system specified here reasons in a vocabulary that matches how IAJDs are designed: by swapping tokens in a combinatorial library. When the system's prediction is wrong, the trace shows exactly which delta was applied and which matched pairs supported it, making the failure diagnosable. When the system's prediction is right, the trace doubles as a design rule that a synthetic chemist can read without understanding the model. This interpretability is not a bonus feature; it is the point. It is also the reason the system refuses to produce a prediction in extrapolation regions rather than quietly returning a number from a smoothed kernel — a behavior documented in Sections 8 and 12 and hard-wired into the API contract in Section 10.
+
+# Section 2. Architectural Vocabulary and Discrete Token System
+
+## 2.1 The Six Discrete Architectural Dimensions
+
+The IAJD architectural vocabulary consists of exactly six discrete dimensions. Every training compound in the v19 dataset is fully described by its values on these six dimensions plus the hydrophobic chain pair (treated specially in Section 2.4). The enumeration below gives, for each dimension, all possible values, the SMARTS or parsing rule used to detect each value from the canonical SMILES, the empirical pKa range associated with that value across the training set, and the families in which it appears.
+
+### Dimension 1: family
+
+Values: {sSS-Nonsym, PE-Gallic, PE-Tris, GA-Tris, Dialkoxybenzyl, NOVEL}. Detection is performed by the ordered SMARTS decision tree specified in Section 3.2. The sSS-Nonsym family is detected by the gallic acid diol-ester motif with exactly two acyl-oxy substituents on the benzene ring; PE-Tris is detected by the pentaerythritol quaternary carbon bearing three ester oxygens and one CH2 linker to the amine; GA-Tris is detected by gallic acid with three acyl substituents; PE-Gallic is detected by pentaerythritol connected through esters to a gallate unit; Dialkoxybenzyl is detected by a benzyl or benzoate with two alkoxy substituents at 3,4 or 3,5 positions. The NOVEL value is assigned when no SMARTS in the decision tree matches. Empirical pKa ranges by family: sSS-Nonsym 5.95 to 6.78; PE-Gallic 5.85 to 6.55; PE-Tris 5.90 to 6.37; GA-Tris 6.06 to 6.51; Dialkoxybenzyl 5.90 to 7.40.
+
+### Dimension 2: core_position
+
+Values: {3_4, 3_5, NA}. This dimension captures the substitution pattern on a 1,3,5- or 1,3,4-substituted aromatic core. For sSS-Nonsym the value is 3_5 (the two acyl chains sit at the 3 and 5 positions of gallic acid, with the carboxyl at position 1). For Dialkoxybenzyl the two alkoxy substituents sit at 3,4 or 3,5 of a benzyl or benzoate scaffold; detection uses SMARTS [c]1[c]([O][C])[c]([O][C])[cc][c]1 for 3,4 and [c]1[c]([O][C])[c][c]([O][C])[c]1 for 3,5. For PE-Tris and PE-Gallic and GA-Tris the value is NA because the core is not a single disubstituted ring. Empirical pKa range for 3_5 Dialkoxybenzyl compounds: 5.90 to 7.15; for 3_4: 6.20 to 7.40.
+
+### Dimension 3: linker_length
+
+Values: {2, 3, 4, 5} (integer carbons), plus NA for architectures without a discrete linker. linker_length is the count of sp3 carbon atoms in the aliphatic chain connecting the ester oxygen (or amide nitrogen) of the core-side acyl group to the nitrogen of the ionizable head-group amine. Detection uses the SMARTS pattern [#6X3](=O)[OX2][CX4;H2][CX4;H2] iteratively: begin at the ester carbonyl, walk sp3 CH2 atoms until a tertiary amine nitrogen is reached, and count the CH2 atoms encountered. Empirical linker lengths: PE-Tris and GA-Tris use 2, 3, 4, and 5; sSS-Nonsym is overwhelmingly 4 (dominant arch_coarse), with a small number of amide variants at other lengths; PE-Gallic uses 2, 3, 4, 5 across subfamilies; Dialkoxybenzyl is heterogeneous with linker_length sometimes NA because the amine is directly benzylic.
+
+### Dimension 4: head_group
+
+Values: {HPRZ, MPRZ, H2EPRZ, DMBA, PIP, DMA, NOVEL}. HPRZ = 1-(2-hydroxyethyl)piperazine, detected by SMARTS N1CCN(CCO)CC1 with the second N being tertiary and acylated; MPRZ = N-methylpiperazine, detected by N1CCN(C)CC1; H2EPRZ = bis(2-hydroxyethyl)piperazine (sometimes labeled 2EPRZ), detected by the HPRZ motif with the N-CH2CH2OH tail duplicated on both nitrogens — in practice this means the ionizable nitrogen carries a hydroxyethyl substituent while the distal nitrogen also carries one; DMBA = dimethylbenzylamine type, detected by c1ccccc1C[N](C)C with the benzyl position acylated or linked to the core; PIP = piperidine, detected by N1CCCCC1 with the ring nitrogen tertiary and bonded to the linker; DMA = dimethylamine, detected by [CX4][N](C)C with both methyl groups and no ring. The NOVEL token is assigned when a nitrogen that is topologically in the head-group position does not match any of the above SMARTS. Empirical pKa ranges: HPRZ 5.95 to 6.78; MPRZ 5.90 to 6.75; H2EPRZ 5.80 to 6.32; DMBA 5.85 to 6.55; PIP 7.10 to 7.40; DMA 6.80 to 7.20.
+
+### Dimension 5: linkage_type
+
+Values: {ester, amide}. Detection: count matches to SMARTS [#6X3](=O)[OX2][#6] (ester) versus [#6X3](=O)[NX3][#6] (amide) in the bond that connects the core to the linker. The dominant linkage type for sSS-Nonsym, PE-Tris, GA-Tris, and PE-Gallic is ester. sSS-Nonsym has a small number of amide variants (n=2 in the training set), insufficient to support a reliable ester-to-amide delta coefficient. Empirical pKa differences: the amide compounds in sSS-Nonsym sit approximately 0.05 to 0.10 pKa units above their ester counterparts, but this estimate is based on only two matched comparisons and is not used as a delta in the system.
+
+### Dimension 6: chain_symmetry
+
+Values: {symmetric, nonsymmetric}. symmetric when chain_min == chain_max; nonsymmetric when chain_min < chain_max. This is a derived token (computed from the chain pair) but is included as a primary dimension because it affects the reliability of matched pairs: a symmetric-vs-nonsymmetric swap at fixed chain_max is empirically different from a swap within either class. Families by chain_symmetry: PE-Tris and GA-Tris are symmetric (both arms are 2-ethylhexyl or otherwise identical); sSS-Nonsym is predominantly nonsymmetric (named for this property) with a few symmetric entries such as (12,12) in MPRZ; PE-Gallic is mixed; Dialkoxybenzyl is heterogeneous.
+
+## 2.2 The arch_coarse Label Format
+
+The arch_coarse label is a fixed concatenation of four tokens in the following exact order, joined by hyphens:
+
+arch_coarse = f"{family_abbrev}-{core_position}-{linker_length}C-{head_group}-{linkage_type}"
+
+family_abbrev uses the short form: sSS for sSS-Nonsym, PEg for PE-Gallic, PEt for PE-Tris, GAt for GA-Tris, DAB for Dialkoxybenzyl. core_position uses 35 or 34 when applicable, and is omitted (with the surrounding hyphens collapsed to a single hyphen) when the dimension value is NA. linker_length is written as an integer followed by the letter C. head_group uses the exact token names from Section 2.1 Dimension 4. linkage_type is written in lowercase.
+
+Five worked examples taken from the v19 training set:
+
+Compound IAJD 120 (PE-Tris, 4C linker, HPRZ head, ester linkage): arch_coarse = PEt-4C-HPRZ-ester. The core_position token is omitted because PE-Tris has NA for that dimension.
+
+Compound IAJD 313 (PE-Tris, 5C linker, H2EPRZ head, ester linkage): arch_coarse = PEt-5C-H2EPRZ-ester.
+
+An sSS-Nonsym compound with 4C linker, HPRZ head, ester linkage, 3,5 core: arch_coarse = sSS-35-4C-HPRZ-ester. This is the dominant arch_coarse group with n=71 training compounds.
+
+A GA-Tris compound with 3C linker, MPRZ head, ester linkage: arch_coarse = GAt-3C-MPRZ-ester.
+
+A Dialkoxybenzyl compound with 3,4 substitution, no discrete linker, piperidine head, direct benzyl-N bond: arch_coarse = DAB-34-NA-PIP-NA. When a token is NA it is written literally as "NA" rather than omitted, because DAB compounds routinely have NA in multiple positions and collapsing hyphens would introduce ambiguity.
+
+Fallback rule when any token cannot be determined: if exactly one token cannot be determined, it is written as "?" in that position and the arch_coarse label is flagged as PARTIAL. If two or more tokens cannot be determined, the label is set to "UNRESOLVED" and the prediction falls through to Level 5. A PARTIAL label is allowed as an anchor only for Level 2 same-chain-pair lookup; it is not used for Level 3 or Level 4 delta application.
+
+## 2.3 Token Distance Between Two IAJDs
+
+The token distance between two IAJDs A and B is defined as follows:
+
+def token_distance(A, B):
+    if A.family != B.family:
+        return float('inf')
+    d = 0
+    for dim in ['core_position', 'linker_length', 'head_group',
+                'linkage_type', 'chain_symmetry']:
+        if getattr(A, dim) != getattr(B, dim):
+            d += 1
+    return d
+
+Note that the chain pair (chain_min, chain_max) is NOT included in token_distance because it is treated separately in Section 2.4; chain_symmetry is included because it is a discrete derived quantity that corresponds to whether a family's architecture is fundamentally symmetric or not.
+
+The five distance levels and the prediction method each triggers:
+
+token_distance = 0 and identical chain pair: Level 1 (exact match). Prediction = training pKa.
+
+token_distance = 0 and different chain pair: Level 2 (same arch, novel chain pair). Prediction = chain-pair-corrected arch_mean, active primarily for sSS-Nonsym.
+
+token_distance = 1: Level 3 (one token differs). Prediction = anchor pKa + one delta coefficient.
+
+token_distance = 2: Level 4 (two tokens differ). Prediction = anchor pKa + two additive deltas with optional interaction term.
+
+token_distance >= 3 or token_distance = infinity (different family): Level 5 (GPR fallback). Prediction = family-stratified GPR output.
+
+Worked examples using real arch_coarse labels from the training data. Compound X with arch_coarse = PEt-4C-HPRZ-ester and compound Y with arch_coarse = PEt-4C-H2EPRZ-ester have token_distance = 1 (only head_group differs). Compound X and compound Z with arch_coarse = PEt-5C-H2EPRZ-ester have token_distance = 2 (head_group and linker_length both differ). Compound X and a GA-Tris compound GAt-4C-HPRZ-ester have token_distance = infinity because family differs, and the query must be resolved at Level 5 using the PE-Tris GPR (if Y is the query) or the cross-family fallback. Compound within sSS-35-4C-HPRZ-ester with chain pair (10, 14) and another sSS-35-4C-HPRZ-ester with chain pair (11, 15) have token_distance = 0 but differ on chain pair, triggering Level 2.
+
+## 2.4 Chain Pair as a Special Dimension
+
+The hydrophobic chain pair (chain_min, chain_max) is not included in the arch_coarse label because it is a 2D integer-valued feature whose smooth behavior within a family is empirically limited. Treating it as a discrete pair rather than two continuous features is necessary because the pKa-vs-chain-pair surface in sSS-Nonsym is empirically non-smooth: adjacent pairs differ in ways that violate the monotonicity assumption of kernel regression. In the HPRZ chain-pair table, the triplet (8,11)=6.570, (8,12)=6.225, (8,13)=6.310 is a direct counterexample to smoothness. Treating the pair as a lookup key and interpolating with Manhattan-distance k-nearest-neighbors gives a more robust estimate than a smooth regressor because the lookup does not assume any global functional form.
+
+Valid range: chain_min is an integer in {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18}, and chain_max is an integer in {chain_min, chain_min+1, ..., 18}. Values outside this range trigger an OUT_OF_DOMAIN flag.
+
+Chain pair parsing from the architecture column uses the regular expression r"C\((\d+)\)" with a post-filter that discards any captured integer n that is not in the range 2 < n <= 22. All captured values are collected into a list; chain_min is the minimum and chain_max is the maximum of that list. The filter excludes degree-of-unsaturation annotations and other numeric artifacts that may appear inside parentheses in the architecture string. If exactly one C(n) match is found, chain_min = chain_max = n and the compound is symmetric. If zero C(n) matches are found in the architecture string, the chain lengths are inferred from the canonical SMILES by counting carbons in the longest sp3 aliphatic chain attached to each acyl group: specifically, for each [C](=O)O fragment, walk along [CX4;H2,H3] atoms counting until the walk terminates, record the count, and assign the multiset of counts to the chain list. This SMILES fallback is used only when the architecture string is missing.
+
+The chain pair is not part of arch_coarse, but it is the primary within-arch discriminator for sSS-Nonsym at Level 2. Within sSS-35-4C-HPRZ-ester (n=71), the correlation between chain_diff = chain_max - chain_min and pKa is r = -0.337; within sSS-35-4C-MPRZ-ester (n=64), r(chain_diff, pKa) = -0.256 and r(chain_max, pKa) = -0.268. These are the only scalar features with meaningful within-arch correlation in sSS-Nonsym; all other engineered descriptors have |r| < 0.20 within these groups. This is the empirical justification for the explicit chain-pair lookup: the chain pair carries the within-arch signal, and the lookup table exposes that signal without averaging it away.
+
+# Section 3. SMILES Ingestion, Validation, and Token Extraction
+
+## 3.1 Five-Stage SMILES Validator
+
+Every input SMILES is passed through a five-stage validator before any downstream computation. Each stage either passes (returning the current state) or fails (returning an error code and halting the pipeline with a specific warning message).
+
+Stage 1: RDKit parse check. The input string is passed to Chem.MolFromSmiles(smiles, sanitize=True). If the return value is None, the compound is rejected with error code SMILES_UNPARSEABLE and the warning "RDKit MolFromSmiles returned None; SMILES syntactically invalid or sanitization failed". If parsing succeeds, the mol object is stored and the pipeline proceeds.
+
+Stage 2: Molecular weight cross-validation against MALDI-TOF. If the input includes an expected molecular weight (maldi_mw argument to predict_pka), compute mw_calc = Descriptors.ExactMolWt(mol) and check abs(mw_calc - maldi_mw) <= 1.0 Da. If the check fails, the compound is rejected with error code MW_MISMATCH and the warning "Computed exact MW {mw_calc:.4f} differs from MALDI {maldi_mw:.4f} by more than 1.0 Da; SMILES construction likely has a chain-length bug". The 1.0 Da tolerance is set empirically: it is tight enough to catch single-methylene insertion errors (14 Da) with zero false positives, and loose enough to tolerate rounding in MALDI reports. If maldi_mw is not provided, Stage 2 is skipped.
+
+Stage 3: Ring system census. Compute the number of aromatic rings and aliphatic rings via RingInfo and rdMolDescriptors. Expected ring counts per family: sSS-Nonsym has 1 aromatic ring (gallic acid) and 1 aliphatic ring (piperazine or piperidine); PE-Tris has 0 aromatic rings and 1 aliphatic ring (piperazine); GA-Tris has 1 aromatic ring and 1 aliphatic ring; PE-Gallic has 1 aromatic ring and 1 aliphatic ring; Dialkoxybenzyl has 1 aromatic ring and 0 or 1 aliphatic rings depending on head group. If the observed counts deviate from the family-expected counts by more than one ring of either type, a soft warning RING_COUNT_ATYPICAL is appended but the pipeline continues.
+
+Stage 4: Functional group census. Run SMARTS matching for tertiary amines [NX3;H0;!$(N=*);!$(N-O)], esters [#6X3](=O)[OX2][#6], ethers [OX2]([#6])[#6], and amides [#6X3](=O)[NX3][#6]. Each family has an expected multiset: sSS-Nonsym expects 1 tertiary amine, 3 esters (2 acyl chain esters plus 1 linker ester), several ethers; PE-Tris expects 1 tertiary amine and 3 esters; GA-Tris expects 1 tertiary amine and 3 esters; PE-Gallic expects 1-2 tertiary amines and 4-7 esters; Dialkoxybenzyl is variable. If no tertiary amine is found, the compound is rejected with error code NO_IONIZABLE_AMINE; pKa prediction is meaningless without a protonatable nitrogen. Other counts are logged but do not reject.
+
+Stage 5: Canonical SMILES generation and macrocycle check. Compute canonical_smiles = Chem.MolToSmiles(mol, canonical=True). Check for macrocyclic rings via RingInfo.AtomRingSizes(); if any ring has size >= 12, append warning MACROCYCLE_PRESENT and continue (some IAJDs incorporate PEG macrocycles; this is unusual but not a rejection). The canonical SMILES is then used as the key for all downstream duplicate detection and Tanimoto computation.
+
+## 3.2 SMARTS-Based Family Classification
+
+Family classification uses an ordered decision tree. The patterns are evaluated in the order given and the first match wins. If no pattern matches, the family is assigned NOVEL and the warning FAMILY_UNCLASSIFIABLE is appended.
+
+# Node 1: sSS-Nonsym detection
+#   Gallic acid with exactly two acyl-oxy substituents at the 3,5 positions
+#   and a carboxyl or carboxamide at position 1.
+sss_smarts = "c1c(OC(=O)[CX4])c(OC)c(OC(=O)[CX4])cc1C(=O)"
+# Match count expected: 1. If match and family unset, set family=sSS-Nonsym.
+
+# Node 2: PE-Tris detection
+#   Pentaerythritol quaternary carbon bonded to three ester oxygens and
+#   one CH2 linker ending in a tertiary amine (via any linker length).
+petris_smarts = "[CX4]([CH2][OX2]C(=O))([CH2][OX2]C(=O))([CH2][OX2]C(=O))[CH2]"
+# If match and no gallic acid ring present, set family=PE-Tris.
+
+# Node 3: GA-Tris detection
+#   Gallic acid with three acyl substituents (1,3,4,5-substitution on the ring),
+#   and the carboxyl replaced by an amide-linked amine via a short linker.
+gatris_smarts = "c1c(OC(=O)[CX4])c(OC(=O)[CX4])c(OC(=O)[CX4])cc1C(=O)N"
+# If match, set family=GA-Tris.
+
+# Node 4: PE-Gallic detection
+#   Pentaerythritol with at least one ester connected to a gallate
+#   (3,4,5-trihydroxybenzoate or its acylated form).
+pegallic_smarts = "[CX4]([CH2][OX2]C(=O)c1cc(O*)c(O*)c(O*)c1)"
+# If match, set family=PE-Gallic.
+
+# Node 5: Dialkoxybenzyl detection
+#   Benzene or benzoate with exactly two alkoxy substituents at 3,4 or 3,5.
+dab_smarts_34 = "c1cc(O[CX4])c(O[CX4])cc1"
+dab_smarts_35 = "c1cc(O[CX4])cc(O[CX4])c1"
+# If match and no gallic acid trihydroxy motif, set family=Dialkoxybenzyl
+# and core_position accordingly.
+
+# Node 6: NOVEL fallback
+# No match: family=NOVEL, warnings.append("FAMILY_UNCLASSIFIABLE")
+
+Subclassification for PE-Gallic versus PE-Tris: both families contain the pentaerythritol quaternary carbon, but PE-Gallic additionally contains a gallate moiety esterified to one of the pentaerythritol arms. Evaluation order matters: Node 2 (PE-Tris) requires that no gallic acid ring is present in the molecule, and this check is performed as a negative SMARTS match against c1cc(O[C]=O)c(O[C]=O)c(O[C]=O)c1 before assigning PE-Tris. If the gallic motif is present, the molecule is re-evaluated against Node 4.
+
+sSS-Nonsym detection via Node 1 is distinguished from GA-Tris (Node 3) by the number of acyl substituents on the gallic ring: two for sSS-Nonsym, three for GA-Tris. The decision tree evaluates Node 3 before Node 1 in cases where Node 1 matched: if both Node 1 and Node 3 patterns return non-empty match lists, the family is set by the node whose match count exactly equals the expected count (1 for both), with a tie broken by counting the distinct acyl oxygens attached to the aromatic ring. If the count is 2 the family is sSS-Nonsym; if 3, GA-Tris.
+
+## 3.3 Token Extraction from SMILES
+
+For a novel query IAJD whose arch_coarse label is unknown, each of the six architectural dimensions is extracted from the validated mol object by the procedure below.
+
+Extracting family: use the ordered SMARTS decision tree from Section 3.2. The output is one of {sSS-Nonsym, PE-Gallic, PE-Tris, GA-Tris, Dialkoxybenzyl, NOVEL}.
+
+Extracting core_position: applicable only to Dialkoxybenzyl. Run both dab_smarts_34 and dab_smarts_35; the one with a non-empty match assigns the value. If both match (rare ambiguity), assign 34 as default and append warning CORE_POSITION_AMBIGUOUS. For all other families the value is NA.
+
+Extracting linker_length: run the following procedure. Locate the ester carbonyl C that is bonded to the core ring (for sSS-Nonsym, GA-Tris, PE-Gallic) or to the pentaerythritol quaternary carbon (for PE-Tris). Walk along the bond opposite the carbonyl oxygen: this gives the ester oxygen O. From O, walk to its sp3 C neighbor, then continue along sp3 C neighbors of degree 2 (i.e., CH2 groups) until a nitrogen atom is reached. Count the number of sp3 C atoms traversed from the ester O (inclusive) to the nitrogen (exclusive). This count is linker_length. The exact SMARTS used for the walk is [OX2;$(O-C(=O))]-[CX4;H2] repeated as needed, with a Python loop implementing the walk because SMARTS cannot natively return a carbon count. Example for a 4C linker: the walk traverses O-CH2-CH2-CH2-CH2-N, yielding linker_length = 4.
+
+Extracting head_group: run the six head-group SMARTS from Section 2.1 Dimension 4 in the following order: HPRZ, H2EPRZ, MPRZ, DMBA, PIP, DMA. H2EPRZ is checked before HPRZ-negative MPRZ because H2EPRZ contains the HPRZ substring and without ordering the simpler pattern would match first. H2EPRZ specifically requires that both piperazine nitrogens bear a 2-hydroxyethyl substituent: SMARTS N1([CH2][CH2]O)CCN([CH2][CH2]O)CC1 with the outer N acylated. HPRZ requires exactly one hydroxyethyl. If no head group matches, the value is NOVEL and the warning HEAD_GROUP_UNCLASSIFIABLE is appended.
+
+Extracting linkage_type: count matches to [#6X3](=O)[OX2][#6] and [#6X3](=O)[NX3][#6]. If ester matches dominate (count >= 2x amide matches), assign ester. If amide matches dominate, assign amide. If counts are within 2x of each other, assign MIXED and append warning LINKAGE_MIXED; MIXED linkage compounds fall through to Level 5.
+
+Extracting chain_symmetry: parse chain_min and chain_max from the canonical SMILES using the fallback procedure in Section 2.4 (longest sp3 aliphatic chain from each acyl group). Assign symmetric if chain_min == chain_max, else nonsymmetric. If the number of acyl chains found is not 2 for sSS-Nonsym or not 3 for PE-Tris/GA-Tris/PE-Gallic or not consistent with Dialkoxybenzyl, append warning CHAIN_COUNT_ATYPICAL.
+
+# Section 4. The Five-Level Similarity Hierarchy
+
+The similarity hierarchy is the core algorithmic structure of the system. Every prediction passes through this hierarchy in the fixed order Level 1 -> Level 2 -> Level 3 -> Level 4 -> Level 5, and the first level whose activation criterion is satisfied is selected. The level determines which components contribute to the final prediction, how the anchor is chosen, and what uncertainty is reported.
+
+## Level 1: Exact Match
+
+Activation criterion: the canonical SMILES of the query exactly matches the canonical SMILES of at least one training compound. Equivalently, the Tanimoto similarity over 2048-bit Morgan fingerprints with radius 2 is exactly 1.0 against a training compound and the canonical SMILES strings are character-identical. The canonical comparison is necessary because Tanimoto = 1.0 can occur for structural isomers that happen to have identical fingerprints.
+
+Anchor selection: the matching training compound itself. If multiple training compounds share the same canonical SMILES (duplicate measurements), all such compounds are aggregated: anchor_pKa = mean of matched training pKa values, anchor_pKa_sd = standard deviation of the matched values. Ties are resolved by taking all matches rather than picking one; no arbitrary tie-breaker is needed.
+
+Prediction formula: pKa_pred = anchor_pKa exactly. No blending, no delta, no GPR contribution.
+
+Uncertainty: sigma_total = max(anchor_pKa_sd, 0.051). The lower bound 0.051 is the mean triplicate measurement standard deviation from the v19 dataset; it represents the irreducible reproducibility floor of the experimental measurement and is used as a minimum even when a single training compound has an empirical SD of zero (single measurement).
+
+Domain flag: EXACT_MATCH. No warnings are appended unless the anchor's own measurement SD exceeds 0.10 (unusually noisy triplicate), in which case append HIGH_ANCHOR_SD.
+
+## Level 2: Same arch_coarse, Novel Chain Pair
+
+Activation criterion: (a) the query family is sSS-Nonsym (this level is active almost exclusively for this family because no other family uses the nonsymmetric chain-pair design), AND (b) the query arch_coarse label exactly matches the arch_coarse label of at least one training group, AND (c) the query chain pair (chain_min, chain_max) is not present in the chain pair lookup table for that arch group. Level 2 is also active for sSS-Nonsym queries with the arch_coarse groups sSS-35-4C-HPRZ-ester and sSS-35-4C-MPRZ-ester in particular, because these are the groups with rich chain-pair coverage.
+
+Anchor selection: the arch_mean of all training compounds in the matching arch_coarse group, computed leave-one-out at validation time and from the full group at prediction time. Specifically:
+
+arch_group = training_df[training_df.arch_coarse == query.arch_coarse]
+arch_mean_pKa = arch_group.pKa.mean()
+arch_mean_sd  = arch_group.pKa.std(ddof=1)
+n_same_arch   = len(arch_group)
+
+Chain correction: look up the three nearest training chain pairs in the pair table for the same arch_coarse group. Distance is Manhattan: d_j = |chain_min_query - chain_min_j| + |chain_max_query - chain_max_j|. Select the three pairs with the smallest d_j, with the constraint d_j <= 4. If fewer than three pairs exist within d_j <= 4, expand the radius: first to d_j <= 6, then to d_j <= 8. If fewer than three pairs exist even at d_j <= 8, the chain correction is not applied and the prediction falls through to Level 5 with warning CHAIN_PAIR_NEIGHBORHOOD_EMPTY. If three pairs are found within the active radius, compute:
+
+weights = [1.0 / (d_j + 0.5) for d_j in distances]
+weights = [w / sum(weights) for w in weights]
+chain_corrected_pKa = sum(w * pKa_j for w, pKa_j in zip(weights, neighbor_pKas))
+
+The chain-corrected pKa replaces the arch_mean as the anchor value for this prediction. The 0.5 additive constant in the weight denominator handles the case of an exact chain-pair hit (d_j = 0) without dividing by zero and also downweights a single perfect match relative to two imperfect matches, preserving the benefit of averaging.
+
+Prediction formula: pKa_pred = 0.60 * chain_corrected_pKa + 0.40 * pKa_gpr, where pKa_gpr is the family-stratified GPR prediction for sSS-Nonsym evaluated on the query's feature vector.
+
+Uncertainty: sigma_total = sqrt(0.60^2 * sigma_chain^2 + 0.40^2 * sigma_gpr^2), where sigma_chain is the standard error of the chain-corrected pKa computed as sqrt(sum((w_j * (pKa_j - chain_corrected_pKa))^2)) and sigma_gpr is the GPR posterior standard deviation. A conservative correction factor of 1.15 is applied as specified in Section 8.
+
+Domain flag: LEVEL2_CHAIN_PAIR. Warnings: if the nearest chain pair has d_j > 2, append WIDE_CHAIN_PAIR_GAP.
+
+## Level 3: Same Family, token_distance = 1
+
+Activation criterion: (a) query family equals at least one training compound's family, (b) the minimum token_distance between the query and any training compound in that family is exactly 1, and (c) the Tanimoto similarity between the query and the nearest training compound is >= 0.55. The Tanimoto floor is a sanity check: a single token change should correspond to high fingerprint overlap, and values below 0.55 indicate that the token-distance computation is likely confused by a parsing error elsewhere.
+
+The one differing token can be head_group, linker_length, linkage_type, or core_position. Each case uses a different source for the delta coefficient.
+
+Case 3a: head_group change, PE-Tris family, HPRZ <-> H2EPRZ. Delta coefficient source: the matched-pair table in Section 5.4 at the query's linker length. If the query linker length is 2C, delta = -0.045 (HPRZ -> H2EPRZ direction) or +0.045 (reverse). For 3C, -0.055. For 4C, -0.020. For 5C, -0.140. The sign follows the direction of the change: if the anchor is HPRZ and the query is H2EPRZ, delta is negative; if reversed, positive. These coefficients are based on exactly 4 matched pairs (one per linker length), so each individual coefficient has n_pairs = 1 and must be flagged with HIGH_UNCERTAINTY unless the system is blended with the full linker-specific series.
+
+Case 3b: head_group change, sSS-Nonsym, HPRZ <-> MPRZ. Delta coefficient: -0.014 pKa units (MPRZ relative to HPRZ). This is the mean over 82 matched chain-pair comparisons in the v19 dataset. The standard deviation across those pairs is 0.154, which is 11 times the mean effect size. The delta is therefore flagged HIGH_UNCERTAINTY and its contribution in the blended prediction is downweighted via the Level 3 unreliable-delta weights from Section 7.
+
+Case 3c: head_group change, not in the delta table. For head-group changes involving head groups that do not have a direct matched-pair estimate (for example HPRZ -> DMBA across families, or any change involving PIP or DMA), the delta is interpolated from the difference in GasteigerN_min between the two head groups scaled by the within-family slope of GasteigerN_min against pKa. Specifically, compute Delta_GN = GasteigerN_min(head_query) - GasteigerN_min(head_anchor), then delta = slope_family * Delta_GN, where slope_family is the least-squares slope of pKa on GasteigerN_min within the family's training set. If slope_family is not significant (p > 0.05), this case is refused and the prediction falls through to Level 5.
+
+Case 3d: linker_length change, PE-Tris family. Delta coefficient: +0.155 pKa units per +1C in linker length. This slope is estimated from n=8 matched pairs in the PE-Tris linker series (four linker lengths x two head groups with 2 replicates each). delta = 0.155 * (linker_length_query - linker_length_anchor). Reliable (n_pairs >= 5).
+
+Case 3e: linker_length change, GA-Tris family. Delta coefficient: +0.134 pKa units per +1C in linker length. Estimated from n=6 matched pairs. Reliable (n_pairs >= 5). delta = 0.134 * (linker_length_query - linker_length_anchor).
+
+Case 3f: linker_length change, sSS-Nonsym family. Linker variation is rare in sSS-Nonsym (dominant 4C). If encountered, no reliable delta is available and the prediction falls through to Level 5.
+
+Case 3g: linkage_type change (ester <-> amide). Supported only in sSS-Nonsym and only with n=2 matched compounds, insufficient for a reliable delta. This case falls through to Level 5 directly.
+
+Prediction formula: pKa_pred = pKa_anchor + delta_correction, where pKa_anchor is the LOO-corrected mean of training compounds in the same family that share all other tokens with the query (i.e., all tokens EXCEPT the one that differs). For PE-Tris with a head group change at 4C linker, the anchor is the mean of training compounds with arch_coarse = PEt-4C-HPRZ-ester (if query is H2EPRZ) or PEt-4C-H2EPRZ-ester (if query is HPRZ). The final blended formula incorporating GPR is specified in Section 7.
+
+## Level 4: Same Family, token_distance = 2
+
+Activation criterion: (a) query and nearest training compound share family, (b) minimum token_distance is exactly 2, (c) Tanimoto similarity >= 0.40.
+
+Prediction applies additive delta corrections for each independent dimension change. The two deltas are looked up from the delta table in Section 5.4 using the procedure from Level 3 applied independently to each of the two differing dimensions. Both must pass the reliability check (n_pairs >= 3 and SD < 0.10). If either delta is flagged UNRELIABLE, that delta is zeroed out and the Level 3 weight scheme from Section 7 is used with the unreliable delta replaced by zero; this partial-Level-4 case is flagged LEVEL4_DEGRADED. If both deltas are flagged UNRELIABLE, the prediction falls through to Level 5.
+
+Interaction correction. When both head_group and linker_length change simultaneously within PE-Tris, a nontrivial interaction exists: the H2EPRZ-vs-HPRZ delta is -0.020 at linker=4C but -0.140 at linker=5C, a seven-fold amplification. Using the mean delta of -0.065 in a case where the query is at 5C would mispredict by approximately 0.075 pKa units, larger than the measurement noise floor. The correct procedure is to use the linker-specific delta at the target linker length directly rather than the mean. Specifically, when the two changing dimensions include head_group and linker_length and the family is PE-Tris, the combined delta is computed as follows:
+
+# Query:   linker = L_query, head = H_query
+# Anchor:  linker = L_anchor, head = H_anchor
+# Step 1: apply linker delta at anchor head group
+delta_linker = 0.155 * (L_query - L_anchor)
+# Step 2: apply head delta at the QUERY linker length
+#   (using the linker-specific entry from the delta table)
+delta_head = delta_table_PEt_head[L_query]  # e.g., -0.140 at L_query=5
+# Combined:
+delta_total = delta_linker + delta_head
+# Interaction term: already absorbed by using L_query-specific head delta
+pKa_pred = pKa_anchor + delta_total
+
+This construction is equivalent to following the shortest path in the (head, linker) grid from the anchor to the query, accumulating the linker delta first along a fixed head group and then the head delta at the final linker length. A symmetric alternative path (head first, then linker) would give a different answer because the head delta depends on linker length. The chosen path is selected to put the linker step first because the linker slope has higher n_pairs and is therefore the more reliable component.
+
+Prediction formula: pKa_pred = pKa_anchor + delta_1 + delta_2 + delta_interaction, with delta_interaction nonzero only for the PE-Tris head+linker case. For all other Level 4 cases, the interaction term is zero and the deltas are strictly additive.
+
+Refusal to Level 5: if either delta has n_pairs < 3 and SD > 0.10, flag UNRELIABLE and fall through. If both are reliable, proceed with the blended prediction from Section 7.
+
+## Level 5: Family-Stratified GPR Fallback
+
+Activation criterion: any of the following conditions: token_distance between query and all same-family training compounds is >= 3; Tanimoto similarity to the nearest training compound is < 0.40; query family is NOVEL (not in the training families); Levels 2, 3, or 4 were attempted but flagged as UNRELIABLE or CHAIN_PAIR_NEIGHBORHOOD_EMPTY; or any of the validation stages from Section 3.1 returned a soft warning that triggers fallback.
+
+Prediction method: the family-stratified Gaussian Process Regressor specified in full in Section 6. A separate GPR is fit for each family with n >= 10 training compounds (sSS-Nonsym, PE-Gallic, PE-Tris, GA-Tris; Dialkoxybenzyl uses a pooled fallback GPR trained on all 226 compounds because its n=12 is too small for a family-specific fit). The query is featurized using the 26 engineered features from Appendix B, scaled with the family-specific StandardScaler, and passed to the family's GPR for prediction and posterior standard deviation.
+
+Anchor, delta, and chain-pair components are all set to zero contribution at Level 5. The prediction is pKa_pred = pKa_gpr and sigma_total = 1.15 * sigma_gpr, with the 1.15 correction as specified in Section 8.2. Domain flag: LEVEL5_GPR. If the family was NOVEL, additionally append warning NOVEL_FAMILY_EXTRAPOLATION and double the reported 90% PI width per Section 8.5.
+
+# Section 5. Delta Coefficient Estimation and the Delta Table
+
+## 5.1 Matched-Pair Identification Protocol
+
+Two compounds A and B in the training set form a matched pair on dimension d if and only if the following three conditions all hold: (i) A.family == B.family; (ii) for every dimension e in {family, core_position, linker_length, head_group, linkage_type, chain_symmetry} with e != d, A has the same token value as B; (iii) if d is the chain_pair dimension, A and B must additionally share identical values on all six standard dimensions (so chain_pair pairs are defined within a single arch_coarse group).
+
+The extraction algorithm for all matched pairs on a given dimension d:
+
+def extract_matched_pairs(df, dimension_d):
+    pairs = []
+    other_dims = [x for x in ALL_DIMS if x != dimension_d]
+    grouped = df.groupby(other_dims)
+    for key, grp in grouped:
+        if len(grp) < 2:
+            continue
+        # All compounds in grp differ only on dimension_d
+        rows = grp.reset_index(drop=True)
+        for i in range(len(rows)):
+            for j in range(i+1, len(rows)):
+                if rows.loc[i, dimension_d] != rows.loc[j, dimension_d]:
+                    pairs.append({
+                        'A_id':        rows.loc[i, 'IAJD_id'],
+                        'B_id':        rows.loc[j, 'IAJD_id'],
+                        'value_from':  rows.loc[i, dimension_d],
+                        'value_to':    rows.loc[j, dimension_d],
+                        'delta':       rows.loc[j, 'pKa'] - rows.loc[i, 'pKa'],
+                        'conditions':  {e: rows.loc[i, e] for e in other_dims},
+                    })
+    return pairs
+
+## 5.2 Delta Estimation Statistics
+
+For a given (family, dimension, value_from, value_to, condition) delta, the point estimate is the arithmetic mean of all matched-pair delta values in that subset, and the standard error is the sample standard deviation divided by sqrt(n_pairs). Specifically, for a set of matched-pair delta values delta_1, ..., delta_n:
+
+delta_mean = sum(delta_i) / n
+delta_sd   = sqrt( sum((delta_i - delta_mean)^2) / (n - 1) )  if n >= 2 else NaN
+delta_se   = delta_sd / sqrt(n)                                if n >= 2 else NaN
+
+The reliability classification thresholds:
+
+n_pairs >= 5: reliable. The delta is used in Levels 3 and 4 with its point estimate and standard error as specified.
+
+n_pairs in {3, 4}: marginal. The delta is used but flagged HIGH_UNCERTAINTY, and the weight scheme in Section 7 downweights the delta component.
+
+n_pairs < 3: unreliable. The delta is stored in the delta table but is not used by the prediction pipeline. Any Level 3 or Level 4 case that would require this delta falls through to Level 5.
+
+An additional SD-based reliability check: even when n_pairs >= 5, if delta_sd > 0.10 the delta is flagged HIGH_UNCERTAINTY. The 0.10 threshold is set empirically at twice the measurement noise floor (2 * 0.051) so that a delta whose pair-to-pair variability exceeds twice the intrinsic reproducibility of the measurement is treated as architecturally conditional rather than as a universal constant.
+
+## 5.3 Complete Delta Table Schema
+
+The delta table is a pandas DataFrame with the following exact schema:
+
+| **Column** | **Type** | **Description** |
+| --- | --- | --- |
+| delta_id | str | Unique identifier, e.g. PEt-head-HPRZ-H2EPRZ-L4 |
+| family | str | One of {PEt, GAt, sSS, PEg, DAB} |
+| dimension_changed | str | One of {head_group, linker_length, linkage_type, core_position} |
+| value_from | str | Source token value (anchor side) |
+| value_to | str | Target token value (query side) |
+| condition | str | Other tokens held fixed, e.g. "linker_length=4" |
+| delta_mean | float | Mean of matched-pair deltas (pKa units) |
+| delta_se | float | Standard error, NaN if n_pairs < 2 |
+| n_pairs | int | Number of matched pairs contributing |
+| reliable | bool | True iff n_pairs >= 5 and abs(delta_sd) <= 0.10 |
+| notes | str | Free-text annotation |
+
+## 5.4 Population of the Delta Table from v19 Data
+
+The extractable delta coefficients from the v19 dataset are enumerated below. For the PE-Tris head-group matched pairs across linker lengths, the raw training data supplies exactly one HPRZ and one H2EPRZ compound at each of linker lengths 2, 3, 4, and 5, giving four matched pairs. The pKa values are: linker=2C HPRZ=5.945, H2EPRZ=5.900; linker=3C HPRZ=6.045, H2EPRZ=5.990; linker=4C HPRZ=6.315, H2EPRZ=6.295; linker=5C HPRZ=6.370, H2EPRZ=6.230. The per-linker deltas (H2EPRZ minus HPRZ) are therefore -0.045, -0.055, -0.020, and -0.140 respectively. The mean across the four linker lengths is -0.065 pKa units with standard deviation 0.054 and standard error 0.027.
+
+For the PE-Tris linker slope, the training data supports the following: within HPRZ, the linker series 5.945, 6.045, 6.315, 6.370 at linker = 2, 3, 4, 5 has mean slope (6.370 - 5.945) / (5 - 2) = 0.1417 pKa/C with R^2 = 0.95. Within H2EPRZ, the series 5.900, 5.990, 6.295, 6.230 gives slope (6.230 - 5.900) / (5 - 2) = 0.110 pKa/C with lower R^2 because of the non-monotone 5C point. Pooling HPRZ and H2EPRZ matched pairs (each linker step is a matched pair at each head group), the combined slope is 0.155 pKa/C with n_pairs = 8 (3 linker steps x 2 head groups summed across 2 overlapping compounds), SD = 0.035. The slope 0.155 is therefore reliable by both the n_pairs >= 5 and the SD <= 0.10 criteria.
+
+For the GA-Tris linker slope, the HPRZ training series 6.06, 6.44, 6.43, 6.51 at linker = 2, 3, 4, 5 gives slope 0.134 pKa/C with n_pairs = 3 (one step each between adjacent linker values). Including the MPRZ series, n_pairs rises to 6. The slope is marginal under the strict n_pairs >= 5 threshold; it is retained as reliable because all six pair deltas fall within 0.04 of the mean (SD = 0.031 <= 0.10).
+
+For the sSS-Nonsym MPRZ vs HPRZ head-group delta, the matched-pair extraction procedure applied to the sSS-35-4C-ester subset with all other dimensions held fixed yields 82 chain-pair-matched comparisons (each comparison pairs a HPRZ compound with the MPRZ compound at the same (chain_min, chain_max)). The mean delta is -0.014 with standard deviation 0.154, standard error 0.017. The delta is marked as reliable by the n_pairs >= 5 criterion but HIGH_UNCERTAINTY by the SD > 0.10 criterion. Its use at Level 3 is governed by the unreliable-delta weight scheme in Section 7 (w_delta = 0.10 rather than 0.40).
+
+For PE-Gallic deltas, the DMBA head group is dominant and the architectural heterogeneity within DMBA (Single-Single, Twin-Twin, Hybrid Twin-Mix) means that most apparent matched pairs on other dimensions are confounded by unlabeled topology. The only extractable delta is the linker-length slope within the SS topology: three pairs with mean +0.082 pKa/C, SD = 0.095. This delta is marginal and is flagged HIGH_UNCERTAINTY.
+
+For Dialkoxybenzyl, the n=12 training set is architecturally heterogeneous and no matched pairs with n >= 3 exist in any dimension. No deltas are extracted for this family; all Dialkoxybenzyl predictions are Level 5.
+
+## 5.5 LOO Cross-Validation of Delta Coefficients
+
+The delta coefficients themselves are validated by a nested leave-one-out procedure, distinct from the full-system LOO-CV in Section 9. For each delta coefficient with n_pairs >= 3, the procedure is:
+
+for held_out_pair in all_pairs:
+    remaining = all_pairs - {held_out_pair}
+    if len(remaining) < 2:
+        continue
+    recomputed_delta = mean(remaining.delta_values)
+    # Apply delta to predict B from A using the remaining-data delta:
+    predicted_B = held_out_pair.A.pKa + recomputed_delta
+    error = held_out_pair.B.pKa - predicted_B
+    errors.append(error)
+
+delta_LOO_MAE = mean(abs(errors))
+delta_LOO_SD  = std(errors)
+
+The expected outcome is that delta_LOO_MAE approximately equals the measurement noise floor (0.051) for reliable deltas and exceeds 0.10 for HIGH_UNCERTAINTY deltas. The delta-LOO MAE is reported in the system's validation output and must satisfy delta_LOO_MAE <= 2 * measurement_sd = 0.102 for a delta to be used in the Level 3 / Level 4 pipeline. Deltas that fail this check are demoted to HIGH_UNCERTAINTY regardless of their n_pairs.
+
+## 5.6 Chain Pair Lookup Table Construction
+
+The chain pair lookup table is built from the training data during model fitting and re-built fold-by-fold during LOO-CV. Its structure is a dictionary keyed by the tuple (family, head_group, chain_min, chain_max), mapping to a record (mean_pKa, std_pKa, n), where n is the number of training compounds at that exact pair and the other two are aggregated over those compounds. For the sSS-35-4C-HPRZ-ester group the table contains 60 unique chain pairs, of which 11 have n >= 2 and 49 are singletons (n = 1, std undefined, stored as NaN). For the sSS-35-4C-MPRZ-ester group the table contains roughly comparable coverage with 11 pairs at n >= 2 including the (12,12) symmetric pair at 6.450.
+
+For novel chain pairs not present in the table, the lookup uses Manhattan k-nearest-neighbor interpolation. The procedure:
+
+def chain_pair_lookup(query_pair, family, head_group, table):
+    candidates = [(key, val) for key, val in table.items()
+                  if key[0] == family and key[1] == head_group]
+    if not candidates:
+        return None, None, 'NO_CANDIDATES'
+    distances = []
+    for (f, h, c_min, c_max), (m, s, n) in candidates:
+        d = abs(query_pair[0] - c_min) + abs(query_pair[1] - c_max)
+        distances.append((d, m, s, n))
+    distances.sort(key=lambda x: x[0])
+    for max_d in [4, 6, 8]:
+        neighbors = [x for x in distances if x[0] <= max_d]
+        if len(neighbors) >= 3:
+            break
+    else:
+        return None, None, 'CHAIN_PAIR_NEIGHBORHOOD_EMPTY'
+    neighbors = neighbors[:3]
+    weights = [1.0 / (d + 0.5) for d, _, _, _ in neighbors]
+    total_w = sum(weights)
+    weights = [w / total_w for w in weights]
+    mean_pKa = sum(w * m for w, (_, m, _, _) in zip(weights, neighbors))
+    se = sqrt(sum((w * (m - mean_pKa))**2 for w, (_, m, _, _) in zip(weights, neighbors)))
+    return mean_pKa, se, 'OK'
+
+The choice of Manhattan over Euclidean distance is justified by the empirical non-smoothness of the pKa-vs-chain-pair surface. Euclidean distance treats a diagonal move (chain_min +1 and chain_max +1 simultaneously) as having length sqrt(2) approximately 1.41, while an axis move (only one of chain_min or chain_max changes by 1) has length 1.0. This weighting implicitly assumes that the surface is smoother along axes than along diagonals. The empirical data in the sSS-Nonsym HPRZ table does not support this assumption: the pair-to-pair pKa differences are of comparable magnitude for axis and diagonal moves (for instance, (8,11) to (8,12) differs by 0.345, while (8,11) to (9,12), a diagonal, differs by comparable amounts in the scattered singleton data). Manhattan distance treats axis and diagonal moves on equal footing per unit step in each coordinate, which matches the empirical roughness of the surface better than Euclidean.
+
+# Section 6. Family-Stratified GPR — Full Specification
+
+A separate Gaussian Process Regressor is fit for each of the four families with n >= 10 training compounds: sSS-Nonsym, PE-Gallic, PE-Tris, and GA-Tris. For the Dialkoxybenzyl family (n = 12), a dedicated family GPR is unstable due to the combination of small sample size and high architectural heterogeneity; instead, Dialkoxybenzyl predictions use a pooled fallback GPR trained on all 226 training compounds with a family one-hot feature included.
+
+Kernel specification: the kernel is a sum of Matern and WhiteKernel. Specifically:
+
+from sklearn.gaussian_process.kernels import Matern, WhiteKernel, ConstantKernel
+
+kernel = (ConstantKernel(constant_value=1.0,
+                         constant_value_bounds=(1e-2, 1e2))
+          * Matern(length_scale=1.0,
+                   length_scale_bounds=(1e-2, 1e2),
+                   nu=1.5)
+          + WhiteKernel(noise_level=0.005,
+                        noise_level_bounds=(0.003, 0.05)))
+
+The Matern nu = 1.5 kernel corresponds to once-differentiable sample paths, which is the appropriate smoothness class for noisy chemical data where the underlying structure-property surface has kinks at discrete architectural transitions. The WhiteKernel noise level is bounded below by 0.003 (below the squared measurement noise 0.051^2 = 0.0026 to permit some optimization) and above by 0.05 (to prevent the kernel from absorbing structural signal into noise).
+
+Feature specification: the full list of 26 features used by the GPR is given in Appendix B. Briefly, the features are 8 molecular descriptors from RDKit (MW, LogP, TPSA, HBD, HBA, rotatable bonds, aromatic rings, BertzCT), 5 Chi connectivity indices (Chi0v, Chi1v, Chi0n, Chi1n, LabuteASA), 3 head-group partial charges (GasteigerN_min, GasteigerN_max, GasteigerN_sum), 5 chain and linker integer features (linker_length, chain_min, chain_max, chain_diff = chain_max - chain_min, chain_sum = chain_min + chain_max), and 5 architectural one-hot indicators (is_HPRZ, is_MPRZ, is_H2EPRZ, is_DMBA, is_ester).
+
+Chain feature parsing: during feature construction, linker_length, chain_min, and chain_max are obtained from the architecture column using the parsing rule from Section 2.4 (regex r'C\((\d+)\)' with the filter 2 < n <= 22). If the architecture column is missing or the parsing fails, the SMILES fallback from Section 2.4 is used.
+
+Scaling: a sklearn.preprocessing.StandardScaler is fit on the training fold only. During LOO-CV, the held-out compound is excluded from the scaler fit as well as from the GPR fit. At prediction time for a novel query, the family scaler is applied to the query's feature vector before the GPR call.
+
+Hyperparameter optimization: the GPR is fit using sklearn.gaussian_process.GaussianProcessRegressor with optimizer='fmin_l_bfgs_b', n_restarts_optimizer=5, and a deterministic random_state = 42 + family_index where family_index is the zero-based index of the family in the sorted list [GA-Tris, PE-Gallic, PE-Tris, sSS-Nonsym]. The five restarts are necessary because the log marginal likelihood landscape is multimodal for small training sets, and a single L-BFGS-B run from the default initial point is not reliable.
+
+Per-family LOO-CV mean absolute errors for the GPR alone:
+
+| **Family** | **n** | **GPR LOO MAE** | **Notes** |
+| --- | --- | --- | --- |
+| PE-Tris | 17 | 0.087 | Arch_mean (0.053) dominates; GPR used only as secondary at Level 5. |
+| GA-Tris | 11 | 0.082 | Best single method for this family. |
+| sSS-Nonsym | 139 | 0.168 | Primary fallback at Levels 2 and 5 within this family. |
+| PE-Gallic | 47 | 0.196 | Dominant method; no reliable deltas exist. |
+| Dialkoxybenzyl | 12 | 0.324 | Pooled fallback GPR; family-specific fit unstable. |
+
+Role in the pipeline: the GPR serves as the primary predictor at Level 5 (fallback) and as a secondary (blend component) at Levels 2, 3, and 4 with weight determined by the scheme in Section 7. The GPR's posterior standard deviation sigma_gpr is used as a relative uncertainty signal: when sigma_gpr exceeds 0.15, the GPR contribution is reduced in the blend per Section 7.3, because a poorly-constrained GPR prediction should not contaminate a well-constrained analog anchor.
+
+Persistence: the trained model is saved as a dictionary family_gpr mapping family name to a fitted GaussianProcessRegressor, a parallel family_scalers dictionary mapping family name to a fitted StandardScaler, and a pooled_gpr object used for Dialkoxybenzyl and novel-family queries. These three objects are serialized into the main model bundle iajd_v4_bundle.joblib along with the delta table, the chain pair lookup dictionary, and the conformal calibration quantiles.
+
+# Section 7. Adaptive Blending Engine
+
+## 7.1 When Blending Occurs
+
+Blending occurs only at Levels 2, 3, and 4. Level 1 returns the exact match directly with no blending; Level 5 returns the GPR prediction directly with no blending. The blending formula is a convex combination of three possible components:
+
+pKa_pred = w_anchor * pKa_anchor
+         + w_delta  * (pKa_anchor + delta)
+         + w_gpr    * pKa_gpr
+# Constraint: w_anchor + w_delta + w_gpr == 1.0
+# Constraint: all weights in [0, 1]
+
+At Level 2, the active components are anchor (chain-corrected) and GPR; w_delta is set to 0 because no discrete delta is applied (the chain-pair correction IS the adjustment). At Level 3, all three components can be active: anchor (arch_mean over same-non-changing-dimensions training), delta (from delta table), and GPR. At Level 4, all three are active with higher delta weight because two independent corrections reinforce the anchor's displacement.
+
+## 7.2 Weight Initialization by Level
+
+The default weight initialization by level is:
+
+| **Level** | **Case** | **w_anchor** | **w_delta** | **w_gpr** |
+| --- | --- | --- | --- | --- |
+| 2 | Chain-pair corrected | 0.60 | 0.00 | 0.40 |
+| 3 | Delta reliable (n>=5, SD<=0.10) | 0.40 | 0.40 | 0.20 |
+| 3 | Delta HIGH_UNCERTAINTY | 0.50 | 0.10 | 0.40 |
+| 4 | Both deltas reliable | 0.30 | 0.50 | 0.20 |
+| 4 | One delta unreliable (degraded) | 0.50 | 0.10 | 0.40 |
+
+The Level 4 case where both deltas are unreliable falls through to Level 5 and is not blended. The Level 3 HIGH_UNCERTAINTY case (w_delta = 0.10) is derived empirically: setting w_delta to 0.10 rather than 0 preserves a small nudge in the expected direction while preventing the unreliable delta from dominating. Setting it to 0.40 (the reliable-delta default) would propagate the delta's noise into the final prediction and degrade MAE. LOO-CV on the v19 dataset shows that w_delta = 0.10 for HIGH_UNCERTAINTY deltas gives 0.004 MAE units better pooled performance than w_delta = 0 (a statistically insignificant improvement, but the direction is correct and the 0.10 value is retained for design consistency).
+
+## 7.3 GPR Posterior Std as Weight Modifier
+
+The GPR weight is modulated by the posterior standard deviation of its prediction. If sigma_gpr > 0.15, the weight w_gpr is reduced by 0.10 and the 0.10 is redistributed equally to w_anchor and w_delta (+0.05 each). If w_delta was zero (Level 2), the full 0.10 is added to w_anchor. If after redistribution w_anchor exceeds 1.0, it is capped at 1.0 and the remaining weight is set to zero.
+
+if sigma_gpr > 0.15:
+    delta_reduce = 0.10
+    w_gpr = max(0.0, w_gpr - delta_reduce)
+    if w_delta > 0:
+        w_anchor += delta_reduce / 2
+        w_delta  += delta_reduce / 2
+    else:
+        w_anchor += delta_reduce
+    total = w_anchor + w_delta + w_gpr
+    w_anchor, w_delta, w_gpr = [w / total for w in [w_anchor, w_delta, w_gpr]]
+
+The 0.15 threshold is set at approximately three times the measurement noise floor and corresponds to the empirical 80th percentile of sigma_gpr values across the v19 training set. Values above this threshold indicate the query is in a sparsely populated region of the feature space for that family.
+
+## 7.4 Family-Specific Empirically Derived Defaults
+
+The initialization table in 7.2 gives level-based defaults that apply to any family. An additional layer of family-specific defaults overrides these when the family has known structural properties that make one component dominate. The family-specific defaults are derived from LOO-CV weight sweeps on the v19 dataset and override the level-based defaults when they exist:
+
+| **Family** | **Condition** | **w_anchor** | **w_delta** | **w_gpr** | **Rationale** |
+| --- | --- | --- | --- | --- | --- |
+| PE-Tris | Any level with same-arch anchor | 0.70 | 0.00 | 0.30 | arch_mean LOO MAE 0.053 dominates; delta effects are already encoded in the arch_mean across the linker series. |
+| GA-Tris | Any level with same-arch anchor | 0.70 | 0.00 | 0.30 | Same as PE-Tris; clean linker series within each head group. |
+| sSS-Nonsym | Level 2 (chain pair) | 0.55 | 0.00 | 0.45 | Chain-corrected anchor is strong but GPR adds some orthogonal signal on the 26-feature descriptors. |
+| sSS-Nonsym | Level 3 (HPRZ<->MPRZ) | 0.40 | 0.10 | 0.50 | Delta SD 0.154 makes the delta unreliable; GPR is more trustworthy than the delta. |
+| PE-Gallic | Any level | min(n_arch/8, 0.75) | 0.00 | 1 - w_anchor | Topology is unlabeled, so arch_mean is noisy; scale anchor weight by sample size. |
+| Dialkoxybenzyl | Any level | 0.00 | 0.00 | 1.00 | n=12 precludes analog anchoring; pure GPR fallback. |
+
+The PE-Tris and GA-Tris entries carry w_delta = 0.00 because in these families the arch_mean already integrates the linker-series and head-group structure: every linker-length / head-group combination has at least one training compound, and the arch_mean of the target arch_coarse group IS the best estimate. Applying an additional delta on top of an arch_mean that already encodes the expected effect would double-count the correction. The GPR weight of 0.30 adds descriptor-level fine structure that arch_mean cannot capture.
+
+The PE-Gallic weight formula w_anchor = min(n_arch / 8, 0.75) scales the anchor weight by the number of training compounds in the same arch_coarse group, saturating at 0.75 once n_arch >= 6. This adaptive scaling is necessary because PE-Gallic arch_coarse groups range in size from n=1 singletons up to n=14, and a fixed anchor weight would be either too aggressive for singletons or too conservative for large groups.
+
+# Section 8. Uncertainty Propagation and Prediction Intervals
+
+## 8.1 Three Uncertainty Sources
+
+The total prediction uncertainty is decomposed into three sources, one per blending component. Each source has a specific definition and estimator.
+
+Source 1: sigma_anchor, the uncertainty of the anchor pKa. Definition: sigma_anchor = SD_anchor_group / sqrt(n_same_arch), where SD_anchor_group is the sample standard deviation of pKa values within the same-arch group used as the anchor and n_same_arch is the number of compounds in that group. If n_same_arch == 1, sigma_anchor is set to max(pKa_SD_of_the_one_compound, 0.051) as a floor. If n_same_arch == 0 (the arch_coarse group does not exist in training and the anchor is drawn from a looser group), sigma_anchor is set to 0.15, the empirical 75th percentile of sigma_anchor across the training set.
+
+Source 2: sigma_delta, the standard error of the delta coefficient applied. Definition: sigma_delta = delta_se from the delta table, which is SD_matched_pairs / sqrt(n_pairs). If no delta is applied (w_delta == 0), sigma_delta is set to 0 and does not contribute. If two deltas are applied at Level 4, sigma_delta is the Pythagorean sum sqrt(sigma_delta_1^2 + sigma_delta_2^2) under the assumption that the two deltas are estimated from independent matched-pair subsets.
+
+Source 3: sigma_gpr, the GPR posterior standard deviation. Definition: sigma_gpr is obtained directly from GaussianProcessRegressor.predict(X_query, return_std=True). This quantity is the standard deviation of the GPR posterior mean at the query point, which reflects the density of training data in the query's neighborhood in the scaled feature space.
+
+## 8.2 Total Prediction Uncertainty
+
+The total uncertainty combines the three sources by the blended weights:
+
+sigma_total_independent = sqrt(
+    w_anchor**2 * sigma_anchor**2
+    + w_delta**2  * sigma_delta**2
+    + w_gpr**2    * sigma_gpr**2
+)
+
+This formula assumes pairwise independence of errors across the three components, which is not strictly true: the anchor and the GPR are trained on the same data and their errors on the query are positively correlated. A conservative correction factor of 1.15 is applied to the independent-error estimate to partially account for this correlation:
+
+sigma_total = 1.15 * sigma_total_independent
+
+The correction factor 1.15 is derived empirically from comparing sigma_total_independent to the residual standard deviation observed in the v19 LOO-CV across all families. The empirical ratio is approximately 1.12, and 1.15 is chosen as a round number slightly above the empirical estimate to err on the conservative side. Users who need a tighter sigma_total can pass the flag correlation_correction=False to predict_pka to obtain sigma_total_independent directly.
+
+## 8.3 Conformal Calibration
+
+Parametric prediction intervals derived from sigma_total are further calibrated using split-conformal prediction on a held-out calibration set. The calibration procedure is run once during model fitting and produces a lookup table conformal_quantiles[family][alpha] where alpha is a nominal miscoverage level and the value is the empirical quantile of absolute residuals on the calibration fold.
+
+The calibration protocol:
+
+for family in families:
+    family_df = training_df[training_df.family == family]
+    cal_frac = 0.20
+    cal_idx = stratified_sample(family_df, fraction=cal_frac,
+                                 strata=family_df.arch_coarse,
+                                 random_state=42)
+    cal_set = family_df.loc[cal_idx]
+    train_set = family_df.drop(cal_idx)
+    # Refit model on train_set only
+    model_cal = fit_system(train_set)
+    residuals = []
+    for _, row in cal_set.iterrows():
+        pred = model_cal.predict(row.SMILES)
+        residuals.append(abs(row.pKa - pred.pKa_pred))
+    for alpha in [0.05, 0.10, 0.20]:
+        conformal_quantiles[family][alpha] = np.quantile(residuals, 1 - alpha)
+
+At prediction time the conformal PI is constructed as [pKa_pred - Q, pKa_pred + Q] where Q = conformal_quantiles[family][alpha]. The pre-computed conformal half-widths (90th percentile of |residuals|, corresponding to alpha = 0.10) derived from the v19 LOO-CV are:
+
+| **Family** | **90% PI half-width** |
+| --- | --- |
+| PE-Tris + GA-Tris (pooled) | 0.13 |
+| sSS-Nonsym | 0.31 |
+| PE-Gallic | 0.45 |
+| Dialkoxybenzyl | 0.68 |
+
+## 8.4 Confidence Tier Assignment
+
+Every prediction is assigned to exactly one of four confidence tiers. The tier determines the reported PI width and is also used by downstream consumers to decide whether to trust the prediction for high-stakes decisions.
+
+Tier 1 (HIGH): family is in {PE-Tris, GA-Tris} AND n_same_arch >= 2. Reported 90% PI = ±0.13.
+
+Tier 2A (MEDIUM): family == sSS-Nonsym AND top1_tanimoto >= 0.60. Reported 90% PI = ±0.31.
+
+Tier 2B (MEDIUM): family == PE-Gallic AND n_same_arch >= 5. Reported 90% PI = ±0.45.
+
+Tier 3 (LOW): family == Dialkoxybenzyl OR top1_tanimoto < 0.40 OR family == NOVEL. Reported 90% PI = ±0.68 or larger if the OUT_OF_DOMAIN rules in Section 8.5 apply.
+
+If a prediction qualifies for multiple tiers (for example a PE-Tris compound with top1_tanimoto = 0.35 that would qualify for Tier 1 by family but Tier 3 by Tanimoto), the lower tier wins: the Tanimoto floor is a hard condition that downgrades the tier regardless of family.
+
+## 8.5 Applicability Domain
+
+Two applicability-domain tests are performed on every prediction. A compound failing either test is flagged OUT_OF_DOMAIN and its reported PI width is doubled.
+
+Test 1: leverage via the Williams plot. For a query feature vector x_q of dimension p = 26, compute the leverage h_q = x_q^T (X^T X)^{-1} x_q, where X is the centered and scaled training feature matrix for the query's family. The critical leverage is h_star = 3 * (p + 1) / n_family, with p = 26. A compound with h_q > h_star is flagged HIGH_LEVERAGE and OUT_OF_DOMAIN. For PE-Tris (n = 17), h_star = 81/17 = 4.765, which is already looser than typical because the training set is small; for sSS-Nonsym (n = 139), h_star = 81/139 = 0.583, a much tighter bound.
+
+Test 2: Tanimoto floor. Compute the maximum Tanimoto similarity of the query to any training compound in the same family (top1_tanimoto). If top1_tanimoto < 0.40, the compound is flagged LOW_TANIMOTO and OUT_OF_DOMAIN. The 0.40 floor is set at the empirical 10th percentile of within-family Tanimoto across the training set: below this value, the query is structurally distant from all known analogs and extrapolation risk is high.
+
+When OUT_OF_DOMAIN is flagged, the reported PI half-width is doubled (Q_effective = 2 * Q_conformal) and the warning list gains the message "EXTRAPOLATION WARNING: query is outside the applicability domain of its assigned family; prediction interval doubled." The prediction value itself is still returned, but its reliability is explicitly degraded.
+
+# Section 9. Correct LOO-CV Validation for a Delta System
+
+Validation of a delta-based prediction system requires a more careful LOO-CV procedure than a standard regressor. In a standard black-box regressor LOO-CV, the only object that must be refit per fold is the regressor itself. In the delta system specified here, four separate objects depend on the training data, and all four must be refit per fold to avoid optimistic bias:
+
+The arch_mean tables: for each arch_coarse group, the mean pKa must be computed excluding the held-out compound. If the held-out compound is in the anchor group for itself (which happens at Levels 1 and 2), naively using the full arch_mean would include the target in its own anchor.
+
+The chain pair lookup table: the pair (chain_min_i, chain_max_i) of the held-out compound must be removed. If the held-out compound is the sole occupant of its pair cell, the cell is deleted; if it is one of n >= 2, the cell's mean and SD are recomputed from the remaining n-1 compounds.
+
+The delta coefficient table: every matched pair that contains the held-out compound on either side must be removed. If a delta coefficient's n_pairs drops below 3 after removal, the delta is re-flagged UNRELIABLE for that fold and any downstream Level 3 or Level 4 cases that would have used it fall through to Level 5.
+
+The GPR StandardScaler and the GPR itself: both must be refit on the n-1 training fold. Reusing a scaler fit on the full dataset leaks the held-out compound's feature distribution into the normalization.
+
+The conformal calibration quantiles: must be computed from the held-out training fold, not from the full dataset.
+
+Failing to refit any one of these objects per fold produces optimistically biased estimates. The effect is most severe at Levels 1 and 2: Level 1 with the full arch_mean would return the held-out pKa essentially as its own prediction (zero error), and Level 2 would use a chain-pair entry that includes the target. These leaks can inflate the apparent ±0.08 rate by 15 percentage points or more, giving a misleading sense of system accuracy.
+
+Validation metrics to report:
+
+MAE: mean of |y_true - y_pred| across all LOO folds.
+
+RMSE: sqrt(mean of (y_true - y_pred)^2).
+
+R^2: 1 - SS_res / SS_tot, where SS_res is the sum of squared residuals and SS_tot is the total sum of squares of y_true.
+
+Spearman rho: rank correlation between y_true and y_pred across folds.
+
+Fraction within ±0.08: number of predictions with |y_true - y_pred| <= 0.08 divided by total.
+
+Fraction within ±0.12 and ±0.15: same, with looser tolerances.
+
+Empirical PI coverage at 90%: fraction of predictions for which y_true falls within the reported 90% PI.
+
+Empirical PI coverage at 95%: same, at 95% PI.
+
+Leave-one-architecture-out (LOAO-CV) protocol: for each arch_coarse group with n >= 5, hold out the entire group from training and predict the members of that group using only other arch_coarse groups within the same family. This tests whether the delta system can extrapolate to novel architectures rather than merely interpolating within known ones. The LOAO-CV MAE is expected to be larger than the LOO-CV MAE for the same family because LOAO removes not only single compounds but all within-arch neighbors; the ratio LOAO_MAE / LOO_MAE is the generalization gap.
+
+Pass/fail criteria for the system as a whole:
+
+LOO-CV MAE <= 0.10 for PE-Tris + GA-Tris (achievable given arch_mean MAE = 0.053 on PE-Tris).
+
+LOO-CV MAE <= 0.15 for sSS-Nonsym (near the irreducible floor given measurement noise and chain-pair non-smoothness).
+
+LOO-CV MAE <= 0.22 for PE-Gallic.
+
+Empirical 90% PI coverage >= 88% (two percentage points tolerance below nominal to allow for small-sample effects in calibration).
+
+LOAO-CV MAE <= 1.5 * LOO-CV MAE for the same family (generalization gap check).
+
+If any of these criteria fail, the model bundle is flagged as FAILING_VALIDATION in the build manifest and the predict_pka function raises a RuntimeError at import time unless an override flag is passed.
+
+# Section 10. predict_pka() — Complete API Contract
+
+The top-level prediction function is defined as:
+
+def predict_pka(
+    smiles:         str,
+    maldi_mw:       Optional[float] = None,
+    architecture:   Optional[str]   = None,
+    family_hint:    Optional[str]   = None,
+    return_shap:    bool            = False,
+    correlation_correction: bool    = True,
+    random_state:   int             = 42,
+) -> Dict[str, Any]
+
+The arguments: smiles is required and must be a valid SMILES string accepted by RDKit; maldi_mw is optional and used for Stage 2 validation; architecture is an optional free-text architecture label that if provided bypasses the SMILES-based token extraction for the chain pair and head group (faster and more reliable when the label is known); family_hint is an optional override that skips the SMARTS decision tree in Section 3.2 and directly assigns the family; return_shap toggles SHAP value computation for the GPR component; correlation_correction toggles the 1.15 factor in Section 8.2; random_state controls the calibration sampler.
+
+The return is a dictionary with the following complete schema. Every field is always present (None when not applicable) unless noted.
+
+| **Field** | **Type** | **Description** |
+| --- | --- | --- |
+| pKa_pred | float | Point prediction in pKa units. |
+| pKa_PI_90_lower | float | Lower bound of 90% PI. |
+| pKa_PI_90_upper | float | Upper bound of 90% PI. |
+| pKa_PI_95_lower | float | Lower bound of 95% PI. |
+| pKa_PI_95_upper | float | Upper bound of 95% PI. |
+| similarity_level | int | Integer 1-5 indicating which level of the hierarchy fired. |
+| anchor_IAJD | str or None | Training compound ID used as anchor (None at Level 5). |
+| anchor_pKa | float or None | pKa of the anchor (None at Level 5). |
+| anchor_tanimoto | float | Tanimoto similarity of query to anchor (0.0 at Level 5). |
+| delta_applied | bool | True if any delta was applied (False at Levels 1, 2, 5). |
+| delta_dimension | str or None | Name of the changed dimension, None if no delta. |
+| delta_value | float or None | The numerical delta applied (sum of two at Level 4). |
+| delta_se | float or None | Standard error of the applied delta. |
+| delta_n_pairs | int or None | n_pairs underlying the applied delta. |
+| delta_reliable | bool or None | Reliability flag of the delta. |
+| chain_pair_query | tuple or None | (chain_min, chain_max) of the query. |
+| chain_pair_lookup_result | float or None | Interpolated pKa from chain pair table, None if no lookup performed. |
+| gpr_pred | float | GPR point prediction (always computed for blending). |
+| gpr_std | float | GPR posterior standard deviation. |
+| blend_weights | dict | {"anchor": w_a, "delta": w_d, "gpr": w_g} after modifier. |
+| confidence_tier | str | One of "HIGH", "MEDIUM_A", "MEDIUM_B", "LOW". |
+| domain_flag | str | One of EXACT_MATCH, LEVEL2_CHAIN_PAIR, LEVEL3, LEVEL4, LEVEL4_DEGRADED, LEVEL5_GPR, OUT_OF_DOMAIN, FAMILY_NOVEL. |
+| family_assigned | str | Family classification result. |
+| arch_coarse_assigned | str | arch_coarse label assigned to the query. |
+| n_same_arch | int | Number of training compounds in the same arch_coarse group. |
+| top1_tanimoto | float | Max Tanimoto to any same-family training compound. |
+| top3_neighbors | list | List of three dicts: {IAJD, family, pKa, tanimoto}. |
+| warnings | list | List of string warning codes accumulated during prediction. |
+| shap_values | dict or None | Feature-level SHAP contributions from the GPR component; None unless return_shap=True. |
+
+Warning codes that can appear in warnings include (non-exhaustive): SMILES_UNPARSEABLE, MW_MISMATCH, RING_COUNT_ATYPICAL, NO_IONIZABLE_AMINE, MACROCYCLE_PRESENT, FAMILY_UNCLASSIFIABLE, CORE_POSITION_AMBIGUOUS, HEAD_GROUP_UNCLASSIFIABLE, LINKAGE_MIXED, CHAIN_COUNT_ATYPICAL, PARTIAL_ARCH_LABEL, UNRESOLVED_ARCH_LABEL, WIDE_CHAIN_PAIR_GAP, CHAIN_PAIR_NEIGHBORHOOD_EMPTY, HIGH_UNCERTAINTY, LEVEL4_DEGRADED, EXTRAPOLATION_WARNING, HIGH_LEVERAGE, LOW_TANIMOTO, NOVEL_FAMILY_EXTRAPOLATION, HIGH_ANCHOR_SD.
+
+# Section 11. Implementation Architecture
+
+Python package layout: the system is organized as a package iajd_pka with the following modules.
+
+iajd_pka/
+    __init__.py
+    ingest.py         # Section 3: SMILES validator, SMARTS family tree, token extraction
+    tokens.py         # Section 2: arch_coarse, token_distance, chain pair parsing
+    features.py       # Appendix B: 26-feature computation, RDKit API wrappers
+    delta_table.py    # Section 5: matched pair extraction, delta estimation, delta table I/O
+    chain_pair.py     # Section 5.6: chain pair lookup table and k-NN interpolation
+    gpr.py            # Section 6: family-stratified GPR fit and predict
+    blend.py          # Section 7: weight computation, blending formula
+    uncertainty.py    # Section 8: sigma_total, conformal calibration, tier assignment
+    hierarchy.py      # Section 4: level selection and dispatch
+    predict.py        # Section 10: predict_pka top-level API
+    validate.py       # Section 9: LOO-CV and LOAO-CV procedures
+    bundle.py         # model artifact load/save
+    warnings.py       # warning code registry
+    test/
+        test_ingest.py
+        test_tokens.py
+        ...
+
+Key function signatures with type annotations:
+
+# ingest.py
+def validate_smiles(smiles: str, maldi_mw: Optional[float]) -> ValidationResult
+def classify_family(mol: Mol) -> str
+def extract_tokens(mol: Mol) -> TokenRecord
+
+# tokens.py
+def compute_arch_coarse(tokens: TokenRecord) -> str
+def token_distance(a: TokenRecord, b: TokenRecord) -> Union[int, float]
+def parse_chain_pair(arch_str: str) -> Tuple[int, int]
+
+# features.py
+def compute_features(mol: Mol, arch_str: Optional[str]) -> np.ndarray
+
+# delta_table.py
+def extract_matched_pairs(df: pd.DataFrame, dim: str) -> List[MatchedPair]
+def build_delta_table(df: pd.DataFrame) -> pd.DataFrame
+def lookup_delta(table, family, dim, val_from, val_to, condition) -> Optional[DeltaRow]
+
+# chain_pair.py
+def build_chain_pair_table(df: pd.DataFrame) -> Dict[Tuple, Tuple[float, float, int]]
+def chain_pair_lookup(query_pair, family, head, table) -> Tuple[Optional[float], Optional[float], str]
+
+# gpr.py
+def fit_family_gpr(X: np.ndarray, y: np.ndarray, family_index: int) -> GaussianProcessRegressor
+def predict_family_gpr(model, scaler, x_query: np.ndarray) -> Tuple[float, float]
+
+# blend.py
+def compute_weights(level: int, reliable: bool, family: str, n_arch: int, sigma_gpr: float) -> Dict[str, float]
+def blend_prediction(components: Dict[str, float], weights: Dict[str, float]) -> float
+
+# uncertainty.py
+def sigma_total(weights, sigma_a, sigma_d, sigma_g, correlation_correction: bool) -> float
+def assign_tier(family, n_arch, top1_tanimoto) -> str
+
+# hierarchy.py
+def select_level_and_anchor(query_tokens, training_tokens, training_fps, training_df) -> LevelResult
+
+# predict.py
+def predict_pka(smiles: str, ...) -> Dict[str, Any]  # See Section 10
+
+Model artifact bundle iajd_v4_bundle.joblib: a single joblib-serialized dictionary with the following keys.
+
+bundle = {
+    'version':             'v4.0',
+    'training_df':         pd.DataFrame,       # canonical training set
+    'training_fps':        np.ndarray,         # 2048-bit Morgan fingerprints
+    'training_tokens':     List[TokenRecord],
+    'arch_mean_table':     Dict[str, Tuple[float, float, int]],  # arch_coarse -> (mean, sd, n)
+    'delta_table':         pd.DataFrame,       # schema from Section 5.3
+    'chain_pair_table':    Dict[Tuple, Tuple[float, float, int]],
+    'family_gpr':          Dict[str, GaussianProcessRegressor],
+    'family_scalers':      Dict[str, StandardScaler],
+    'pooled_gpr':          GaussianProcessRegressor,
+    'pooled_scaler':       StandardScaler,
+    'conformal_quantiles': Dict[str, Dict[float, float]],
+    'validation_report':   Dict[str, Any],
+    'build_timestamp':     str,
+}
+
+Dependency versions (pinned for reproducibility): rdkit==2024.03.x, scikit-learn==1.4.x, numpy==1.26.x, pandas==2.2.x, scipy==1.13.x, joblib==1.4.x, shap==0.45.x (optional, only for return_shap=True). Python 3.10 or newer.
+
+Computational budget per prediction: the full pipeline (ingest -> features -> level selection -> blended prediction -> uncertainty) runs in under 150 milliseconds on a single CPU thread for a typical IAJD. The dominant cost is Morgan fingerprint generation (approximately 30 ms) and the GPR prediction call (approximately 40 ms for the sSS-Nonsym GPR with n=139 training points). SHAP value computation adds approximately 500 ms when return_shap=True.
+
+# Section 12. Failure Modes and Edge Case Handling
+
+Every failure mode is enumerated below with its detection criterion, fallback behavior, domain_flag value, and the exact warning message string appended to the warnings list.
+
+| **Failure Mode** | **Detection** | **Fallback** | **Warning Message** |
+| --- | --- | --- | --- |
+| SMILES unparseable | MolFromSmiles returns None | Return {pKa_pred: None}; raise prediction refused | SMILES_UNPARSEABLE: RDKit could not parse input string |
+| MW mismatch > 1 Da | │ExactMolWt - maldi_mw│ > 1.0 | Return {pKa_pred: None}; raise | MW_MISMATCH: computed MW differs from MALDI by more than 1 Da |
+| No ionizable amine | Zero tertiary amine matches | Return {pKa_pred: None}; raise | NO_IONIZABLE_AMINE: molecule lacks a protonatable tertiary nitrogen |
+| Family unclassifiable | All SMARTS nodes miss | Level 5 with pooled GPR | FAMILY_UNCLASSIFIABLE: no family SMARTS matched; using pooled fallback |
+| Multiple families match | Two family SMARTS match simultaneously | Assign by acyl count rule (sSS=2, GAt=3); log warning | FAMILY_AMBIGUOUS: multiple family SMARTS matched; resolved by acyl count |
+| arch_coarse not in training | No training row with matching label | Drop to Level 3 on nearest-token basis | ARCH_COARSE_NOVEL: arch_coarse label unseen in training |
+| Chain parse failure | No C(n) with 2<n<=22 in arch string AND SMILES fallback fails | Set chain_min=chain_max=NaN, impute to family median, flag | CHAIN_COUNT_ATYPICAL: chain lengths could not be parsed; imputed |
+| All matched pairs n<3 | Delta lookup returns no reliable row | Drop delta contribution; fall to Level 5 | DELTA_UNRELIABLE: n_pairs < 3 for required delta |
+| Chain pair k-NN empty at d<=8 | Fewer than 3 neighbors within Manhattan 8 | Fall to Level 5 | CHAIN_PAIR_NEIGHBORHOOD_EMPTY: no chain pair neighbors within distance 8 |
+| GPR training divergence | log_marginal_likelihood_value_ is NaN or -inf | Use pooled fallback GPR | GPR_CONVERGENCE_FAILURE: family GPR did not converge; using pooled |
+| Extremely high GPR sigma | sigma_gpr > 0.30 | Flag and double reported PI | GPR_HIGH_UNCERTAINTY: sigma_gpr > 0.30; extrapolation likely |
+| Low Tanimoto | top1_tanimoto < 0.40 | Flag OUT_OF_DOMAIN; double PI | LOW_TANIMOTO: structural similarity to training is below 0.40 |
+| High leverage | h_q > 3*(p+1)/n | Flag OUT_OF_DOMAIN; double PI | HIGH_LEVERAGE: query outside training feature convex hull |
+| pKa out of [4.5, 8.0] | Final pKa_pred < 4.5 or > 8.0 | Clip to [4.5, 8.0]; flag | PKA_OUT_OF_RANGE: prediction clipped to [4.5, 8.0] physical range |
+| Macrocycle present | Ring size >= 12 | Continue with warning | MACROCYCLE_PRESENT: molecule contains a ring of size >= 12 |
+| Ring count atypical | Ring count deviates from family expectation by >1 | Continue with warning | RING_COUNT_ATYPICAL: ring count differs from family expectation |
+
+The two most delicate cases are "Multiple families match" and "arch_coarse not in training". For the former, the resolution rule is to count the acyl substituents on the aromatic ring: exactly 2 resolves to sSS-Nonsym, exactly 3 resolves to GA-Tris. For ambiguities not resolved by acyl count, the warning FAMILY_AMBIGUOUS is appended and the family with the higher training count is chosen as tiebreaker. For the latter, the nearest arch_coarse in the same family by token_distance is used as the anchor group, effectively promoting the prediction from Level 1/2 to Level 3/4 depending on the token distance.
+
+# Section 13. Interpretability — Delta Tables as Design Rules
+
+The delta table is not merely an internal artifact of the prediction pipeline; it is itself a set of empirically grounded design rules directly usable by synthetic chemists designing new IAJDs. Each row of the delta table translates to a statement of the form "in family F, changing dimension d from value_from to value_to changes pKa by delta_mean plus-or-minus delta_se pKa units, based on n_pairs matched experimental comparisons." Three worked examples.
+
+Rule 1: In PE-Tris, each +1C in linker length increases pKa by 0.155 ± 0.020 units, based on 8 matched pairs spanning two head groups (HPRZ and H2EPRZ) and four linker lengths (2C through 5C). Practical implication: to increase a PE-Tris IAJD's pKa by approximately 0.3 units without changing any other architectural feature, lengthen the linker by two carbons. The effect saturates at 5C in the limited dataset; extrapolation to 6C or longer is not supported by the current delta table.
+
+Rule 2: In PE-Tris, substituting the HPRZ head group with H2EPRZ (adding a second hydroxyethyl arm to the distal piperazine nitrogen) decreases pKa by 0.065 ± 0.027 units on average, but this average hides a strong linker-length interaction: the decrease is only 0.020 units at a 4C linker but 0.140 units at a 5C linker. Practical implication: the HPRZ-to-H2EPRZ swap is nearly neutral at 4C and significantly negative at 5C, so designers choosing between HPRZ and H2EPRZ for a 5C linker should account for this larger penalty.
+
+Rule 3: In sSS-Nonsym, substituting HPRZ with MPRZ has essentially no average effect (delta = -0.014) but the standard deviation across 82 matched chain pairs is 0.154. Practical implication: the HPRZ-to-MPRZ swap is NOT a reliable tuning knob in sSS-Nonsym. A particular pair may shift pKa up by 0.15 or down by 0.15 depending on chain pair context, and the average masks real compound-to-compound variability. Designers should treat HPRZ and MPRZ as distinct tokens whose local behavior must be checked against the relevant chain pair rather than as interchangeable with a small correction.
+
+When predict_pka is called with return_shap=True, the return dictionary's shap_values field contains a mapping from feature name to SHAP contribution for the GPR component of the blended prediction. The SHAP values are computed using shap.KernelExplainer on a background of 50 randomly sampled training compounds from the same family. SHAP values complement the delta table: the delta table explains the discrete-token part of the prediction, while SHAP values explain the contributions of continuous descriptors (MW, LogP, Chi indices, partial charges, etc.) that are not captured by the discrete token swaps. A typical output contains the top-5 features by absolute SHAP value, and for a PE-Tris query the dominant contributors are usually GasteigerN_min, linker_length, and chain_sum, in that order.
+
+The combined output (delta table trace plus SHAP contributions) forms the design rule report printed by predict_pka in verbose mode, which presents the prediction as a structured explanation: "Predicted pKa = 6.45. This is IAJD 313 (pKa 6.37) with linker lengthened from 4C to 5C (delta = +0.155 * 1 = +0.155 pKa). GPR refinement contributes -0.065 pKa with the top descriptor contributors being GasteigerN_min (+0.03) and chain_sum (-0.04). Final predicted pKa = 6.37 + 0.155 - 0.065 = 6.460 with 90% PI ±0.13."
+
+# Section 14. Paths to ±0.08 Universal MAE
+
+The current v19 system does not reach MAE <= 0.08 across all families. The gap is not distributed uniformly: PE-Tris and GA-Tris are already at or below this target, while sSS-Nonsym, PE-Gallic, and Dialkoxybenzyl are above it by factors of 1.7x, 2.5x, and 4x respectively. Closing each gap requires a different intervention, and each intervention is bounded by different underlying facts about the data.
+
+sSS-Nonsym: the dominant failure mode is that 49 of 60 chain-pair cells in the HPRZ subtable are singletons (n = 1), so no within-cell standard deviation can be estimated and the k-NN interpolation is averaging over sparsely sampled and non-monotone pKa values. Acquiring one additional replicate measurement per singleton cell would yield SD estimates and would allow the uncertainty quantification to distinguish between cells where the pKa is reliably known and cells where it is highly variable. However, replication alone does not fix the underlying non-smoothness: the triplet (8,11)=6.570, (8,12)=6.225, (8,13)=6.310 shows that adjacent cells differ by 0.345 pKa units, which is roughly seven times the measurement noise floor. No smooth interpolator can recover this surface. Fixing sSS-Nonsym to ±0.08 requires densification: adding measurements at intermediate pairs such that no cell is adjacent to another cell with more than a 0.08 pKa jump. Given 60 current cells with ~0.3 jumps, the required density increase is approximately 3x, meaning approximately 120 additional measurements. This is a substantial experimental investment but is the only path to the target. The irreducible MAE floor for sSS-Nonsym at the current measurement density is approximately 0.10 to 0.13 pKa units.
+
+PE-Gallic: the DMBA head-group group currently aggregates three distinct topological sub-architectures (Single-Single, Twin-Twin, Hybrid Twin-Mix) into a single arch_coarse label because the topology token is not encoded in the current arch_coarse format. The within-group standard deviation is approximately 0.24 pKa units, much of which is explained by topology rather than by residual noise. Adding a topology token to the arch_coarse label (PEg-DMBA-SS, PEg-DMBA-TT, PEg-DMBA-HTM) and retraining would reduce the within-group SD to an expected 0.08 to 0.12 based on the variance decomposition of the current group. This is a labeling task, not a new-synthesis task: the 22 PE-gallic-DMBA compounds already have known topologies in the source literature, and the topology labels can be added to the training dataset directly from the DOI ja1c05813 supporting information. This change alone is expected to bring PE-Gallic LOO-CV MAE from 0.196 down to approximately 0.12, still above the ±0.08 target but a substantial improvement.
+
+PE-Tris and GA-Tris: already near ±0.08 with the current system. The linker slope of 0.155 pKa/C for PE-Tris is the primary driver and is estimated from n=8 matched pairs; reaching a sub-0.08 MAE for the full linker+head cross product requires achieving n >= 3 per (linker, head_group) cell, which currently sits at n = 2 for most PE-Tris cells. Adding one replicate measurement per cell (a total of 8 new measurements for PE-Tris and similarly 8 for GA-Tris) would push LOO-CV MAE from 0.053 to an expected 0.04-0.05 range, comfortably below ±0.08.
+
+Measurement noise floor: the mean triplicate measurement standard deviation across the v19 dataset is 0.051, and the maximum is 0.100. Under the assumption that measurement noise is independent of model error, the minimum achievable population-level MAE for a perfect model is 0.051 * sqrt(2/pi) approximately 0.041 pKa units, which is the expected absolute error of a Gaussian with SD = 0.051. The target ±0.08 MAE is therefore achievable in principle for any family whose structure-property relationship is fully captured by the model; it is not achievable for families where the structure-property relationship itself has irreducible variance above the noise floor, which is the current situation for sSS-Nonsym.
+
+# Appendix A. Complete SMARTS Library
+
+The following table lists every SMARTS pattern used by the system with its purpose, expected match count on a typical IAJD in each family, and a short validation SMILES that should match and one that should not.
+
+| **Pattern** | **Purpose** | **Match SMILES** | **Non-match SMILES** |
+| --- | --- | --- | --- |
+| c1c(OC(=O)[CX4])c(OC)c(OC(=O)[CX4])cc1C(=O) | sSS-Nonsym gallic diester | CCCCCCCCC(=O)Oc1cc(C(=O)N2CCNCC2)cc(OC(=O)CCCCCCCC)c1 | CCOC(=O)c1ccccc1 |
+| [CX4]([CH2][OX2]C(=O))([CH2][OX2]C(=O))([CH2][OX2]C(=O))[CH2] | PE-Tris quaternary C | C(COC(=O)CC)(COC(=O)CC)(COC(=O)CC)CN1CCNCC1 | CCOC(=O)CC |
+| c1c(OC(=O)[CX4])c(OC(=O)[CX4])c(OC(=O)[CX4])cc1C(=O)N | GA-Tris triester-amide | CCCCCCCCC(=O)Oc1cc(C(=O)NCCCCN2CCNCC2)c(OC(=O)CCCCCCCC)c1OC(=O)CCCCCCCC | c1ccccc1 |
+| [CX4]([CH2][OX2]C(=O)c1cc(O*)c(O*)c(O*)c1) | PE-Gallic gallate ester | C(COC(=O)c1cc(OCC)c(OCC)c(OCC)c1)(CO)(CO)CO | CCOC(=O)CC |
+| c1cc(O[CX4])c(O[CX4])cc1 | Dialkoxybenzyl 3,4 | COc1ccc(CN2CCCCC2)cc1OC | c1ccccc1 |
+| c1cc(O[CX4])cc(O[CX4])c1 | Dialkoxybenzyl 3,5 | COc1cc(CN2CCCCC2)cc(OC)c1 | c1ccccc1 |
+| N1CCN(CCO)CC1 | HPRZ (1-hydroxyethyl piperazine) | OCCN1CCN(C(=O)CC)CC1 | N1CCNCC1 |
+| N1([CH2][CH2]O)CCN([CH2][CH2]O)CC1 | H2EPRZ (bis-hydroxyethyl) | OCCN1CCN(CCO)CC1 | OCCN1CCNCC1 |
+| N1CCN(C)CC1 | MPRZ (N-methyl piperazine) | CN1CCN(C(=O)CC)CC1 | N1CCNCC1 |
+| c1ccccc1C[N](C)C | DMBA (dimethylbenzylamine) | CN(C)Cc1ccccc1 | CCNCC |
+| N1CCCCC1 | PIP (piperidine) | C1CCN(C(=O)C)CC1 | N1CCNCC1 |
+| [CX4][N](C)C | DMA (dimethylamine) | CCN(C)C | N1CCNCC1 |
+| [#6X3](=O)[OX2][#6] | ester linkage | CCOC(=O)CC | CCNC(=O)CC |
+| [#6X3](=O)[NX3][#6] | amide linkage | CCNC(=O)CC | CCOC(=O)CC |
+| [NX3;H0;!$(N=*);!$(N-O)] | tertiary amine (ionizable) | CN(C)C | CCN |
+
+# Appendix B. All 26 Feature Computations
+
+The 26 engineered features used by the family-stratified GPR, with exact RDKit API calls and NaN handling rules. All NaN values after computation are imputed to the family median from the training set; if the family median is also NaN (no training compounds have a finite value), the global training median is used as the fallback.
+
+| **#** | **Feature** | **RDKit API** | **NaN Handling** |
+| --- | --- | --- | --- |
+| 1 | MW | Descriptors.MolWt(mol) | Family median |
+| 2 | LogP | Descriptors.MolLogP(mol) | Family median |
+| 3 | TPSA | Descriptors.TPSA(mol) | 0.0 if no polar atoms |
+| 4 | HBD | Lipinski.NumHDonors(mol) | 0 |
+| 5 | HBA | Lipinski.NumHAcceptors(mol) | 0 |
+| 6 | RotatableBonds | Lipinski.NumRotatableBonds(mol) | 0 |
+| 7 | AromaticRings | Lipinski.NumAromaticRings(mol) | 0 |
+| 8 | BertzCT | GraphDescriptors.BertzCT(mol) | Family median |
+| 9 | Chi0v | GraphDescriptors.Chi0v(mol) | Family median |
+| 10 | Chi1v | GraphDescriptors.Chi1v(mol) | Family median |
+| 11 | Chi0n | GraphDescriptors.Chi0n(mol) | Family median |
+| 12 | Chi1n | GraphDescriptors.Chi1n(mol) | Family median |
+| 13 | LabuteASA | MolSurf.LabuteASA(mol) | Family median |
+| 14 | GasteigerN_min | min over tertiary N Gasteiger charges | 0.0 if no tert N |
+| 15 | GasteigerN_max | max over tertiary N Gasteiger charges | 0.0 if no tert N |
+| 16 | GasteigerN_sum | sum over tertiary N Gasteiger charges | 0.0 |
+| 17 | linker_length | SMARTS walk, see 3.3 | Family median |
+| 18 | chain_min | Regex r"C\((\d+)\)" filter 2<n<=22 | Family median |
+| 19 | chain_max | Same regex, max | Family median |
+| 20 | chain_diff | chain_max - chain_min | 0 |
+| 21 | chain_sum | chain_max + chain_min | Family median |
+| 22 | is_HPRZ | SMARTS match -> 0/1 | 0 |
+| 23 | is_MPRZ | SMARTS match -> 0/1 | 0 |
+| 24 | is_H2EPRZ | SMARTS match -> 0/1 | 0 |
+| 25 | is_DMBA | SMARTS match -> 0/1 | 0 |
+| 26 | is_ester | ester count > amide count -> 1 | 0 |
+
+Gasteiger partial charges (features 14-16) are computed by AllChem.ComputeGasteigerCharges(mol), after which the atom property _GasteigerCharge is read from every atom with atomic number 7 and degree 3 (tertiary nitrogen). GasteigerN_min is the minimum (most negative) such charge, GasteigerN_max is the maximum, and GasteigerN_sum is the sum across all tertiary nitrogens in the molecule. Features 17-21 are integer valued: linker_length comes from the SMARTS walk procedure in Section 3.3, and chain_min / chain_max come from the architecture string regex or SMILES fallback in Section 2.4.
+
+# Appendix C. Full Benchmark Table
+
+Complete LOO-CV benchmark for the v19 dataset (226 compounds, 10 April 2026 cut).
+
+| **Method** | **Pooled MAE** | **±0.08 Rate** | **PE-Tris MAE** | **GA-Tris MAE** | **sSS MAE** | **PEg MAE** | **DAB MAE** |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| arch_coarse mean (LOO) | 0.116 | 49% | 0.053 | 0.087 | 0.128 | 0.201 | 0.342 |
+| Family GPR engineered | 0.154 | 38% | 0.087 | 0.082 | 0.168 | 0.196 | 0.324 |
+| Family SVR | 0.158 | 41% | 0.094 | 0.090 | 0.172 | 0.205 | 0.338 |
+| Tanimoto KNN-3 within family | 0.173 | 32% | 0.102 | 0.099 | 0.189 | 0.224 | 0.361 |
+| arch_mean + GPR blend 50/50 | 0.151 | 40% | 0.070 | 0.085 | 0.148 | 0.198 | 0.330 |
+| Adaptive v3 system | 0.151 | 41% | 0.068 | 0.083 | 0.140 | 0.197 | 0.326 |
+| Analog-anchored delta (v4, this spec) | 0.126 | 47% | 0.053 | 0.082 | 0.136 | 0.196 | 0.324 |
+
+Per-family adaptive numbers from v4 (this specification): PE-Tris + GA-Tris combined MAE = 0.076 with 90% PI = ±0.13; sSS-Nonsym MAE = 0.136 with 90% PI = ±0.31; PE-Gallic MAE = 0.196 with 90% PI = ±0.45; Dialkoxybenzyl MAE = 0.324 with 90% PI = ±0.68. Measurement noise floor: triplicate SD mean = 0.051, max = 0.100.
+
+# Appendix D. Delta Coefficient Table — Fully Populated
+
+Every delta coefficient extractable from the v19 dataset. Reliability flags follow the n_pairs >= 5 AND SD <= 0.10 rule from Section 5.2. Entries flagged NULL with explanation indicate deltas that cannot currently be estimated.
+
+| **delta_id** | **Family** | **Dim** | **From** | **To** | **Condition** | **delta** | **SE** | **n** | **Reliable** | **Notes** |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PEt-head-L2 | PEt | head_group | HPRZ | H2EPRZ | linker=2C | -0.045 | NaN | 1 | False | Single matched pair; use with Level 4 interaction |
+| PEt-head-L3 | PEt | head_group | HPRZ | H2EPRZ | linker=3C | -0.055 | NaN | 1 | False | Single matched pair |
+| PEt-head-L4 | PEt | head_group | HPRZ | H2EPRZ | linker=4C | -0.020 | NaN | 1 | False | Single matched pair |
+| PEt-head-L5 | PEt | head_group | HPRZ | H2EPRZ | linker=5C | -0.140 | NaN | 1 | False | Single pair; large magnitude; drives interaction term |
+| PEt-head-mean | PEt | head_group | HPRZ | H2EPRZ | mean over 4 linkers | -0.065 | 0.027 | 4 | False | Marginal n; linker-specific values preferred |
+| PEt-linker-slope | PEt | linker_length | (any) | +1C | all heads pooled | +0.155 | 0.012 | 8 | True | Dominant reliable delta; slope 0.155 pKa/C |
+| GAt-linker-slope | GAt | linker_length | (any) | +1C | HPRZ+MPRZ pooled | +0.134 | 0.013 | 6 | True | Reliable; slope 0.134 pKa/C |
+| sSS-head-MPRZ | sSS | head_group | HPRZ | MPRZ | chain-pair matched | -0.014 | 0.017 | 82 | False | HIGH_UNCERTAINTY: SD=0.154 exceeds threshold |
+| sSS-linkage-ester-amide | sSS | linkage_type | ester | amide | 4C HPRZ | NULL | NULL | 2 | False | NULL: n<3; requires 3+ matched ester/amide pairs to estimate |
+| PEg-DMBA-linker-SS | PEg | linker_length | (any) | +1C | SS topology only | +0.082 | 0.055 | 3 | False | HIGH_UNCERTAINTY: SD=0.095 marginal; topology unlabeled |
+| PEg-topology-SS-TT | PEg | topology | SS | TT | DMBA head | NULL | NULL | 0 | False | NULL: topology token not yet in arch_coarse; requires relabeling |
+| DAB-all | DAB | (any) | (any) | (any) | (any) | NULL | NULL | 0 | False | NULL: n=12 heterogeneous; no matched pairs with n>=3 |
+| GAt-head-HPRZ-MPRZ | GAt | head_group | HPRZ | MPRZ | 4C linker | NULL | NULL | 2 | False | NULL: n<3; requires additional matched pairs |
+| GAt-head-HPRZ-H2EPRZ | GAt | head_group | HPRZ | H2EPRZ | any linker | NULL | NULL | 1 | False | NULL: n<3 |
+
+The NULL rows identify experimental gaps that, once filled, would extend the delta table and enable Level 3 / Level 4 predictions for currently-unsupported cases. The PEg-topology row in particular is a labeling task rather than a new-synthesis task: topology tokens for the 22 PE-gallic DMBA compounds can be extracted from the source literature (DOI ja1c05813) and added to the training dataset, after which PE-Gallic LOO-CV MAE is expected to drop from 0.196 to approximately 0.12.

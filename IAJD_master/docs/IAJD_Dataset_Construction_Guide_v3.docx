@@ -1,0 +1,516 @@
+# **IAJD pKa QSPR Dataset Construction Guide**
+
+## **How to Build a Complete ML-Ready Dataset from Percec Lab Publications**
+
+## **Version 3.0 — From Raw Papers to Unique SMILES**
+
+# **PART 0: BEFORE YOU DO ANYTHING**
+
+## **0.1 Test Every PDF for Readability**
+
+Run this IMMEDIATELY on every PDF in the project before any data extraction:
+
+import subprocess
+for f in all_pdfs:
+    result = subprocess.run(['pdftotext', '-f', '1', '-l', '1', f, '-'], capture_output=True, text=True)
+    if len(result.stdout.strip()) < 20:
+        print(f"CORRUPT: {f}")
+
+If ANY PDF fails, STOP and tell the user. Compressed PDFs are frequently corrupt. Request uncompressed versions. Do NOT try to work around corrupt PDFs by guessing structures from context or building SMILES from templates.
+
+## **0.2 Understand the Goal**
+
+You are building a dataset of ~280-300 Ionizable Amphiphilic Janus Dendrimers (IAJDs) with:
+
+- One unique SMILES per IAJD (target: >95% unique canonical SMILES)
+
+- Experimentally measured pKa values
+
+- Architectural family classification
+
+- Computed molecular descriptors
+
+The SMILES must encode the FULL dendrimer structure — not a simplified scaffold. Each IAJD is a unique molecule. If two IAJDs share identical SMILES but have different pKa values, your SMILES are wrong.
+
+## **0.3 What Makes IAJDs Hard**
+
+These are NOT simple small molecules. A typical IAJD has:
+
+- 50-150 heavy atoms
+
+- A branched dendrimer core (pentaerythritol or gallic acid)
+
+- 2-3 long alkyl chains (C6-C18)
+
+- PEG (polyethylene glycol) chains: -OCH2CH2O- repeats
+
+- 1-9 ionizable amine groups at specific positions
+
+- Ester or amide linkages connecting the hydrophilic and hydrophobic domains
+
+The structural diversity comes from:
+
+1. Which CORE is used (pentaerythritol vs gallic acid vs dihydroxybenzoate)
+
+2. Which ARMS carry the amine (position 1, 2, 3, or combinations thereof)
+
+3. How many amines are attached (1, 2, 3, up to 9)
+
+4. Whether the linkage is ester (-C(=O)O-) or amide (-C(=O)NH-)
+
+5. Which specific PEG/dendron modules form the hydrophilic part
+
+6. The length of the alkyl chains
+
+7. The type of ionizable amine head group
+
+Items 1, 6, and 7 are easy to extract from paper figures. Items 2-5 require reading the actual ChemDraw structures from the Supporting Information.
+
+# **PART 1: HOW TO READ IAJD STRUCTURES FROM PAPERS**
+
+## **1.1 The Three Levels of Structural Information**
+
+Each paper presents IAJD structures at three levels of detail:
+
+### **Level 1: Schematic Cartoons (Main Paper Figures)**
+
+These show simplified block diagrams:
+
+- A colored block for the hydrophobic part with chain lengths labeled (e.g., "11/18" or "C12")
+
+- A colored block for the hydrophilic part with the head group shown
+
+- Numbers below = IAJD number and pKa value
+
+**What you CAN extract:** IAJD number, pKa value, alkyl chain lengths, head group type (MPRZ, DMA, PIP, etc.), whether chains are symmetric or nonsymmetric.
+
+**What you CANNOT extract:** The actual molecular connectivity. These cartoons deliberately hide the structural details that make each IAJD unique.
+
+### **Level 2: Synthesis Schemes (Main Paper or SI)**
+
+These show the chemical reactions used to synthesize the IAJDs. They reveal:
+
+- The core molecule (propyl gallate, pentaerythritol, 3,5-dihydroxybenzoic acid)
+
+- The type of linkage (ester vs amide)
+
+- The general building block strategy
+
+**What you CAN extract:** Core type, linkage type, building block identities.
+
+**What you CANNOT extract:** Which specific combination of building blocks is used for each individual IAJD.
+
+### **Level 3: Full ChemDraw Structures (SI Only)**
+
+These are the ONLY source of complete, unambiguous molecular structures. They show every atom and every bond. Each IAJD has its own ChemDraw structure in the SI, typically in the synthesis section or in dedicated structure figures.
+
+**THIS IS THE LEVEL YOU MUST READ TO GET CORRECT SMILES.**
+
+## **1.2 How to Extract SMILES from ChemDraw Structures in SI PDFs**
+
+### **Step 1: Rasterize the relevant SI pages**
+
+# Find pages with structures
+pdftotext supplementary.pdf - | grep -n "IAJD\|Scheme\|Figure S\|Structure"
+
+# Rasterize at 200 DPI for clear reading
+pdftoppm -jpeg -r 200 -f PAGE_START -l PAGE_END supplementary.pdf /tmp/struct
+
+### **Step 2: Read the rasterized structure image**
+
+Use the `view` tool to look at the rasterized page. You will see a ChemDraw-style structure with:
+
+- Zig-zag lines for carbon chains
+
+- Letters for heteroatoms (N, O, S)
+
+- Wedges for stereochemistry (usually not relevant for these dendrimers)
+
+- Labels identifying the compound (e.g., "IAJD 329" or "EH.GA2.EO")
+
+### **Step 3: Trace the structure into SMILES**
+
+Start from the ionizable amine (the nitrogen that gets protonated) and trace outward:
+
+1. **Identify the amine head group:**
+
+   - Dimethylamine: -N(CH3)2 → N(C)C
+
+   - Piperazine: cyclic diamine → C1CNCCN1
+
+   - N-methylpiperazine: → N1CCN(C)CC1
+
+   - N-(2-hydroxyethyl)piperazine: → N1CCN(CCO)CC1
+
+2. **Trace the linker from amine to core:**
+
+   - Count the carbon atoms between the amine N and the ester/amide carbonyl
+
+   - Linker length 2: -CH2-C(=O)- → CC(=O)
+
+   - Linker length 3: -CH2CH2-C(=O)- → CCC(=O)
+
+   - Linker length 4: -CH2CH2CH2-C(=O)- → CCCC(=O)
+
+   - Note whether it's ester (-C(=O)O-) or amide (-C(=O)NH-)
+
+3. **Identify the core:**
+
+   - 3,5-dihydroxybenzoate: aromatic ring with O at positions 3 and 5
+
+   - 3,4-dihydroxybenzoate: aromatic ring with O at positions 3 and 4
+
+   - Gallic acid (3,4,5): aromatic ring with O at positions 3, 4, and 5
+
+   - Pentaerythritol: C(CH2O-)(CH2O-)(CH2O-)(CH2O-)
+
+4. **Trace the alkyl chains:**
+
+   - Count carbons in each chain
+
+   - Note if branched (2-ethylhexyl = CC(CC)CCCC)
+
+5. **For PE-Gallic IAJDs (the hardest):**
+
+   The PE core has 4 arms. THREE arms connect to gallic acid branches (each carrying 3 alkyl chains). ONE arm connects to the amine. But critically:
+
+   - Some IAJDs have the amine on ONE gallic acid arm (e.g., position 1)
+
+   - Others have amines on TWO arms (positions 1,2 or 1,3)
+
+   - Others have amines on ALL THREE arms
+
+   - The remaining arms carry PEG chains or benzyl groups
+
+   This is what the v1.0 Nomenclature encodes:
+
+   - PE.C12.4C.DMBA1 = PE core, C12 chains, 4-carbon linker, DMBA amine on arm 1 only
+
+   - PE.C12.4C.DMBA12 = amines on arms 1 and 2
+
+   - PE.C12.4C.DMBA1.Bn23 = amine on arm 1, benzyl groups on arms 2 and 3
+
+   The SMILES for these IAJDs MUST encode which arms carry the amine. For example:
+
+   - IAJD 1 (DMBA on arm 1): The arm at position 1 has -OCCOCCOCCOC(=O)CCCN(C)C while arms 2 and 3 have -OCCOCCOCCO (plain PEG, no amine)
+
+   - IAJD 3 (DMBA on arms 1,2): Arms 1 AND 2 both have the amine-bearing chain
+
+### **Step 4: Validate the SMILES**
+
+from rdkit import Chem
+from rdkit.Chem import Descriptors
+
+mol = Chem.MolFromSmiles(smiles)
+assert mol is not None, "SMILES failed to parse"
+
+# Check molecular formula makes sense
+mw = Descriptors.ExactMolWt(mol)
+# Compare to MALDI-TOF MW from SI (should agree within 1 Da)
+
+# Check nitrogen count matches expected amines
+n_count = sum(1 for a in mol.GetAtoms() if a.GetAtomicNum() == 7)
+# Should match: 1 for DMA, 2 for piperazine, etc. times number of amine arms
+
+## **1.3 Specific Extraction Instructions by Paper**
+
+### **For ja1c05813 (54 PE-Gallic IAJDs)**
+
+The SI contains Schemes S1-S6 showing the building blocks (modules A-G) and Tables S1-S11 showing which modules are combined for each IAJD.
+
+**Key:** Each IAJD uses a specific combination of modules. Module A might have amine at position 1, Module B at position 2, etc. The SI tables tell you which modules are combined. You MUST read these tables to know the exact structure.
+
+Look for a table like:
+
+| **IAJD** | **Module Combination** | **pKa** |
+| --- | --- | --- |
+| 1 | A(1) | 6.27 |
+| 2 | A(2) | 6.20 |
+| 3 | A(1,2) | 6.41 |
+
+The number in parentheses tells you which positions carry the amine.
+
+Then look at the Scheme showing Module A's structure to trace the full SMILES.
+
+### **For ja2c00273 (47 sSS-Nonsym IAJDs)**
+
+Figure 2 in the main paper shows ALL structures as schematics with chain lengths. But the SI (Schemes S1-S4) shows the actual ChemDraw structures.
+
+**Key:** These IAJDs are built from a 3,5-dihydroxybenzoate core with two different alkyl chains. The hydrophilic part varies — some have 1 amine, others have 2 or 3, with different PEG spacer lengths. The SI structures show exactly how many amines and PEG units each IAJD has.
+
+For each IAJD, extract:
+
+- Chain 1 length (at position 3)
+
+- Chain 2 length (at position 5)
+
+- Number of amine groups
+
+- PEG chain length/pattern
+
+- Head group type
+
+### **For pharmaceutics1501572 (97 sSS-Nonsym IAJDs)**
+
+This is the largest set. The main paper's Figures 1-12 show schematics. The SI should contain Schemes showing the 7 different hydrophilic dendron modules used.
+
+**Key:** These 97 IAJDs use combinations of 7 hydrophilic dendron modules (labeled 1-7 in the paper). Each module has a different number and arrangement of amines and PEG units. Within each chain-length group (e.g., all C12/C8 IAJDs), the IAJDs differ ONLY in which dendron module is used.
+
+For each IAJD:
+
+1. Extract chain lengths from the schematic (main paper figures)
+
+2. Identify which dendron module is used (from SI)
+
+3. Build the full SMILES using the dendron module structure + chain lengths
+
+### **For bm4c01599 (13 PE-Tris IAJDs)**
+
+These are the simplest to extract because they vary systematically:
+
+- Core: pentaerythritol with tris-alkoxymethyl linkage
+
+- Chains: either C8 linear or 2-ethylhexyl (EH) branched
+
+- Linker: 2, 3, 4, or 5 carbon atoms
+
+- Head group: HPRZ or H2EPRZ
+
+The SI Scheme S1 shows the general structure. Each IAJD can be built programmatically once you know the 4 parameters above.
+
+### **For ja5c07232 (8 GA-Tris IAJDs)**
+
+Scheme 1 in the main paper shows the complete synthesis with all 8 products. These are fully systematic:
+
+- Core: gallic acid with 3x 2-ethylhexyl ethers
+
+- Linker: 2, 3, 4, or 5 carbon atoms
+
+- Head group: HPRZ or H2EPRZ
+
+Build programmatically:
+
+EH = "CC(CC)CCCC"
+def build_ga_tris(linker_n, head_type):
+    heads = {"HPRZ": "N1CCN(CCO)CC1", "H2EPRZ": "N1CCN(CCOCCO)CC1"}
+    lnk = "C" * (linker_n - 1)
+    return f"O=C({lnk}{heads[head_type]})OCc1cc(O{EH})c(O{EH})c(O{EH})c1"
+
+# **PART 2: pKa DATA EXTRACTION**
+
+## **2.1 Where to Find pKa Values**
+
+pKa values appear in:
+
+1. **Main paper figures** (below schematic structures, in blue text)
+
+2. **SI pKa tables** (with triplicate measurements and standard deviations)
+
+3. **SI titration curves** (raw data — use the reported average, not the graph)
+
+Always prefer SI tables with triplicate data over main paper figures.
+
+## **2.2 IAJD pKa vs DNP pKa**
+
+Papers report TWO different pKa values:
+
+- **IAJD pKa** (individual molecule): Measured by acid-base titration of the IAJD dissolved in ethanol/NaCl. This is what we model.
+
+- **DNP pKa** (nanoparticle surface): Measured by TNS fluorescence assay on assembled dendrimersome nanoparticles. This is NOT what we model.
+
+The IAJD pKa is typically 5.8-6.7. The DNP pKa is typically 7.0-8.5. If you see a pKa above 7.0, verify it is the IAJD pKa and not the DNP pKa.
+
+**Specific trap:** IAJD 97 has IAJD pKa = 6.50 (from ja5c07232 SI Table S2) but DNP pKa = 8.22 (from sciadv_adv1554). Use 6.50.
+
+## **2.3 Triplicate Data from ja5c07232**
+
+This paper's SI Table S2 provides the most complete triplicate pKa data for 16 IAJDs. Use these values for:
+
+| **IAJD** | **pKa 1** | **pKa 2** | **pKa 3** | **Mean** | **SD** |
+| --- | --- | --- | --- | --- | --- |
+| 333 | 5.83 | 5.95 | 5.98 | 5.92 | 0.08 |
+| 313 | 6.03 | 6.09 | 6.03 | 6.05 | 0.03 |
+| 93 | 6.25 | 6.35 | 6.24 | 6.28 | 0.06 |
+| 325 | 6.27 | 6.39 | 6.42 | 6.36 | 0.08 |
+| 334 | 5.91 | 5.84 | 5.85 | 5.87 | 0.04 |
+| 314 | 5.99 | 5.99 | 6.01 | 6.00 | 0.01 |
+| 288 | 6.33 | 6.40 | 6.21 | 6.31 | 0.10 |
+| 326 | 6.28 | 6.32 | 6.40 | 6.33 | 0.06 |
+| 329 | 6.03 | 6.12 | 6.04 | 6.06 | 0.05 |
+| 321 | 6.46 | 6.44 | 6.42 | 6.44 | 0.02 |
+| 97 | 6.46 | 6.50 | 6.54 | 6.50 | 0.04 |
+| 323 | 6.53 | 6.55 | 6.44 | 6.51 | 0.06 |
+| 330 | 6.22 | 6.26 | 6.18 | 6.22 | 0.04 |
+| 322 | 6.26 | 6.19 | 6.27 | 6.24 | 0.04 |
+| 253 | 6.31 | 6.39 | 6.42 | 6.37 | 0.06 |
+| 324 | 6.54 | 6.53 | 6.47 | 6.51 | 0.04 |
+
+IAJDs 333, 313, 93, 325, 334, 314, 288, 326 are PE-Tris. IAJDs 329, 330, 321, 322, 97, 323, 253, 324 are GA-Tris.
+
+# **PART 3: FAMILY CLASSIFICATION**
+
+## **3.1 The Five Families**
+
+1. **PE-Gallic** (~50-70 IAJDs): Pentaerythritol core + gallic acid arms. Sources: ja1c05813, ja1c09585, ja3c07337.
+
+2. **PE-Tris** (~16 IAJDs): Pentaerythritol core + tris-alkoxymethyl linkage. Source: bm4c01599.
+
+3. **GA-Tris** (~8-10 IAJDs): Gallic acid core + benzyl ester to amine. Source: ja5c07232.
+
+4. **Dialkoxybenzyl** (~30-40 IAJDs): 3,5 or 3,4-dihydroxybenzyl core. Sources: ja1c09585, ja3c13569.
+
+5. **sSS-Nonsym** (~100-160 IAJDs): 3,5-DHB core + nonsymmetric chains. Sources: ja2c00273, pharmaceutics1501572.
+
+## **3.2 Classification Rules**
+
+IAJDs 97 and 253 are GA-Tris (not PE-Gallic or sSS-Nonsym).
+
+IAJDs 312-334 from bm4c01599 are PE-Tris (not PE-Gallic).
+
+The v1.0 Architecture labels map to families as follows:
+
+- PE-gallic-* → PE-Gallic
+
+- PE-tris-alkoxymethyl → PE-Tris
+
+- GA-tris-* → GA-Tris
+
+- *dialkoxybenz* → Dialkoxybenzyl
+
+- sSS-*, SS-gallic-* → sSS-Nonsym
+
+# **PART 4: FEATURE COMPUTATION**
+
+## **4.1 From Correct SMILES, Compute:**
+
+### **RDKit Descriptors**
+
+MolLogP, HeavyAtomCount, TPSA, LabuteASA, FractionCSP3, RotatableBonds, BertzCT, Chi0v, Chi1v, HallKierAlpha, NumAromaticRings, ExactMolWt, NumHDonors, NumHAcceptors
+
+### **Substructure Counts**
+
+NumEsters, NumEthers, NumTertiaryAmines, NumSecondaryAmines, NumAmides, HasPiperazine, NumNitrogens, NumAmines (total)
+
+### **Electronic**
+
+Gasteiger partial charge on ionizable nitrogen
+
+### **Derived**
+
+Hydrophobic_Index = MolLogP / HeavyAtomCount
+
+Polar_Surface_Ratio = TPSA / LabuteASA
+
+HBD_HBA_Ratio = HBD / HBA
+
+Desolvation_Proxy = MolLogP * TPSA / 100
+
+### **Metadata Features (from paper, not SMILES)**
+
+Linker_Length (2-5), Inductive_Effect_Strength (1/Linker_Length), Head_Group type, Is_PE_Core, Is_3_5_Position, Is_3_4_Position, Is_3_4_5_Position, Has_Nonsym_Chains, Has_2EO_Head, Architecture_Detail (one-hot encoded)
+
+### **Morgan Fingerprints**
+
+1024-bit, radius 2, for Tanimoto kernel in GPR
+
+## **4.2 Architecture One-Hot Encoding Is Critical**
+
+Even with correct SMILES, add the Architecture_Detail as one-hot encoded features. In testing, this single addition improved R² from 0.01 to 0.42. The architecture captures family-level and sub-family-level structural information that complements SMILES-derived descriptors.
+
+## **4.3 Validation Checks**
+
+- All SMILES parse in RDKit
+
+- Unique SMILES count > 95% of total IAJDs
+
+- No feature has zero variance
+
+- pKa range [4.9, 7.7] for all IAJDs
+
+- NumNitrogens varies across IAJDs (if constant, SMILES may be identical)
+
+- MolLogP, HeavyAtomCount should vary significantly across families
+
+# **PART 5: MODEL DEVELOPMENT**
+
+## **5.1 GPR with Tanimoto + ARD-RBF Composite Kernel (Primary Model)**
+
+import gpytorch, torch
+
+class TanimotoKernel(gpytorch.kernels.Kernel):
+    has_lengthscale = False
+    def forward(self, x1, x2, diag=False, **params):
+        x1_ = x1.float(); x2_ = x2.float()
+        dot = x1_.matmul(x2_.transpose(-1, -2))
+        n1 = (x1_ ** 2).sum(-1, keepdim=True)
+        n2 = (x2_ ** 2).sum(-1, keepdim=True)
+        K = dot / (n1 + n2.transpose(-1, -2) - dot).clamp(min=1e-8)
+        return K.diag() if diag else K
+
+class CompositeGPModel(gpytorch.models.ExactGP):
+    def __init__(self, train_x_desc, train_x_fp, train_y, likelihood, n_desc):
+        super().__init__(torch.cat([train_x_desc, train_x_fp], -1), train_y, likelihood)
+        self.mean = gpytorch.means.ConstantMean()
+        self.rbf = gpytorch.kernels.ScaleKernel(
+            gpytorch.kernels.RBFKernel(ard_num_dims=n_desc))
+        self.tan = gpytorch.kernels.ScaleKernel(TanimotoKernel())
+        self.n_desc = n_desc
+
+    def forward(self, x):
+        desc = x[..., :self.n_desc]; fp = x[..., self.n_desc:]
+        return gpytorch.distributions.MultivariateNormal(
+            self.mean(x), self.rbf(desc) + self.tan(fp))
+
+Train with Adam optimizer, lr=0.1, 200 iterations. Use 10-fold CV.
+
+## **5.2 XGBoost (Secondary Model)**
+
+Use engineered features + architecture one-hot + 1024-bit Morgan FP.
+
+## **5.3 SVR (Baseline)**
+
+Grid search: C=[1,10,100], epsilon=[0.01,0.05,0.1], gamma=['scale',0.01,0.1].
+
+## **5.4 Ensemble**
+
+Inverse-MAE weighted average of all three tiers.
+
+# **PART 6: KNOWN PITFALLS**
+
+1. **Compressed PDFs are corrupt.** Test ALL PDFs before starting. If pdftotext returns empty, request uncompressed version.
+
+2. **Scaffold-level SMILES are NOT unique.** Building SMILES from "3,5-DHB + C12/C8 + MPRZ" gives the same SMILES for 10 different IAJDs. You MUST read the ChemDraw structures to see how many amines and which positions they occupy.
+
+3. **PE-Tris is a separate family from PE-Gallic.** 16 IAJDs from bm4c01599 (312-334) use a different linkage.
+
+4. **IAJDs 97 and 253 are GA-Tris.** Not PE-Gallic or sSS-Nonsym.
+
+5. **DNP pKa ≠ IAJD pKa.** DNP pKa is the nanoparticle surface pKa (7-8.5). IAJD pKa is the individual molecule pKa (5-7). Use IAJD pKa.
+
+6. **Architecture encoding boosts R² from ~0 to ~0.4.** Always include it.
+
+7. **Don****'****t eliminate features before SMILES are fixed.** Identical SMILES make features appear correlated when they are not.
+
+8. **The biggest source of model error is SMILES non-uniqueness.** If R² < 0.3 or MAE > 0.17, check SMILES uniqueness first. It should be >95%.
+
+9. **The pharmaceutics1501572 paper has 97 IAJDs that are the hardest to differentiate.** They require reading 7 different dendron module structures from the SI, then determining which module each IAJD uses.
+
+10. **NumAmines is the single most important differentiating feature for constitutional isomers.** IAJDs sharing chain lengths differ in how many amines they have (1 vs 2 vs 3). If NumAmines is the same for all IAJDs, your SMILES are wrong.
+
+# **PART 7: EXPECTED RESULTS**
+
+With >95% unique SMILES:
+
+- GPR MAE: 0.10-0.14, R²: 0.45-0.65, 95% PI coverage: >90%
+
+- SVR MAE: 0.12-0.14, R²: 0.40-0.55
+
+- Ensemble MAE: 0.10-0.13, R²: 0.50-0.65
+
+With <70% unique SMILES:
+
+- All models MAE: 0.16-0.19, R²: 0.01-0.15
+
+- The model literally cannot predict different outputs from identical inputs
+
+The gap between these two scenarios is the difference between a useful predictive tool and a fancy random number generator.

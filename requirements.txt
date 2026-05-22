@@ -1,0 +1,15 @@
+# IAJD tandem demo — verified working set (Python 3.11, macOS arm64).
+numpy<2
+pandas>=2.0,<2.3
+scikit-learn>=1.3,<1.7
+xgboost>=2.0,<3.0
+joblib>=1.3
+openpyxl>=3.1
+rdkit>=2024.3.5
+
+# Optional — only needed for fetching LION / ADMET features on novel SMILES that
+# aren't in the bundled lion_cache_v13.json / admet_cache_v13.json. The cached
+# entries cover the full training set; the pipeline falls back to RDKit proxies
+# (with a clear warning) when these extras are missing.
+# chemprop==1.6.1      # LION 5-CV ensemble; install into its own venv per IAJD_master/optional/CHEMPROP_INSTALL.md
+# admet-ai>=2.0.1      # ADMET-AI; required for fresh ADMET predictions

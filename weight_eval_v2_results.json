@@ -1,0 +1,1686 @@
+{
+  "pka": {
+    "rows": [
+      {
+        "features": "preds_only",
+        "estimator": "xgb_d2_n100",
+        "cv_mae": 0.08477388808397741,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.3223208808898925
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.10539048801768908
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.15081874563338915
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.06970310056531748
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.04431463859064114
+          }
+        }
+      },
+      {
+        "features": "preds_only",
+        "estimator": "xgb_d3_n200",
+        "cv_mae": 0.08577630585771265,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.30065665880839026
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.09785264622081408
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.1652266798628138
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.0777841480358227
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.04153269637402866
+          }
+        }
+      },
+      {
+        "features": "preds_only",
+        "estimator": "xgb_d2_n300_lr0.03",
+        "cv_mae": 0.08751196993075731,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.3448106670379638
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.10506346442482686
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.15935487138464102
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.07440516755387587
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.04310682255587126
+          }
+        }
+      },
+      {
+        "features": "preds_only",
+        "estimator": "ridge_a1.0",
+        "cv_mae": 0.0702119790193956,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.29353651105772643
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.10084300769249367
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.12038735645601396
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.05905663481739221
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.034511758127949696
+          }
+        }
+      },
+      {
+        "features": "preds_only",
+        "estimator": "ridge_a5.0",
+        "cv_mae": 0.08249189947568364,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.3033979117543093
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.09256012422058314
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.12233985914639113
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.06345093288976486
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.05421879904128319
+          }
+        }
+      },
+      {
+        "features": "preds_only",
+        "estimator": "linreg",
+        "cv_mae": 0.06867118093789308,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.27789810647566376
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.10219061641481218
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.12038300923365283
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.06395226270510579
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.031726628045900714
+          }
+        }
+      },
+      {
+        "features": "preds+sim",
+        "estimator": "xgb_d2_n100",
+        "cv_mae": 0.08720045004433732,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.3372944021224975
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.10622499639337711
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.15762624537691164
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.07233867490613777
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.04424703899904977
+          }
+        }
+      },
+      {
+        "features": "preds+sim",
+        "estimator": "xgb_d3_n200",
+        "cv_mae": 0.08764987410568607,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.33198692639668775
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.1022382666847923
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.16918581049493028
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.07841124869681695
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.040291048091092505
+          }
+        }
+      },
+      {
+        "features": "preds+sim",
+        "estimator": "xgb_d2_n300_lr0.03",
+        "cv_mae": 0.0881939297962964,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.35186618804931635
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.09879509145563302
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.16378585531356493
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.07545749922056451
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.04242232947040801
+          }
+        }
+      },
+      {
+        "features": "preds+sim",
+        "estimator": "ridge_a1.0",
+        "cv_mae": 0.07026801560583554,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.294682744629395
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.09954634185250724
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.12125289405367254
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.058929986218513954
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.034355637643867565
+          }
+        }
+      },
+      {
+        "features": "preds+sim",
+        "estimator": "ridge_a5.0",
+        "cv_mae": 0.08248947905847752,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.30380145343974546
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.09173321876784217
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.12242172145886596
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.06383280138987364
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.05411578734295134
+          }
+        }
+      },
+      {
+        "features": "preds+sim",
+        "estimator": "linreg",
+        "cv_mae": 0.06869590087161935,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.2823692172358699
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.10255777315331495
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.12150658395576139
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.06307640996706768
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.031208553152512017
+          }
+        }
+      },
+      {
+        "features": "preds+sim+fam",
+        "estimator": "xgb_d2_n100",
+        "cv_mae": 0.08726293284718582,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.33695930480957026
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.10593178488991475
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.1585402204635296
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.07198399827286998
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.044195121518141915
+          }
+        }
+      },
+      {
+        "features": "preds+sim+fam",
+        "estimator": "xgb_d3_n200",
+        "cv_mae": 0.08772487997039546,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.32337176163991294
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.10493569113991481
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.16915971634235796
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.07682962159852723
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.04138391412419376
+          }
+        }
+      },
+      {
+        "features": "preds+sim+fam",
+        "estimator": "xgb_d2_n300_lr0.03",
+        "cv_mae": 0.08889933787710297,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.36059155305226637
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.10400991439819335
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.16367523923833327
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.07594660526997328
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.042412005637189436
+          }
+        }
+      },
+      {
+        "features": "preds+sim+fam",
+        "estimator": "ridge_a1.0",
+        "cv_mae": 0.0736180206764242,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.3420919042255311
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.10908410201531096
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.1263757881829614
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.05804068454350776
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.03394127871091069
+          }
+        }
+      },
+      {
+        "features": "preds+sim+fam",
+        "estimator": "ridge_a5.0",
+        "cv_mae": 0.08633149014121776,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.3411026568761839
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.10005144849431304
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.12721793199730405
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.06648949180284325
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.05470787595834121
+          }
+        }
+      },
+      {
+        "features": "preds+sim+fam",
+        "estimator": "linreg",
+        "cv_mae": 0.07196210749303154,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.32707935250892445
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.1123402875319936
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.12640999230831684
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.06213280597408774
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.030948198494925173
+          }
+        }
+      }
+    ],
+    "best": [
+      0.06867118093789308,
+      {
+        "features": "preds_only",
+        "estimator": "linreg",
+        "cv_mae": 0.06867118093789308,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 12,
+            "mae": 0.27789810647566376
+          },
+          "GA-Tris": {
+            "n": 11,
+            "mae": 0.10219061641481218
+          },
+          "PE-Gallic": {
+            "n": 47,
+            "mae": 0.12038300923365283
+          },
+          "PE-Tris": {
+            "n": 37,
+            "mae": 0.06395226270510579
+          },
+          "sSS-Nonsym": {
+            "n": 139,
+            "mae": 0.031726628045900714
+          }
+        }
+      }
+    ],
+    "baseline_mae": 0.0653
+  },
+  "bioact": {
+    "rows": [
+      {
+        "features": "DA",
+        "estimator": "xgb_d2_n100",
+        "cv_mae": 0.42520341024927827,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.25091158651971895
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.3748434472105019
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.44394213734346266
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.582335430868793
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.5389704291260695
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.36384534061888907
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.40487785419597244
+          }
+        }
+      },
+      {
+        "features": "DA",
+        "estimator": "xgb_d3_n200",
+        "cv_mae": 0.44269471227937224,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.2630822536545863
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.34762241923412557
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.5053724856237216
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5976968352877383
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.5911536198049819
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.37035636127928945
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.4073306062697478
+          }
+        }
+      },
+      {
+        "features": "DA",
+        "estimator": "xgb_d3_n300_lr0.03",
+        "cv_mae": 0.4404964016810875,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.26295101747226757
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.34765357870842506
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.4876231347076862
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.601845986136127
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.5961272651087456
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.3814151686523363
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.4062000013810924
+          }
+        }
+      },
+      {
+        "features": "DA",
+        "estimator": "xgb_d4_n300_lr0.03",
+        "cv_mae": 0.45901996545264306,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.2621899113828068
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.3564742802508566
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.5269288932435228
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.6292926375948673
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.6347351422797859
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.4150475424621508
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.41541621559153147
+          }
+        }
+      },
+      {
+        "features": "DA",
+        "estimator": "xgb_d2_n500_lr0.02",
+        "cv_mae": 0.44095122808141374,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.25088577855733224
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.3668753247129698
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.46131355514709965
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.6011312549196963
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.6091235562103029
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.4584104460571215
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.4070263716979509
+          }
+        }
+      },
+      {
+        "features": "DA",
+        "estimator": "ridge_a1.0",
+        "cv_mae": 0.42706332055776247,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.19858642105683724
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.4618137029006657
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.465071030015677
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5031308551423772
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.495871376717475
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.5027020486939449
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.4079810858522371
+          }
+        }
+      },
+      {
+        "features": "DA",
+        "estimator": "ridge_a5.0",
+        "cv_mae": 0.42949222824022637,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.19556356752300205
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.46513721723811013
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.4679251055267774
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5035084455384561
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.5105653139805605
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.509831616944088
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.4071248900995342
+          }
+        }
+      },
+      {
+        "features": "DA",
+        "estimator": "linreg",
+        "cv_mae": 0.42645659884918924,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.19942404325678803
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.4608952678650594
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.4643291948880279
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5030424990572716
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.49220151636562254
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.5007549493307847
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.4082120803147994
+          }
+        }
+      },
+      {
+        "features": "DALM",
+        "estimator": "xgb_d2_n100",
+        "cv_mae": 0.4037930812805247,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.2382231881585129
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.3703351169387077
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.40229292021325774
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5597109859072452
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.4213878179155405
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.6027696532104418
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.4065003940127772
+          }
+        }
+      },
+      {
+        "features": "DALM",
+        "estimator": "xgb_d3_n200",
+        "cv_mae": 0.38620419114763,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.19811738687775154
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.3397641400179821
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.33551029186575787
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5371347014986758
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.4429130392438365
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.6153388899658129
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.39523601354656923
+          }
+        }
+      },
+      {
+        "features": "DALM",
+        "estimator": "xgb_d3_n300_lr0.03",
+        "cv_mae": 0.3856222316659497,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.19866559844748574
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.33712933953757684
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.32841332333933937
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.559724575766254
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.4368022811065348
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.6251635474059984
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.3966940457712495
+          }
+        }
+      },
+      {
+        "features": "DALM",
+        "estimator": "xgb_d4_n300_lr0.03",
+        "cv_mae": 0.40501105291965334,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.23036199144044012
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.30737343834517195
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.329695755979279
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5710002963625674
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.5019946602051268
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.4241856497619555
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.4207030331618321
+          }
+        }
+      },
+      {
+        "features": "DALM",
+        "estimator": "xgb_d2_n500_lr0.02",
+        "cv_mae": 0.39547208520098187,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.2390755872746613
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.3490883416651914
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.3896514050620526
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.541034275778461
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.3842555403647316
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.5763840597961352
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.40989500125497624
+          }
+        }
+      },
+      {
+        "features": "DALM",
+        "estimator": "ridge_a1.0",
+        "cv_mae": 0.42955692807462625,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.2009918897784734
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.4729672561151971
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.4611664337628266
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5361367096296765
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.5009247321037282
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.5085889985614834
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.4084387035168941
+          }
+        }
+      },
+      {
+        "features": "DALM",
+        "estimator": "ridge_a5.0",
+        "cv_mae": 0.43130239149163285,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.19274628499095858
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.4747625813678754
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.4695493549680558
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5238381242083144
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.5120744529167861
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.5184792678442205
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.4071371341476106
+          }
+        }
+      },
+      {
+        "features": "DALM",
+        "estimator": "linreg",
+        "cv_mae": 0.4291047508339387,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.2035791187293196
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.47245983515850065
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.4586579712690162
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5399081994730078
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.4979371659527962
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.5055578100222793
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.40884083774991903
+          }
+        }
+      },
+      {
+        "features": "DALM+sim",
+        "estimator": "xgb_d2_n100",
+        "cv_mae": 0.4099565599053569,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.22918373288250363
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.41222804610128266
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.40536372181612806
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5468200748049503
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.4445911876062007
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.637862960705559
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.4050991940998642
+          }
+        }
+      },
+      {
+        "features": "DALM+sim",
+        "estimator": "xgb_d3_n200",
+        "cv_mae": 0.38801802042811406,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.24646224520143267
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.3564166119461755
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.3204438995707681
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5626842563235049
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.4199402728946476
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.5271264952514574
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.40332148904876636
+          }
+        }
+      },
+      {
+        "features": "DALM+sim",
+        "estimator": "xgb_d3_n300_lr0.03",
+        "cv_mae": 0.38901471724873554,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.2374077430639868
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.3531063900540387
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.3170985098195618
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5409765307986026
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.437692467890471
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.547223369488518
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.40310115001685104
+          }
+        }
+      },
+      {
+        "features": "DALM+sim",
+        "estimator": "xgb_d4_n300_lr0.03",
+        "cv_mae": 0.4027411288327801,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.23842485772549615
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.3584772222709383
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.28615697984078925
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5839341228091006
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.5021635825698114
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.47985495747069573
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.41799665841333533
+          }
+        }
+      },
+      {
+        "features": "DALM+sim",
+        "estimator": "xgb_d2_n500_lr0.02",
+        "cv_mae": 0.40286366321184,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.23168530008729693
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.3927949145165283
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.37763405078536777
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5142685954653506
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.42574785278996513
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.65920323551635
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.4088158790467056
+          }
+        }
+      },
+      {
+        "features": "DALM+sim",
+        "estimator": "ridge_a1.0",
+        "cv_mae": 0.4303220318579122,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.20294755673886192
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.47545814204095166
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.46199170507668524
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5393824674014078
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.5025203095137435
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.5150460631790356
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.40826135388052504
+          }
+        }
+      },
+      {
+        "features": "DALM+sim",
+        "estimator": "ridge_a5.0",
+        "cv_mae": 0.4315237599828538,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.19326210917746975
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.47548145646234363
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.46980100124388285
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5247378316022158
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.5125413155027682
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.5203185559216047
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.4070891172147149
+          }
+        }
+      },
+      {
+        "features": "DALM+sim",
+        "estimator": "linreg",
+        "cv_mae": 0.4311339917110527,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.20853685843679504
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.47925040565731786
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.460758299478107
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5488365846749971
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.5020295438724678
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.5234750865736404
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.40839171561846116
+          }
+        }
+      },
+      {
+        "features": "DALM+sim+fam",
+        "estimator": "xgb_d2_n100",
+        "cv_mae": 0.40721370479249863,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.23904612933466562
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.4152259946744685
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.393993304761257
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5533085887514835
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.44109253924619224
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.6565785330627367
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.40175155213416996
+          }
+        }
+      },
+      {
+        "features": "DALM+sim+fam",
+        "estimator": "xgb_d3_n200",
+        "cv_mae": 0.39309903497767573,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.22345779281394082
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.378002594143355
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.33381799497796194
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.6012919967257266
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.4474253486237034
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.4863936346862719
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.39933364759855783
+          }
+        }
+      },
+      {
+        "features": "DALM+sim+fam",
+        "estimator": "xgb_d3_n300_lr0.03",
+        "cv_mae": 0.3916289568411303,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.23119174713760346
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.37848676330674585
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.3278895244941768
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5987498347841983
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.4364360504065923
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.4996053618286059
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.40031630454226486
+          }
+        }
+      },
+      {
+        "features": "DALM+sim+fam",
+        "estimator": "xgb_d4_n300_lr0.03",
+        "cv_mae": 0.39505108398349814,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.2138413115945993
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.3706881668006782
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.297522237677843
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5894667213045841
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.4533226014989787
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.5174685400817797
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.41358572980089514
+          }
+        }
+      },
+      {
+        "features": "DALM+sim+fam",
+        "estimator": "xgb_d2_n500_lr0.02",
+        "cv_mae": 0.4019001436676377,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.23878924656116032
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.40949463211155535
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.35978155779122034
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.530184895285297
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.46186045880811893
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.64606265247802
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.39780204429508104
+          }
+        }
+      },
+      {
+        "features": "DALM+sim+fam",
+        "estimator": "ridge_a1.0",
+        "cv_mae": 0.4366804916975912,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.21089796102758548
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.49963190476967034
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.4684023634449336
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.6123494923944683
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.5077860556759638
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.6232181361346962
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.40539759588483465
+          }
+        }
+      },
+      {
+        "features": "DALM+sim+fam",
+        "estimator": "ridge_a5.0",
+        "cv_mae": 0.4365235137064406,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.19700893474914372
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.49769363357803115
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.4755394948329408
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.5579638490603123
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.5217609739900925
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.588204516673166
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.4048099217373343
+          }
+        }
+      },
+      {
+        "features": "DALM+sim+fam",
+        "estimator": "linreg",
+        "cv_mae": 0.4385010823914206,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.21944191214207137
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.50375012893843
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.47012577701358155
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.6389143234123746
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.5052506933884687
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.6586701263929507
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.4051076385747998
+          }
+        }
+      }
+    ],
+    "best": [
+      0.3856222316659497,
+      {
+        "features": "DALM",
+        "estimator": "xgb_d3_n300_lr0.03",
+        "cv_mae": 0.3856222316659497,
+        "per_family": {
+          "Dialkoxybenzyl": {
+            "n": 18,
+            "mae": 0.19866559844748574
+          },
+          "G1-Janus-Dendrimer": {
+            "n": 26,
+            "mae": 0.33712933953757684
+          },
+          "GA-Tris": {
+            "n": 50,
+            "mae": 0.32841332333933937
+          },
+          "HTM-Dendrimer": {
+            "n": 10,
+            "mae": 0.559724575766254
+          },
+          "PE-Tris": {
+            "n": 51,
+            "mae": 0.4368022811065348
+          },
+          "TT-Dendrimer": {
+            "n": 5,
+            "mae": 0.6251635474059984
+          },
+          "sSS-Nonsym": {
+            "n": 175,
+            "mae": 0.3966940457712495
+          }
+        }
+      }
+    ],
+    "baseline_mae": 0.40098551634727286
+  }
+}

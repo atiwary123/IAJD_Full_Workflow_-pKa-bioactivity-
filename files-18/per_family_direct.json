@@ -1,0 +1,44 @@
+{
+  "per_family": {
+    "sSS-Nonsym": {
+      "n": 175,
+      "mode": "in_family",
+      "mae": 0.4348753302636557,
+      "elapsed_s": 28.211045265197754
+    },
+    "PE-Tris": {
+      "n": 51,
+      "mode": "in_family",
+      "mae": 0.4379447632098508,
+      "elapsed_s": 3.33935809135437
+    },
+    "GA-Tris": {
+      "n": 50,
+      "mode": "in_family",
+      "mae": 0.44083940738616834,
+      "elapsed_s": 2.083331346511841
+    },
+    "G1-Janus-Dendrimer": {
+      "n": 26,
+      "mode": "in_family",
+      "mae": 0.4181571473307821,
+      "elapsed_s": 0.967066764831543
+    },
+    "Dialkoxybenzyl": {
+      "n": 18,
+      "mode": "in_family",
+      "mae": 0.15131709713980732,
+      "elapsed_s": 0.41361260414123535
+    },
+    "HTM-Dendrimer": {
+      "n": 10,
+      "mode": "pooled",
+      "mae": null
+    },
+    "TT-Dendrimer": {
+      "n": 5,
+      "mode": "pooled",
+      "mae": null
+    }
+  }
+}

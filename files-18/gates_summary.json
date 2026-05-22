@@ -1,0 +1,169 @@
+{
+  "block_b_active": {
+    "sSS-Nonsym": true,
+    "PE-Tris": true,
+    "GA-Tris": true,
+    "G1-Janus-Dendrimer": false,
+    "Dialkoxybenzyl": true,
+    "HTM-Dendrimer": true,
+    "TT-Dendrimer": false
+  },
+  "block_c_active": {
+    "sSS-Nonsym": true,
+    "PE-Tris": true,
+    "GA-Tris": false,
+    "G1-Janus-Dendrimer": true,
+    "Dialkoxybenzyl": true,
+    "HTM-Dendrimer": true,
+    "TT-Dendrimer": true
+  },
+  "detailed": {
+    "sSS-Nonsym": {
+      "family": "sSS-Nonsym",
+      "B": {
+        "family": "sSS-Nonsym",
+        "block": "B",
+        "mae_full": 0.41107691189736156,
+        "mae_off": 0.4120163534430598,
+        "delta": 0.0009394415456982497,
+        "use": true,
+        "n": 175
+      },
+      "C": {
+        "family": "sSS-Nonsym",
+        "block": "C",
+        "mae_full": 0.41107691189736156,
+        "mae_off": 0.41506150947724135,
+        "delta": 0.0039845975798797895,
+        "use": true,
+        "n": 175
+      }
+    },
+    "PE-Tris": {
+      "family": "PE-Tris",
+      "B": {
+        "family": "PE-Tris",
+        "block": "B",
+        "mae_full": 0.4051892203557507,
+        "mae_off": 0.4357973088729685,
+        "delta": 0.030608088517217802,
+        "use": true,
+        "n": 51
+      },
+      "C": {
+        "family": "PE-Tris",
+        "block": "C",
+        "mae_full": 0.4051892203557507,
+        "mae_off": 0.4114824859936929,
+        "delta": 0.006293265637942191,
+        "use": true,
+        "n": 51
+      }
+    },
+    "GA-Tris": {
+      "family": "GA-Tris",
+      "B": {
+        "family": "GA-Tris",
+        "block": "B",
+        "mae_full": 0.4242543893197016,
+        "mae_off": 0.44335459760217233,
+        "delta": 0.01910020828247072,
+        "use": true,
+        "n": 50
+      },
+      "C": {
+        "family": "GA-Tris",
+        "block": "C",
+        "mae_full": 0.4242543893197016,
+        "mae_off": 0.40990209787111526,
+        "delta": -0.014352291448586352,
+        "use": false,
+        "n": 50
+      }
+    },
+    "G1-Janus-Dendrimer": {
+      "family": "G1-Janus-Dendrimer",
+      "B": {
+        "family": "G1-Janus-Dendrimer",
+        "block": "B",
+        "mae_full": 0.43892941531817675,
+        "mae_off": 0.43821389092497526,
+        "delta": -0.0007155243932014943,
+        "use": false,
+        "n": 26
+      },
+      "C": {
+        "family": "G1-Janus-Dendrimer",
+        "block": "C",
+        "mae_full": 0.43892941531817675,
+        "mae_off": 0.4403864829545199,
+        "delta": 0.0014570676363431234,
+        "use": true,
+        "n": 26
+      }
+    },
+    "Dialkoxybenzyl": {
+      "family": "Dialkoxybenzyl",
+      "B": {
+        "family": "Dialkoxybenzyl",
+        "block": "B",
+        "mae_full": 0.18513150168935905,
+        "mae_off": 0.18724395224443452,
+        "delta": 0.0021124505550754735,
+        "use": true,
+        "n": 18
+      },
+      "C": {
+        "family": "Dialkoxybenzyl",
+        "block": "C",
+        "mae_full": 0.18513150168935905,
+        "mae_off": 0.1851683903417367,
+        "delta": 3.688865237766459e-05,
+        "use": true,
+        "n": 18
+      }
+    },
+    "HTM-Dendrimer": {
+      "family": "HTM-Dendrimer",
+      "B": {
+        "family": "HTM-Dendrimer",
+        "block": "B",
+        "mae_full": 0.4108432834231143,
+        "mae_off": 0.44807944942348055,
+        "delta": 0.03723616600036622,
+        "use": true,
+        "n": 10
+      },
+      "C": {
+        "family": "HTM-Dendrimer",
+        "block": "C",
+        "mae_full": 0.4108432834231143,
+        "mae_off": 0.4335772585628728,
+        "delta": 0.0227339751397585,
+        "use": true,
+        "n": 10
+      }
+    },
+    "TT-Dendrimer": {
+      "family": "TT-Dendrimer",
+      "B": {
+        "family": "TT-Dendrimer",
+        "block": "B",
+        "mae_full": 0.4528813793502085,
+        "mae_off": 0.4516452267012827,
+        "delta": -0.0012361526489257924,
+        "use": false,
+        "n": 5
+      },
+      "C": {
+        "family": "TT-Dendrimer",
+        "block": "C",
+        "mae_full": 0.4528813793502085,
+        "mae_off": 0.4731120540938608,
+        "delta": 0.02023067474365231,
+        "use": true,
+        "n": 5
+      }
+    }
+  }
+}

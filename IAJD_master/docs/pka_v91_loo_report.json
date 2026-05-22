@@ -1,0 +1,60 @@
+{
+  "version": "v9.1",
+  "architecture": "v9 31-feature base with tuned XGBoost HPs, plus a uniform neighbor-selection rule that replaces GA-Tris special-casing: delta-train neighborhood Kt=8, candidate pool Kq_max=10, similarity threshold s>=0.6 (floor of 1 neighbor), similarity-power weighting wp=4, blend \u03b1=0.05. GA-Tris now uses the same code path as every other family. The similarity threshold makes the effective K query-dependent: tight families naturally use fewer, more-similar neighbors; loose families fall back to top-1. Zero family-specific logic in the wrapper.",
+  "uniform_config": {
+    "Kt_delta_train": 8,
+    "Kq_max_candidate_pool": 10,
+    "alpha_blend": 0.05,
+    "wp_weight_power": 4.0,
+    "sim_threshold": 0.6,
+    "min_neighbors": 1
+  },
+  "pooled_mae": 0.06718543285831724,
+  "pooled_rmse": 0.1244424383105043,
+  "r2": 0.7382359635061975,
+  "within_0.08": 0.7682926829268293,
+  "within_0.12": 0.8455284552845529,
+  "per_family": {
+    "sSS-Nonsym": {
+      "n": 139,
+      "mae": 0.03721408998235121,
+      "rmse": 0.05924849246446527,
+      "res_p90": 0.08278687153743558
+    },
+    "PE-Tris": {
+      "n": 37,
+      "mae": 0.05303179503510885,
+      "rmse": 0.06746782501429799,
+      "res_p90": 0.11032655089458687
+    },
+    "PE-Gallic": {
+      "n": 47,
+      "mae": 0.11740163482496623,
+      "rmse": 0.18860913207651636,
+      "res_p90": 0.29968220336614965
+    },
+    "Dialkoxybenzyl": {
+      "n": 12,
+      "mae": 0.23805205429481346,
+      "rmse": 0.33201687926344964,
+      "res_p90": 0.5758211235519793
+    },
+    "GA-Tris": {
+      "n": 11,
+      "mae": 0.09256182463536522,
+      "rmse": 0.11999999327502038,
+      "res_p90": 0.1609228453575149
+    }
+  },
+  "changes_from_v9": {
+    "GA-Tris MAE": "0.1211 -> 0.0926  (-0.0285)",
+    "sSS-Nonsym MAE": "0.0399 -> 0.0372",
+    "PE-Tris MAE": "0.0521 -> 0.0530",
+    "PE-Gallic MAE": "0.1197 -> 0.1174",
+    "Dialkoxybenzyl MAE": "0.2587 -> 0.2381",
+    "pooled_mae": "0.0712 -> 0.0672  (-0.0040)",
+    "r2": "0.7127 -> 0.7382  (+0.0255)",
+    "within_0.08": "0.7520 -> 0.7683  (+0.0163)",
+    "architectural_uniformity": "v9 had a special if-branch for GA-Tris routing to v5.2 hierarchy. v9.1 removes that; all 5 families use the same prediction path."
+  }
+}
