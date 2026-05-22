@@ -1,0 +1,85 @@
+{
+  "stack_weights": {
+    "sSS-Nonsym": {
+      "n": 175,
+      "pool_source": "v141_pool",
+      "fam_source": "v142_fam",
+      "analog_source": "analog_v3",
+      "w_pool": 0.35000000000000003,
+      "w_fam": 0.30000000000000004,
+      "w_analog": 0.34999999999999987,
+      "mae": 0.4034127916717389
+    },
+    "PE-Tris": {
+      "n": 51,
+      "pool_source": "v142_pool",
+      "fam_source": "v142_fam",
+      "analog_source": "analog_v1",
+      "w_pool": 0.75,
+      "w_fam": 0.25,
+      "w_analog": 0.0,
+      "mae": 0.4033439542261088
+    },
+    "GA-Tris": {
+      "n": 50,
+      "pool_source": "v141_pool",
+      "fam_source": "v141_fam",
+      "analog_source": "analog_v2",
+      "w_pool": 0.05,
+      "w_fam": 0.8,
+      "w_analog": 0.1499999999999999,
+      "mae": 0.42393822088199384
+    },
+    "G1-Janus-Dendrimer": {
+      "n": 26,
+      "pool_source": "v141_pool",
+      "fam_source": "v141_fam",
+      "analog_source": "analog_v1",
+      "w_pool": 0.75,
+      "w_fam": 0.2,
+      "w_analog": 0.04999999999999999,
+      "mae": 0.40345404653039524
+    },
+    "Dialkoxybenzyl": {
+      "n": 18,
+      "pool_source": "v141_pool",
+      "fam_source": "v142_fam",
+      "analog_source": "analog_v2",
+      "w_pool": 0.0,
+      "w_fam": 0.9500000000000001,
+      "w_analog": 0.04999999999999993,
+      "mae": 0.11852475238510124
+    },
+    "HTM-Dendrimer": {
+      "n": 10,
+      "pool_source": "v141_pool",
+      "fam_source": "pool_fallback",
+      "analog_source": "analog_v3",
+      "w_pool": 0.35000000000000003,
+      "w_fam": 0.5,
+      "w_analog": 0.1499999999999999,
+      "mae": 0.46258930601515635
+    },
+    "TT-Dendrimer": {
+      "n": 5,
+      "pool_source": "v141_pool",
+      "fam_source": "pool_fallback",
+      "analog_source": "analog_v1",
+      "w_pool": 0.2,
+      "w_fam": 0.8,
+      "w_analog": 0.0,
+      "mae": 0.4175915740773474
+    }
+  },
+  "pooled_mae": 0.3931396804043163,
+  "pooled_r2": 0.4951201065187295,
+  "per_family_mae": {
+    "sSS-Nonsym": 0.4034127916717389,
+    "PE-Tris": 0.4033439542261088,
+    "GA-Tris": 0.42393822088199384,
+    "G1-Janus-Dendrimer": 0.40345404653039524,
+    "Dialkoxybenzyl": 0.11852475238510124,
+    "HTM-Dendrimer": 0.46258930601515635,
+    "TT-Dendrimer": 0.4175915740773474
+  }
+}

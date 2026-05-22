@@ -1,0 +1,434 @@
+[
+  {
+    "name": "EXP264-1",
+    "smiles": "CCCCC(CC)COc1cc(C(=O)OCCCCN2CCN(CCO)CC2)cc(OCC(CC)CCCC)c1OCC(CC)CCCC",
+    "formula": "C41H74N2O6",
+    "mw": 690.5546880879999,
+    "family_predicted": "PE-Gallic",
+    "head": "HPRZ",
+    "chains": [
+      4,
+      4
+    ],
+    "pka": 6.33,
+    "pka_pi": [
+      6.03,
+      6.62
+    ],
+    "level": 1,
+    "tanimoto": 1.0,
+    "confidence": "LOW",
+    "organ_dominant": "unclear",
+    "organ_tied": null,
+    "organ_probs": {
+      "spleen_strong": 0.143,
+      "liver_strong": 0.225,
+      "lung_strong": 0.0,
+      "LN_strong": 0.0,
+      "heart_active": 0.004761904761904762,
+      "whole_body_active": 0.4
+    },
+    "flux_total": 6.951,
+    "flux_total_pi90": [
+      5.499,
+      8.402
+    ],
+    "flux_spleen": 7.702,
+    "flux_spleen_pi90": [
+      6.251,
+      9.153
+    ],
+    "flux_liver": 7.224,
+    "flux_liver_pi90": [
+      5.773,
+      8.675
+    ],
+    "flux_lung": 6.897,
+    "flux_lung_pi90": [
+      5.445,
+      8.348
+    ],
+    "flux_LN": 6.516,
+    "flux_LN_pi90": [
+      5.065,
+      7.967
+    ],
+    "bin": "low",
+    "bin_probs": {
+      "low": 0.522,
+      "mid": 0.361,
+      "high": 0.117
+    },
+    "flux_linear": 8926102.6843994,
+    "nearest_neighbors": [
+      {
+        "IAJD_id": "IAJD_300",
+        "family": "GA-Tris",
+        "tanimoto": 1.0,
+        "log10_flux_total": 6.711807229041191
+      },
+      {
+        "IAJD_id": "IAJD_297",
+        "family": "Dialkoxybenzyl",
+        "tanimoto": 0.721,
+        "log10_flux_total": 6.734799829588847
+      },
+      {
+        "IAJD_id": "IAJD_294",
+        "family": "Dialkoxybenzyl",
+        "tanimoto": 0.7,
+        "log10_flux_total": 7.7737864449811935
+      }
+    ],
+    "warnings": [
+      "Stage A: dominant-organ call unclear (max prob < 0.4)",
+      "LION_INACTIVE: Block B feature signal unavailable in this bundle",
+      "ADMET_FALLBACK: Block C uses RDKit-derived stand-in (real ADMET-AI not active)"
+    ]
+  },
+  {
+    "name": "EXP264-2",
+    "smiles": "CCCCC(CC)CCOc1cc(COC(=O)CCN2CCN(CCOCCO)CC2)cc(OCCC(CC)CCCC)c1OCCC(CC)CCCC",
+    "formula": "C45H82N2O7",
+    "mw": 762.612202964,
+    "family_predicted": "sSS-Nonsym",
+    "head": "H2EPRZ",
+    "chains": [
+      5,
+      7
+    ],
+    "pka": 6.31,
+    "pka_pi": [
+      6.02,
+      6.61
+    ],
+    "level": 4,
+    "tanimoto": 0.841,
+    "confidence": "LOW",
+    "organ_dominant": "lung",
+    "organ_tied": null,
+    "organ_probs": {
+      "spleen_strong": 0.143,
+      "liver_strong": 0.429,
+      "lung_strong": 1.0,
+      "LN_strong": 0.589,
+      "heart_active": 0.004761904761904762,
+      "whole_body_active": 0.4
+    },
+    "flux_total": 7.682,
+    "flux_total_pi90": [
+      6.941,
+      8.423
+    ],
+    "flux_spleen": 7.976,
+    "flux_spleen_pi90": [
+      7.235,
+      8.717
+    ],
+    "flux_liver": 6.562,
+    "flux_liver_pi90": [
+      5.821,
+      7.302
+    ],
+    "flux_lung": 6.931,
+    "flux_lung_pi90": [
+      6.19,
+      7.672
+    ],
+    "flux_LN": 6.541,
+    "flux_LN_pi90": [
+      5.8,
+      7.282
+    ],
+    "bin": "mid",
+    "bin_probs": {
+      "low": 0.065,
+      "mid": 0.695,
+      "high": 0.24
+    },
+    "flux_linear": 48064495.95014758,
+    "nearest_neighbors": [
+      {
+        "IAJD_id": "IAJD_322",
+        "family": "GA-Tris",
+        "tanimoto": 0.841,
+        "log10_flux_total": 8.843375
+      },
+      {
+        "IAJD_id": "IAJD_253",
+        "family": "GA-Tris",
+        "tanimoto": 0.785,
+        "log10_flux_total": 8.0305
+      },
+      {
+        "IAJD_id": "IAJD_253",
+        "family": "GA-Tris",
+        "tanimoto": 0.785,
+        "log10_flux_total": 6.491361693834273
+      }
+    ],
+    "warnings": [
+      "LION_INACTIVE: Block B feature signal unavailable in this bundle",
+      "ADMET_FALLBACK: Block C uses RDKit-derived stand-in (real ADMET-AI not active)"
+    ]
+  },
+  {
+    "name": "EXP264-3",
+    "smiles": "CCCCC(CC)CCOc1cc(COC(=O)CCN2CCN(CCO)CC2)cc(OCCC(CC)CCCC)c1OCCC(CC)CCCC",
+    "formula": "C43H78N2O6",
+    "mw": 718.5859882159999,
+    "family_predicted": "sSS-Nonsym",
+    "head": "HPRZ",
+    "chains": [
+      5,
+      7
+    ],
+    "pka": 6.33,
+    "pka_pi": [
+      6.04,
+      6.62
+    ],
+    "level": 4,
+    "tanimoto": 0.81,
+    "confidence": "LOW",
+    "organ_dominant": "liver",
+    "organ_tied": "lung",
+    "organ_probs": {
+      "spleen_strong": 0.143,
+      "liver_strong": 0.429,
+      "lung_strong": 0.333,
+      "LN_strong": 0.0,
+      "heart_active": 0.004761904761904762,
+      "whole_body_active": 0.4
+    },
+    "flux_total": 7.629,
+    "flux_total_pi90": [
+      6.888,
+      8.37
+    ],
+    "flux_spleen": 7.905,
+    "flux_spleen_pi90": [
+      7.164,
+      8.646
+    ],
+    "flux_liver": 6.384,
+    "flux_liver_pi90": [
+      5.643,
+      7.124
+    ],
+    "flux_lung": 6.996,
+    "flux_lung_pi90": [
+      6.255,
+      7.737
+    ],
+    "flux_LN": 6.624,
+    "flux_LN_pi90": [
+      5.883,
+      7.365
+    ],
+    "bin": "mid",
+    "bin_probs": {
+      "low": 0.081,
+      "mid": 0.714,
+      "high": 0.205
+    },
+    "flux_linear": 42575094.994247675,
+    "nearest_neighbors": [
+      {
+        "IAJD_id": "IAJD_321",
+        "family": "GA-Tris",
+        "tanimoto": 0.81,
+        "log10_flux_total": 8.708666666666666
+      },
+      {
+        "IAJD_id": "IAJD_097",
+        "family": "GA-Tris",
+        "tanimoto": 0.738,
+        "log10_flux_total": 8.427
+      },
+      {
+        "IAJD_id": "IAJD_097",
+        "family": "GA-Tris",
+        "tanimoto": 0.738,
+        "log10_flux_total": 8.77742682238931
+      }
+    ],
+    "warnings": [
+      "Stage A: dominant organ tied with lung",
+      "LION_INACTIVE: Block B feature signal unavailable in this bundle",
+      "ADMET_FALLBACK: Block C uses RDKit-derived stand-in (real ADMET-AI not active)"
+    ]
+  },
+  {
+    "name": "EXP264-4",
+    "smiles": "CCCCC(CC)CCOc1cc(COC(=O)CN2CCN(CCOCCO)CC2)cc(OCCC(CC)CCCC)c1OCCC(CC)CCCC",
+    "formula": "C44H80N2O7",
+    "mw": 748.5965528999999,
+    "family_predicted": "sSS-Nonsym",
+    "head": "H2EPRZ",
+    "chains": [
+      5,
+      7
+    ],
+    "pka": 6.26,
+    "pka_pi": [
+      5.97,
+      6.55
+    ],
+    "level": 4,
+    "tanimoto": 0.841,
+    "confidence": "LOW",
+    "organ_dominant": "lung",
+    "organ_tied": null,
+    "organ_probs": {
+      "spleen_strong": 0.143,
+      "liver_strong": 0.429,
+      "lung_strong": 1.0,
+      "LN_strong": 0.667,
+      "heart_active": 0.004761904761904762,
+      "whole_body_active": 0.4
+    },
+    "flux_total": 7.61,
+    "flux_total_pi90": [
+      6.869,
+      8.351
+    ],
+    "flux_spleen": 8.209,
+    "flux_spleen_pi90": [
+      7.468,
+      8.949
+    ],
+    "flux_liver": 6.561,
+    "flux_liver_pi90": [
+      5.82,
+      7.302
+    ],
+    "flux_lung": 6.749,
+    "flux_lung_pi90": [
+      6.008,
+      7.49
+    ],
+    "flux_LN": 6.752,
+    "flux_LN_pi90": [
+      6.011,
+      7.493
+    ],
+    "bin": "mid",
+    "bin_probs": {
+      "low": 0.088,
+      "mid": 0.719,
+      "high": 0.193
+    },
+    "flux_linear": 40766504.70296089,
+    "nearest_neighbors": [
+      {
+        "IAJD_id": "IAJD_330",
+        "family": "GA-Tris",
+        "tanimoto": 0.841,
+        "log10_flux_total": 8.96790909090909
+      },
+      {
+        "IAJD_id": "IAJD_322",
+        "family": "GA-Tris",
+        "tanimoto": 0.731,
+        "log10_flux_total": 8.843375
+      },
+      {
+        "IAJD_id": "IAJD_253",
+        "family": "GA-Tris",
+        "tanimoto": 0.731,
+        "log10_flux_total": 6.491361693834273
+      }
+    ],
+    "warnings": [
+      "LION_INACTIVE: Block B feature signal unavailable in this bundle",
+      "ADMET_FALLBACK: Block C uses RDKit-derived stand-in (real ADMET-AI not active)"
+    ]
+  },
+  {
+    "name": "EXP264-5",
+    "smiles": "CCCCC(CC)CCOc1cc(COC(=O)CN2CCN(CCO)CC2)cc(OCCC(CC)CCCC)c1OCCC(CC)CCCC",
+    "formula": "C42H76N2O6",
+    "mw": 704.5703381519999,
+    "family_predicted": "sSS-Nonsym",
+    "head": "HPRZ",
+    "chains": [
+      5,
+      7
+    ],
+    "pka": 6.27,
+    "pka_pi": [
+      5.98,
+      6.56
+    ],
+    "level": 4,
+    "tanimoto": 0.81,
+    "confidence": "LOW",
+    "organ_dominant": "lung",
+    "organ_tied": null,
+    "organ_probs": {
+      "spleen_strong": 0.143,
+      "liver_strong": 0.429,
+      "lung_strong": 1.0,
+      "LN_strong": 0.667,
+      "heart_active": 0.004761904761904762,
+      "whole_body_active": 0.4
+    },
+    "flux_total": 7.638,
+    "flux_total_pi90": [
+      6.897,
+      8.379
+    ],
+    "flux_spleen": 8.153,
+    "flux_spleen_pi90": [
+      7.413,
+      8.894
+    ],
+    "flux_liver": 6.552,
+    "flux_liver_pi90": [
+      5.811,
+      7.293
+    ],
+    "flux_lung": 6.774,
+    "flux_lung_pi90": [
+      6.033,
+      7.515
+    ],
+    "flux_LN": 6.479,
+    "flux_LN_pi90": [
+      5.739,
+      7.22
+    ],
+    "bin": "mid",
+    "bin_probs": {
+      "low": 0.078,
+      "mid": 0.711,
+      "high": 0.211
+    },
+    "flux_linear": 43481881.12644475,
+    "nearest_neighbors": [
+      {
+        "IAJD_id": "IAJD_329",
+        "family": "GA-Tris",
+        "tanimoto": 0.81,
+        "log10_flux_total": 8.3605
+      },
+      {
+        "IAJD_id": "IAJD_330",
+        "family": "GA-Tris",
+        "tanimoto": 0.734,
+        "log10_flux_total": 8.96790909090909
+      },
+      {
+        "IAJD_id": "IAJD_321",
+        "family": "GA-Tris",
+        "tanimoto": 0.694,
+        "log10_flux_total": 8.708666666666666
+      }
+    ],
+    "warnings": [
+      "LION_INACTIVE: Block B feature signal unavailable in this bundle",
+      "ADMET_FALLBACK: Block C uses RDKit-derived stand-in (real ADMET-AI not active)"
+    ]
+  }
+]

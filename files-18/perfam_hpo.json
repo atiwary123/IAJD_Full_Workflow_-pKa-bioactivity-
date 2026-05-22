@@ -1,0 +1,109 @@
+{
+  "perfam_params": {
+    "sSS-Nonsym": {
+      "n_estimators": 200,
+      "max_depth": 3,
+      "learning_rate": 0.07,
+      "subsample": 0.9,
+      "colsample_bytree": 0.8,
+      "reg_lambda": 1.0,
+      "min_child_weight": 1
+    },
+    "PE-Tris": {
+      "n_estimators": 400,
+      "max_depth": 6,
+      "learning_rate": 0.05,
+      "subsample": 0.7,
+      "colsample_bytree": 0.6,
+      "reg_lambda": 2.0,
+      "min_child_weight": 5
+    },
+    "GA-Tris": {
+      "n_estimators": 200,
+      "max_depth": 5,
+      "learning_rate": 0.1,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8,
+      "reg_lambda": 1.0,
+      "min_child_weight": 1
+    },
+    "G1-Janus-Dendrimer": {
+      "n_estimators": 400,
+      "max_depth": 6,
+      "learning_rate": 0.05,
+      "subsample": 0.7,
+      "colsample_bytree": 0.6,
+      "reg_lambda": 2.0,
+      "min_child_weight": 5
+    },
+    "Dialkoxybenzyl": {
+      "n_estimators": 200,
+      "max_depth": 3,
+      "learning_rate": 0.05,
+      "subsample": 0.8,
+      "colsample_bytree": 0.7,
+      "reg_lambda": 3.0,
+      "min_child_weight": 3
+    },
+    "HTM-Dendrimer": {
+      "n_estimators": 200,
+      "max_depth": 5,
+      "learning_rate": 0.1,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8,
+      "reg_lambda": 1.0,
+      "min_child_weight": 1
+    },
+    "TT-Dendrimer": {
+      "n_estimators": 200,
+      "max_depth": 5,
+      "learning_rate": 0.1,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8,
+      "reg_lambda": 1.0,
+      "min_child_weight": 1
+    }
+  },
+  "perfam_cv": {
+    "sSS-Nonsym": {
+      "mode": "fitted",
+      "n": 175,
+      "cv_mae": 0.4290035728292361,
+      "n_splits": 5
+    },
+    "PE-Tris": {
+      "mode": "fitted",
+      "n": 51,
+      "cv_mae": 0.3881054855460472,
+      "n_splits": 5
+    },
+    "GA-Tris": {
+      "mode": "fitted",
+      "n": 50,
+      "cv_mae": 0.4279879791048118,
+      "n_splits": 5
+    },
+    "G1-Janus-Dendrimer": {
+      "mode": "fitted",
+      "n": 26,
+      "cv_mae": 0.5606387004296464,
+      "n_splits": 5
+    },
+    "Dialkoxybenzyl": {
+      "mode": "fitted",
+      "n": 18,
+      "cv_mae": 0.13415695334454392,
+      "n_splits": 4
+    },
+    "HTM-Dendrimer": {
+      "mode": "pooled_default",
+      "n": 10,
+      "cv_mae": null
+    },
+    "TT-Dendrimer": {
+      "mode": "pooled_default",
+      "n": 5,
+      "cv_mae": null
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "honest_pooled_mae": 0.4251222984594921,
+  "honest_pooled_r2": 0.4341282002113087,
+  "in_sample_pooled_mae": 0.3931,
+  "optimism": -0.032022298459492116,
+  "per_family_honest": {
+    "Dialkoxybenzyl": {
+      "n": 18,
+      "mae": 0.16033082903282386
+    },
+    "G1-Janus-Dendrimer": {
+      "n": 26,
+      "mae": 0.455751545658495
+    },
+    "GA-Tris": {
+      "n": 50,
+      "mae": 0.4514398085851299
+    },
+    "HTM-Dendrimer": {
+      "n": 10,
+      "mae": 0.47554975452811393
+    },
+    "PE-Tris": {
+      "n": 51,
+      "mae": 0.45021776644545886
+    },
+    "TT-Dendrimer": {
+      "n": 5,
+      "mae": 0.4454326035994384
+    },
+    "sSS-Nonsym": {
+      "n": 175,
+      "mae": 0.4295126731026567
+    }
+  },
+  "methodology": "5-fold family-stratified nested CV on v14.3 with REAL LION + ADMET features",
+  "features_source": "REAL LION (5-CV chemprop ensemble) + REAL ADMET-AI predictions, not RDKit proxies"
+}

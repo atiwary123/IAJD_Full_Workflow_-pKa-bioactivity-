@@ -1,0 +1,254 @@
+{
+  "results": [
+    {
+      "config_id": 9,
+      "params": {
+        "n_estimators": 200,
+        "max_depth": 5,
+        "learning_rate": 0.1,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "reg_lambda": 1.0,
+        "min_child_weight": 1
+      },
+      "cv_mae": 0.4126468463702537,
+      "fold_maes": [
+        0.39467238655951764,
+        0.408940441309774,
+        0.47478056813403435,
+        0.3647946967227143,
+        0.42004613912522826
+      ]
+    },
+    {
+      "config_id": 6,
+      "params": {
+        "n_estimators": 400,
+        "max_depth": 5,
+        "learning_rate": 0.05,
+        "subsample": 0.8,
+        "colsample_bytree": 0.7,
+        "reg_lambda": 1.0,
+        "min_child_weight": 3
+      },
+      "cv_mae": 0.41294252897819517,
+      "fold_maes": [
+        0.3828228331639425,
+        0.4149153894255287,
+        0.4708046216222391,
+        0.39160808245199225,
+        0.40456171822727327
+      ]
+    },
+    {
+      "config_id": 2,
+      "params": {
+        "n_estimators": 400,
+        "max_depth": 4,
+        "learning_rate": 0.05,
+        "subsample": 0.8,
+        "colsample_bytree": 0.7,
+        "reg_lambda": 2.0,
+        "min_child_weight": 3
+      },
+      "cv_mae": 0.4132208185952441,
+      "fold_maes": [
+        0.3808278391534856,
+        0.42735658352634176,
+        0.45986423153373207,
+        0.38786969805257915,
+        0.41018574071008224
+      ]
+    },
+    {
+      "config_id": 0,
+      "params": {
+        "n_estimators": 200,
+        "max_depth": 3,
+        "learning_rate": 0.05,
+        "subsample": 0.8,
+        "colsample_bytree": 0.7,
+        "reg_lambda": 2.0,
+        "min_child_weight": 3
+      },
+      "cv_mae": 0.41573975598562346,
+      "fold_maes": [
+        0.3831909311832212,
+        0.43863607570738644,
+        0.4784681649279973,
+        0.3835203969702168,
+        0.39488321113929575
+      ]
+    },
+    {
+      "config_id": 10,
+      "params": {
+        "n_estimators": 600,
+        "max_depth": 3,
+        "learning_rate": 0.05,
+        "subsample": 0.8,
+        "colsample_bytree": 0.7,
+        "reg_lambda": 3.0,
+        "min_child_weight": 3
+      },
+      "cv_mae": 0.4184556964910372,
+      "fold_maes": [
+        0.39281780591171855,
+        0.43081216034527015,
+        0.4648676802674959,
+        0.390920168016856,
+        0.41286066791384524
+      ]
+    },
+    {
+      "config_id": 1,
+      "params": {
+        "n_estimators": 400,
+        "max_depth": 3,
+        "learning_rate": 0.03,
+        "subsample": 0.8,
+        "colsample_bytree": 0.7,
+        "reg_lambda": 2.0,
+        "min_child_weight": 3
+      },
+      "cv_mae": 0.41863666111272757,
+      "fold_maes": [
+        0.37977553553693705,
+        0.4406597150718637,
+        0.48145691699563475,
+        0.3836060819531297,
+        0.40768505600607247
+      ]
+    },
+    {
+      "config_id": 3,
+      "params": {
+        "n_estimators": 400,
+        "max_depth": 4,
+        "learning_rate": 0.03,
+        "subsample": 0.7,
+        "colsample_bytree": 0.7,
+        "reg_lambda": 3.0,
+        "min_child_weight": 5
+      },
+      "cv_mae": 0.42049219541657656,
+      "fold_maes": [
+        0.38757250666644616,
+        0.4305852562686793,
+        0.48059012575004484,
+        0.39332849171998957,
+        0.4103845966777232
+      ]
+    },
+    {
+      "config_id": 7,
+      "params": {
+        "n_estimators": 400,
+        "max_depth": 6,
+        "learning_rate": 0.05,
+        "subsample": 0.7,
+        "colsample_bytree": 0.6,
+        "reg_lambda": 2.0,
+        "min_child_weight": 5
+      },
+      "cv_mae": 0.4210340240874674,
+      "fold_maes": [
+        0.38238949998996485,
+        0.4223852719021377,
+        0.4767567455275006,
+        0.40400389855377916,
+        0.41963470446395434
+      ]
+    },
+    {
+      "config_id": 5,
+      "params": {
+        "n_estimators": 800,
+        "max_depth": 4,
+        "learning_rate": 0.02,
+        "subsample": 0.7,
+        "colsample_bytree": 0.6,
+        "reg_lambda": 5.0,
+        "min_child_weight": 5
+      },
+      "cv_mae": 0.42172137208599825,
+      "fold_maes": [
+        0.37745123906143807,
+        0.4368556177180331,
+        0.48226731476961227,
+        0.4001400639872668,
+        0.4118926248936411
+      ]
+    },
+    {
+      "config_id": 4,
+      "params": {
+        "n_estimators": 600,
+        "max_depth": 4,
+        "learning_rate": 0.03,
+        "subsample": 0.7,
+        "colsample_bytree": 0.6,
+        "reg_lambda": 3.0,
+        "min_child_weight": 5
+      },
+      "cv_mae": 0.42230646020740525,
+      "fold_maes": [
+        0.3770429669536092,
+        0.42292455965321496,
+        0.4799049797140382,
+        0.4127819404043407,
+        0.41887785431182334
+      ]
+    },
+    {
+      "config_id": 8,
+      "params": {
+        "n_estimators": 1000,
+        "max_depth": 3,
+        "learning_rate": 0.02,
+        "subsample": 0.7,
+        "colsample_bytree": 0.6,
+        "reg_lambda": 5.0,
+        "min_child_weight": 5
+      },
+      "cv_mae": 0.4257505975372336,
+      "fold_maes": [
+        0.39050293199958974,
+        0.44392716733396576,
+        0.48144208074699457,
+        0.39625220216916873,
+        0.4166286054364488
+      ]
+    },
+    {
+      "config_id": 11,
+      "params": {
+        "n_estimators": 300,
+        "max_depth": 4,
+        "learning_rate": 0.07,
+        "subsample": 0.7,
+        "colsample_bytree": 0.6,
+        "reg_lambda": 2.0,
+        "min_child_weight": 3
+      },
+      "cv_mae": 0.4264039553810698,
+      "fold_maes": [
+        0.3775193793501887,
+        0.43364155386772363,
+        0.4776751755816119,
+        0.40851646321186774,
+        0.434667204893957
+      ]
+    }
+  ],
+  "best_params": {
+    "n_estimators": 200,
+    "max_depth": 5,
+    "learning_rate": 0.1,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "reg_lambda": 1.0,
+    "min_child_weight": 1
+  },
+  "best_cv_mae": 0.4126468463702537
+}

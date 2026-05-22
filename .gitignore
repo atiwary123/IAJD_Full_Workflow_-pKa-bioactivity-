@@ -1,0 +1,39 @@
+# Python venvs (gigabytes — fetched/built per machine)
+.venv/
+lion_env/
+admet_env/
+
+# External model repository (clone separately when needed)
+lion_repo/
+
+# Byte-compiled
+__pycache__/
+*.pyc
+*.pyo
+
+# Local caches (regenerable)
+.cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Claude Code agent settings (local-only — not source)
+.claude/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Redundant — the IAJD_master/ directory is the source of truth
+IAJD_master.zip
+
+# Repair backups (large, regeneratable)
+*.pre_repair_backup.pkl
+
+# Test outputs that the loop regenerates
+/tmp/iajd_server*.log
+
+# Runtime logs / dumps the user might generate
+*.log

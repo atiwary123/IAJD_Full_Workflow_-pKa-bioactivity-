@@ -1,0 +1,183 @@
+[
+  {
+    "label": "PE-Tris (standard v9.1)",
+    "family_hint": "PE-Tris",
+    "smiles": "CCCCCCCCOCC(COCCCCCCCC)(COCCCCCCCC)COC(=O)CCCN1CCN(C)CC1",
+    "pka_pred": 6.428,
+    "pka_PI90": [
+      6.26,
+      6.6
+    ],
+    "pka_source": "v9.1_predicted",
+    "pka_tier": "MEDIUM",
+    "log10_flux": 6.036001682281494,
+    "log10_flux_PI90": [
+      5.836001682281494,
+      6.236001682281494
+    ],
+    "bioact_tier": "HIGH",
+    "lion_active": true,
+    "admet_active": true,
+    "lion_real": true,
+    "gate_overrides": [],
+    "max_tanimoto_pka": 1.0,
+    "max_tanimoto_bioact": 1.0,
+    "alpha_used": 1.0
+  },
+  {
+    "label": "GA-Tris (ADMET gate override)",
+    "family_hint": "GA-Tris",
+    "smiles": "CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCCCCCC)c1OCCCCCCCCCCCC",
+    "pka_pred": 6.482,
+    "pka_PI90": [
+      6.24,
+      6.72
+    ],
+    "pka_source": "v9.1_predicted",
+    "pka_tier": "MEDIUM",
+    "log10_flux": 6.299594879150391,
+    "log10_flux_PI90": [
+      6.0995948791503904,
+      6.499594879150391
+    ],
+    "bioact_tier": "HIGH",
+    "lion_active": true,
+    "admet_active": true,
+    "lion_real": true,
+    "gate_overrides": [
+      "Block C (ADMET) gate=OFF for GA-Tris in bundle, OVERRIDDEN to ON"
+    ],
+    "max_tanimoto_pka": 0.863,
+    "max_tanimoto_bioact": 0.863,
+    "alpha_used": 1.0
+  },
+  {
+    "label": "sSS-Nonsym (standard)",
+    "family_hint": "sSS-Nonsym",
+    "smiles": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCC)c1",
+    "pka_pred": 6.418,
+    "pka_PI90": [
+      6.29,
+      6.54
+    ],
+    "pka_source": "v9.1_predicted",
+    "pka_tier": "MEDIUM",
+    "log10_flux": 6.570663576047166,
+    "log10_flux_PI90": [
+      6.370663576047166,
+      6.770663576047166
+    ],
+    "bioact_tier": "HIGH",
+    "lion_active": true,
+    "admet_active": true,
+    "lion_real": true,
+    "gate_overrides": [],
+    "max_tanimoto_pka": 1.0,
+    "max_tanimoto_bioact": 1.0,
+    "alpha_used": 0.8
+  },
+  {
+    "label": "Dialkoxybenzyl (standard)",
+    "family_hint": "Dialkoxybenzyl",
+    "smiles": "CCCCCCCCCCCCOc1ccc(COC(=O)CCCN2CCN(CCO)CC2)cc1OCCCCCCCCCCCC",
+    "pka_pred": 6.416,
+    "pka_PI90": [
+      5.6,
+      7.23
+    ],
+    "pka_source": "v9.1_predicted",
+    "pka_tier": "MEDIUM",
+    "log10_flux": 6.835588131424812,
+    "log10_flux_PI90": [
+      6.635588131424812,
+      7.035588131424812
+    ],
+    "bioact_tier": "HIGH",
+    "lion_active": true,
+    "admet_active": true,
+    "lion_real": true,
+    "gate_overrides": [],
+    "max_tanimoto_pka": 1.0,
+    "max_tanimoto_bioact": 0.865,
+    "alpha_used": 0.5
+  },
+  {
+    "label": "G1-Janus-Dendrimer (full v9.1 path w/ pooled debias)",
+    "family_hint": "G1-Janus-Dendrimer",
+    "smiles": "CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)c(OCCCCCCCCCCCC)c(OCCCCCCCCCCCC)c1",
+    "pka_pred": 6.35,
+    "pka_PI90": [
+      5.51,
+      7.19
+    ],
+    "pka_source": "v9.1_predicted",
+    "pka_tier": "MEDIUM",
+    "log10_flux": 6.251806259155273,
+    "log10_flux_PI90": [
+      6.051806259155273,
+      6.451806259155274
+    ],
+    "bioact_tier": "HIGH",
+    "lion_active": true,
+    "admet_active": true,
+    "lion_real": true,
+    "gate_overrides": [
+      "Block B (LION) gate=OFF for G1-Janus-Dendrimer in bundle, OVERRIDDEN to ON"
+    ],
+    "max_tanimoto_pka": 0.75,
+    "max_tanimoto_bioact": 0.75,
+    "alpha_used": 1.0
+  },
+  {
+    "label": "HTM-Dendrimer (full v9.1 path w/ pooled debias)",
+    "family_hint": "HTM-Dendrimer",
+    "smiles": "CCCCCCCCCCCCN(CCO)CCOC(=O)CCCN1CCN(C)CC1",
+    "pka_pred": 6.276,
+    "pka_PI90": [
+      5.44,
+      7.12
+    ],
+    "pka_source": "v9.1_predicted",
+    "pka_tier": "LOW",
+    "log10_flux": 6.63095235824585,
+    "log10_flux_PI90": [
+      6.33095235824585,
+      6.930952358245849
+    ],
+    "bioact_tier": "MED",
+    "lion_active": true,
+    "admet_active": true,
+    "lion_real": true,
+    "gate_overrides": [],
+    "max_tanimoto_pka": 0.556,
+    "max_tanimoto_bioact": 0.556,
+    "alpha_used": 1.0
+  },
+  {
+    "label": "TT-Dendrimer (full v9.1 path w/ pooled debias)",
+    "family_hint": "TT-Dendrimer",
+    "smiles": "CCCCCCCCCCCCOCC(COCCCCCCCCCCCC)(NC(=O)CCN(CCO)CCO)C(=O)OCCCCCCCCCCCC",
+    "pka_pred": 6.624,
+    "pka_PI90": [
+      5.54,
+      7.7
+    ],
+    "pka_source": "v9.1_predicted",
+    "pka_tier": "LOW",
+    "log10_flux": 6.840652942657471,
+    "log10_flux_PI90": [
+      6.3906529426574705,
+      7.290652942657471
+    ],
+    "bioact_tier": "LOW",
+    "lion_active": true,
+    "admet_active": true,
+    "lion_real": true,
+    "gate_overrides": [
+      "Block B (LION) gate=OFF for TT-Dendrimer in bundle, OVERRIDDEN to ON"
+    ],
+    "max_tanimoto_pka": 0.377,
+    "max_tanimoto_bioact": 0.377,
+    "alpha_used": 1.0
+  }
+]

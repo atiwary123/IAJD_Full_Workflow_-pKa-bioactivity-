@@ -1,0 +1,63 @@
+{
+  "pooled_mae": 0.400569557838605,
+  "pooled_r2": 0.4774815218304488,
+  "per_family": {
+    "sSS-Nonsym": {
+      "n": 175,
+      "mae": 0.41107691189736156
+    },
+    "Dialkoxybenzyl": {
+      "n": 18,
+      "mae": 0.18513150168935905
+    },
+    "TT-Dendrimer": {
+      "n": 5,
+      "mae": 0.4516452267012827
+    },
+    "PE-Tris": {
+      "n": 51,
+      "mae": 0.4051892203557507
+    },
+    "GA-Tris": {
+      "n": 50,
+      "mae": 0.40990209787111526
+    },
+    "G1-Janus-Dendrimer": {
+      "n": 26,
+      "mae": 0.43821389092497526
+    },
+    "HTM-Dendrimer": {
+      "n": 10,
+      "mae": 0.4108432834231143
+    }
+  },
+  "best_alpha": {
+    "TT-Dendrimer": 1.0,
+    "PE-Tris": 1.0,
+    "G1-Janus-Dendrimer": 1.0,
+    "Dialkoxybenzyl": 0.5,
+    "HTM-Dendrimer": 1.0,
+    "sSS-Nonsym": 0.8,
+    "GA-Tris": 1.0
+  },
+  "gate_b": {
+    "sSS-Nonsym": true,
+    "Dialkoxybenzyl": true,
+    "TT-Dendrimer": false,
+    "PE-Tris": true,
+    "GA-Tris": true,
+    "G1-Janus-Dendrimer": false,
+    "HTM-Dendrimer": true
+  },
+  "gate_c": {
+    "sSS-Nonsym": true,
+    "Dialkoxybenzyl": true,
+    "TT-Dendrimer": true,
+    "PE-Tris": true,
+    "GA-Tris": false,
+    "G1-Janus-Dendrimer": true,
+    "HTM-Dendrimer": true
+  },
+  "baseline_pooled_mae": 0.4342090861079789,
+  "pooled_mae_improvement": 0.03363952826937394
+}

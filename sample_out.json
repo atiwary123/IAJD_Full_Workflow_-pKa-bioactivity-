@@ -1,0 +1,114 @@
+{
+  "smiles": "CCCCCCCCOCC(COCCCCCCCC)(COCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+  "canonical_smiles": "CCCCCCCCOCC(COCCCCCCCC)(COCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+  "version": "tandem_final (pKa=v9.1-full, bioact=v14.0-LION+ADMET-on)",
+  "family_used": "PE-Tris",
+  "family_sources": {
+    "pka": "PE-Tris",
+    "bioact": "PE-Tris",
+    "user_hint": "PE-Tris"
+  },
+  "family_warnings": [],
+  "warnings": [
+    "DIRECT_MODEL_REFIT: pickled XGBoost predicted nonsense; refit on stored X_train/y_train"
+  ],
+  "flow": {
+    "stage1_pka": "v9.1 (full path): pKa=6.307 PI90=[6.19, 6.43] family=PE-Tris tier=HIGH",
+    "stage2_bioact": "v14.0-full: log10_flux=6.768 PI90=(6.568398761749267, 6.968398761749268) family=PE-Tris \u03b1=1.0 B=ON C=ON (forced) tier=HIGH"
+  },
+  "pka": {
+    "source": "v9.1_predicted",
+    "tier": "HIGH",
+    "max_tanimoto_to_training": 1.0,
+    "ood_flag": false,
+    "molgpka_debiased": 6.294,
+    "direct_xgb_pred": 6.374,
+    "analog_delta_pred": 6.304,
+    "n_neighbors_used": 10,
+    "warnings": [],
+    "point": 6.307,
+    "sigma": 0.073,
+    "ci_60": [
+      6.246,
+      6.368
+    ],
+    "ci_90": [
+      6.19,
+      6.43
+    ]
+  },
+  "bioactivity": {
+    "tier": "HIGH",
+    "max_tanimoto": 1.0,
+    "alpha_used": 1.0,
+    "block_B_active": true,
+    "block_B_real": true,
+    "block_C_active": true,
+    "gate_overrides_applied": [],
+    "pred_direct": 6.768398761749268,
+    "pred_analog": 7.432339979890775,
+    "pka_used_in_features": 6.307,
+    "warnings": [],
+    "point": 6.768,
+    "sigma": 0.122,
+    "ci_60": [
+      6.666,
+      6.87
+    ],
+    "ci_90": [
+      6.568,
+      6.968
+    ]
+  },
+  "neighbors": {
+    "pka": [
+      {
+        "iajd_id": 285,
+        "smiles": "CCCCCCCCCCCCCCCOCC(COCCCCCCCCCCCCCCC)(COCCCCCCCCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+        "family": "PE-Tris",
+        "pKa": 6.5,
+        "pKa_sd": null,
+        "tanimoto": 1.0
+      },
+      {
+        "iajd_id": 278,
+        "smiles": "CCCCCCCCCCOCC(COCCCCCCCCCC)(COCCCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+        "family": "PE-Tris",
+        "pKa": 6.57,
+        "pKa_sd": null,
+        "tanimoto": 1.0
+      },
+      {
+        "iajd_id": 251,
+        "smiles": "CCCCCCCCCCCOCC(COCCCCCCCCCCC)(COCCCCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+        "family": "PE-Tris",
+        "pKa": 6.56,
+        "pKa_sd": null,
+        "tanimoto": 1.0
+      }
+    ],
+    "bioact": [
+      {
+        "iajd_id": "IAJD83",
+        "smiles": "CCCCCCCCCCCCOCC(COCCCCCCCCCCCC)(COCCCCCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+        "family": "PE-Tris",
+        "log10_flux_total": 7.851869600729766,
+        "tanimoto": 1.0
+      },
+      {
+        "iajd_id": "IAJD_280",
+        "smiles": "CCCCCCCCCCCCCOCC(COCCCCCCCCCCCCC)(COCCCCCCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+        "family": "PE-Tris",
+        "log10_flux_total": 7.041392685158225,
+        "tanimoto": 1.0
+      },
+      {
+        "iajd_id": "IAJD_249",
+        "smiles": "CCCCCCCCOCC(COCCCCCCCC)(COCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+        "family": "PE-Tris",
+        "log10_flux_total": 8.775974331129369,
+        "tanimoto": 1.0
+      }
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "collapse_decision": "HTM/TT/G1-Janus \u2192 PE-Gallic in bioact pipeline",
+  "subarch_compounds_merged_into_pe_gallic": 41,
+  "baseline_orig_labels_mae": 0.40098551634727286,
+  "baseline_collapsed_labels_mae": 0.40098551634727286,
+  "best_alpha_for_pe_gallic_collapsed": 1.0,
+  "stacker_loo_mae": 0.39335305803006243,
+  "verdict": "no change in headline MAE (0.4010 \u2192 0.4010); per-family \u03b1=1.0 propagates correctly through the collapse"
+}
