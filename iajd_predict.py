@@ -746,8 +746,9 @@ def _organ_partition(bioact_neighbors: list) -> Dict[str, Any]:
         return {"target_organ": None, "reason": "no_neighbors"}
 
     import math
-    # Restrict to top-8 closest neighbors that actually have per-organ data
-    usable = [n for n in bioact_neighbors[:8]
+    # Restrict to top-2 closest neighbors that actually have per-organ data.
+    # This is a nearest-neighbor similarity lookup, not an ML prediction.
+    usable = [n for n in bioact_neighbors[:2]
               if any(n.get(col) is not None for _, col in _ORGAN_COLS)]
     if not usable:
         return {"target_organ": None, "reason": "no_per_organ_data_in_neighbors"}
@@ -790,7 +791,7 @@ def _organ_partition(bioact_neighbors: list) -> Dict[str, Any]:
         "log10_flux_by_organ": {k: round(v, 3) for k, v in log_flux_by_organ.items()},
         "partition_pct": partition,
         "n_neighbors_used": len(usable),
-        "method": "Tanimoto^4 weighted average over top-8 bioact neighbors",
+        "method": "similarity-score (Tanimoto-weighted) over top-2 nearest training IAJDs — NOT an ML prediction",
     }
 
 

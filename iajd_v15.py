@@ -677,12 +677,13 @@ def predict_bioactivity_v15(smiles: str, bundle: V15Bundle,
         "x_full": x_full,
     })
 
-    # 4. Per-organ partition: use a wider neighbor pool (top-30 by count-Tanimoto)
-    # because the top-8 analog-delta neighbors may all lack per-organ data
-    # (some IAJDs only have total flux measured).
+    # 4. Per-organ partition: nearest-neighbor similarity lookup (not an ML
+    # prediction). Restricted to the top-2 closest IAJDs by count-Tanimoto so
+    # the partition is reported as a direct similarity score to the two
+    # closest training molecules rather than a smoothed analog ensemble.
     fp_q_count = count_fp(mol)
     sims_all = bulk_tanimoto(fp_q_count, bundle.bioact.count_fps)
-    order = sims_all.argsort()[::-1][:30]
+    order = sims_all.argsort()[::-1][:2]
     wide_neighbors = [{
         "iajd_id": bundle.bioact.ids[int(j)],
         "smiles":  bundle.bioact.smiles[int(j)],
@@ -739,7 +740,7 @@ def _per_organ_from_neighbors(neighbors: List[Dict[str, Any]],
         "log10_flux_by_organ": {k: round(v, 3) for k, v in log_flux.items()},
         "partition_pct": partition,
         "n_neighbors_used": len(neighbors),
-        "method": "Tanimoto^4-weighted (count-Morgan-3) average over analog neighbors",
+        "method": "similarity-score (Tanimoto-weighted) over top-2 nearest training IAJDs — NOT an ML prediction",
     }
 
 
