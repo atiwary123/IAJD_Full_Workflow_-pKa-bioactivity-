@@ -21,6 +21,18 @@ from iajd_predict import (
 )
 from iajd_family import CHEMICAL_FAMILIES, BIOACT_ONLY_SUBARCHS
 
+# v11 pKa-dominant independent baseline (M2 bundle). Optional — the Space
+# still works if the bundle file isn't shipped.
+try:
+    from v11_pka_predictor import (
+        predict_v11_bioact, tail_descriptors_from_mol, is_available as _v11_ok,
+    )
+    V11_AVAILABLE = _v11_ok()
+except Exception:  # noqa: BLE001
+    V11_AVAILABLE = False
+    predict_v11_bioact = None
+    tail_descriptors_from_mol = None
+
 # Warm the bundle at import — HF Spaces shares the process across requests, so
 # this one-time ~10s cost is amortized.  Wrapped in try/except so import-time
 # errors don't kill the whole Space.
@@ -119,6 +131,33 @@ def _render_result_markdown(r: dict, idx: int = 0) -> str:
         md.append(f"- stacker LOO MAE {stk.get('expected_loo_mae')} (vs baseline {stk.get('baseline_loo_mae')})")
     md.append("")
 
+    # v11 pKa-dominant independent baseline (shown alongside, NOT replacing v14)
+    v11 = r.get("bioactivity_v11_pka_dominant") or {}
+    if v11.get("point") is not None:
+        md.append("#### 🧪 log₁₀ flux total — v11 pKa-Dominant (INDEPENDENT BASELINE)")
+        md.append(
+            "> **What this is:** a separate ML model that uses **predicted pKa** as its central "
+            "feature (plus family one-hot, pKa×family interaction, and 8 tail/shape descriptors). "
+            "Trained on the same bioact table as v14, evaluated under the same family-stratified "
+            "k=5 LOO protocol. **Independent of the v14+stacker prediction above.** Shown for "
+            "comparison so you can see how much of the flux signal predicted pKa alone carries."
+        )
+        md.append("")
+        md.append(f"**v11 M2 pKa-dominant: log₁₀ flux total = {_log_with_sci(v11.get('point'))}**")
+        md.append(
+            f"_LOO MAE {v11.get('loo_mae', '—'):.3f} (vs v14+stacker LOO MAE 0.3934 above) · "
+            f"trained on {v11.get('n_train_rows', '—')} rows · "
+            f"family_used=`{v11.get('family_used') or '(out-of-set)'}` · "
+            f"feature_sha=`{v11.get('feature_sha', '—')}`_"
+        )
+        if v11.get("point") is not None and bio.get("point") is not None:
+            try:
+                delta = float(v11["point"]) - float(bio["point"])
+                md.append(f"_Δ vs v14+stacker: **{delta:+.3f}** log-units._")
+            except Exception:  # noqa: BLE001
+                pass
+        md.append("")
+
     # Organ — similarity score, NOT an ML prediction
     if organ.get("target_organ"):
         md.append(f"#### Per-organ flux  —  ⚠️ **NOT an ML prediction**")
@@ -163,6 +202,40 @@ def _render_result_markdown(r: dict, idx: int = 0) -> str:
     return "\n".join(md)
 
 
+def _attach_v11(r: dict) -> dict:
+    """Enrich a single predict() result with the v11 pKa-dominant baseline.
+    No-op if the bundle isn't available or if the v9.1 pKa wasn't predicted.
+    """
+    if not V11_AVAILABLE or predict_v11_bioact is None:
+        return r
+    pka = r.get("pka") or {}
+    if pka.get("point") is None:
+        return r
+    fam = (r.get("family_resolution") or {}).get("family_assigned") or \
+           r.get("family_used")
+    smi = r.get("canonical_smiles")
+    tail = None
+    if smi:
+        try:
+            from rdkit import Chem
+            mol = Chem.MolFromSmiles(smi)
+            if mol is not None and tail_descriptors_from_mol is not None:
+                tail = tail_descriptors_from_mol(mol)
+        except Exception:  # noqa: BLE001
+            tail = None
+    try:
+        v11_out = predict_v11_bioact(
+            canonical_smiles=smi or "",
+            family=fam or "",
+            predicted_pKa=float(pka["point"]),
+            tail_descriptors=tail,
+        )
+        r["bioactivity_v11_pka_dominant"] = v11_out
+    except Exception as exc:  # noqa: BLE001
+        r["bioactivity_v11_pka_dominant"] = {"error": f"{type(exc).__name__}: {exc}"}
+    return r
+
+
 def single_predict(smiles: str, family_choice: str, neighbors: int):
     if not smiles or not smiles.strip():
         return "_Enter a SMILES._", ""
@@ -171,6 +244,7 @@ def single_predict(smiles: str, family_choice: str, neighbors: int):
         r = predict(smiles.strip(), family=family, neighbors=int(neighbors))
     except Exception as exc:  # noqa: BLE001
         return f"### Prediction failed\n\n```\n{type(exc).__name__}: {exc}\n```", ""
+    _attach_v11(r)
     md = _render_result_markdown(r, 0)
     raw = json.dumps(r, indent=2, default=str)
     return md, raw
@@ -201,6 +275,7 @@ def batch_predict(file_obj, smiles_text: str, family_choice: str, neighbors: int
         for e in rb["errors"]:
             parts.append(f"- ❌ `{e.get('label')}`: {e.get('error')}")
     for i, r in enumerate(rb.get("results", [])):
+        _attach_v11(r)
         parts.append("\n---\n")
         parts.append(_render_result_markdown(r, i))
     raw = json.dumps(rb, indent=2, default=str)
@@ -217,6 +292,11 @@ axis; 96% LOO recall), ChemDraw / `.cdxml` / `.sdf` / `.mol` / multi-SMILES uplo
 2D positional structural refinement on the analog leg, and an XGBoost stacker
 over (direct, analog, LION, ADMET) heads (true-LOO MAE **0.3934** vs **0.4010**
 v14 baseline).
+
+**v11 pKa-dominant** independent baseline runs alongside v14 ({"loaded ✓" if V11_AVAILABLE else "not available ✗"}).
+It uses predicted pKa + family + pKa×family + 8 tail descriptors and reaches family-stratified
+k=5 LOO MAE **0.497** (vs v14+stacker 0.393). Shown separately so you can compare what a
+pKa-centric representation gets you against the full 3D/LION/ADMET cascade.
 
 **Bundle status:** {"loaded ✓" if BUNDLE_OK else f"failed — {BUNDLE_ERR}"}
 
