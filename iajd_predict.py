@@ -91,10 +91,10 @@ def _load_bioact_stacker():
     return _STACKER_BUNDLE
 
 
-def _bioact_stacker_predict(X_full_row, analog_pred):
+def _bioact_stacker_predict(X_full_row, analog_pred, smiles=None):
     """Apply the bioactivity stacker. Returns
         {"point": float, "direct": float, "analog": float,
-         "lion": float, "admet": float}
+         "lion": float, "admet": float, "agile": float (if available)}
     or None if the bundle isn't loaded."""
     import numpy as np
     sb = _load_bioact_stacker()
@@ -105,10 +105,86 @@ def _bioact_stacker_predict(X_full_row, analog_pred):
     direct = float(sb["direct_head"].predict(x)[0])
     lion = float(sb["lion_head"].predict(x[:, bl_a:bl_b])[0])
     admet = float(sb["admet_head"].predict(x[:, bc_a:bc_b])[0])
-    feats = np.asarray([[direct, float(analog_pred), lion, admet]])
+
+    # AGILE head (v2+): extract GNN embedding and predict
+    agile_val = None
+    if "agile_head" in sb and smiles:
+        try:
+            agile_val = _agile_predict_single(smiles, sb)
+        except Exception:
+            agile_val = None
+
+    if agile_val is not None and "agile" in sb.get("stack_features", []):
+        feats = np.asarray([[direct, float(analog_pred), lion, admet, agile_val]])
+    else:
+        feats = np.asarray([[direct, float(analog_pred), lion, admet]])
     point = float(sb["stacker"].predict(feats)[0])
-    return {"point": point, "direct": direct, "analog": float(analog_pred),
-            "lion": lion, "admet": admet}
+    result = {"point": point, "direct": direct, "analog": float(analog_pred),
+              "lion": lion, "admet": admet}
+    if agile_val is not None:
+        result["agile"] = agile_val
+    return result
+
+
+_AGILE_CACHE = {}
+
+def _agile_predict_single(smiles, sb):
+    """Get AGILE prediction for a SMILES. Uses precomputed cache or
+    lazy-loads the encoder if memory allows."""
+    import numpy as np
+    if smiles in _AGILE_CACHE:
+        return _AGILE_CACHE[smiles]
+
+    try:
+        import torch
+        from agile_embeddings import load_agile_encoder, smiles_to_graph
+        from torch_geometric.data import Batch
+
+        global _AGILE_ENCODER
+        if '_AGILE_ENCODER' not in globals():
+            _AGILE_ENCODER = None
+        if _AGILE_ENCODER is None:
+            _AGILE_ENCODER = load_agile_encoder()
+        if _AGILE_ENCODER is False:
+            return None
+
+        g = smiles_to_graph(smiles)
+        if g is None:
+            return None
+        with torch.no_grad():
+            h, _ = _AGILE_ENCODER(Batch.from_data_list([g]))
+        emb = h.cpu().numpy()
+        scaled = sb["agile_scaler"].transform(emb)
+        pca_emb = sb["agile_pca"].transform(scaled)
+        val = float(sb["agile_head"].predict(pca_emb)[0])
+        _AGILE_CACHE[smiles] = val
+        return val
+    except Exception:
+        return None
+
+
+def _warm_agile_cache():
+    """Precompute AGILE predictions for all training SMILES at startup."""
+    import numpy as np
+    sb = _load_bioact_stacker()
+    if sb is None or "agile_head" not in sb:
+        return
+    emb_path = Path(__file__).resolve().parent / "agile_embeddings_v14_train.npy"
+    smi_path = CACHE_DIR.parent / "bioact_v14_bundle.pkl"
+    if not emb_path.exists() or not smi_path.exists():
+        return
+    try:
+        import pickle
+        with open(smi_path, "rb") as f:
+            smiles_list = list(pickle.load(f)["smis_train"])
+        emb = np.load(emb_path)
+        scaled = sb["agile_scaler"].transform(emb)
+        pca_emb = sb["agile_pca"].transform(scaled)
+        preds = sb["agile_head"].predict(pca_emb)
+        for smi, pred in zip(smiles_list, preds):
+            _AGILE_CACHE[smi] = float(pred)
+    except Exception:
+        pass
 
 # Cache of structural feature vectors keyed by canonical SMILES. Training-set
 # entries are populated lazily as neighbors surface from v15; same vector dim
@@ -338,6 +414,7 @@ def _get_v15() -> V15Bundle:
     global _V15
     if _V15 is None:
         _V15 = load_v15(_load_bundle())
+        _warm_agile_cache()
     return _V15
 
 
@@ -558,7 +635,8 @@ def predict(
         # 0.4010 → −0.0154 improvement, see weight_eval_v2_results.json).
         x_full = bio_result.get("x_full")
         if x_full is not None:
-            stack_out = _bioact_stacker_predict(x_full, analog_for_stacker)
+            stack_out = _bioact_stacker_predict(x_full, analog_for_stacker,
+                                                   smiles=summary.get("canonical_smiles"))
         else:
             stack_out = None
         if stack_out is not None:
