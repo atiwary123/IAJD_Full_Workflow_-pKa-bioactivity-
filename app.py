@@ -154,7 +154,18 @@ def _render_result_markdown(r: dict, idx: int = 0) -> str:
     md.append("")
 
     # ── Three-model bioactivity comparison ──
-    md.append("## Bioactivity Predictions (log10 flux total)")
+    is_lookup = bio.get("source") == "training_set_exact_match"
+
+    if is_lookup:
+        iajd_id = bio.get("iajd_id_if_measured", "")
+        md.append(f"## Bioactivity: MEASURED VALUE (training set exact match)")
+        md.append(f"_This compound ({iajd_id}) is in the training set (Tanimoto=1.0). "
+                  f"The value below is the **stored experimental measurement**, not a model prediction._")
+        md.append("")
+        md.append(f"## log10 flux total = {_log_with_sci(bio.get('point'))}")
+        md.append("")
+    else:
+        md.append("## Bioactivity Predictions (log10 flux total)")
     md.append("")
     md.append("| Model | Prediction | Description |")
     md.append("|---|---|---|")
@@ -164,10 +175,14 @@ def _render_result_markdown(r: dict, idx: int = 0) -> str:
     stk_mode = stk.get("mode", "static") if stk.get("applied") else "off"
     novelty = stk.get("components", {}).get("novelty")
     nov_str = f" novelty={novelty:.2f}" if novelty is not None else ""
-    md.append(f"| **v14 + adaptive stacker** | **{bio_point}** | "
-              f"6-head ensemble (direct + analog + LION + ADMET + AGILE + CPP) with OOD-aware dynamic weighting; "
-              f"physics heads (CPP/AGILE) dominate as queries drift from training;{nov_str} "
-              f"LOO MAE 0.403 on 335 compounds |")
+    if is_lookup:
+        md.append(f"| **v14 + adaptive stacker** | **{bio_point}** | "
+                  f"LOOKUP (exact match in training set, not a prediction) |")
+    else:
+        md.append(f"| **v14 + adaptive stacker** | **{bio_point}** | "
+                  f"6-head ensemble (direct + analog + LION + ADMET + AGILE + CPP) with OOD-aware dynamic weighting; "
+                  f"physics heads (CPP/AGILE) dominate as queries drift from training;{nov_str} "
+                  f"LOO MAE 0.403 on 335 compounds |")
 
     # Model 2: v11 M2 pKa-dominant
     if v11.get("point") is not None:
@@ -380,7 +395,7 @@ Accepts SMILES, ChemDraw (.cdxml), SDF, MOL. Family auto-detected (6 chemical fa
 
         gr.Markdown(
             "---\n"
-            "_Training: 278 pKa compounds (6 families) + 369 bioactivity measurements (8 families)._ "
+            "_Training: 278 pKa compounds (6 families) + 273 bioactivity measurements (6 families)._ "
             "_pKa v9.1 LOO MAE 0.065. Adaptive stacker (6-head, OOD-aware) LOO MAE 0.403. v11 M2 LOO MAE 0.475._"
         )
     return demo
