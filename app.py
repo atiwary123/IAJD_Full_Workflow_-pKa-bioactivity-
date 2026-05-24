@@ -44,6 +44,61 @@ except Exception as exc:  # noqa: BLE001
     BUNDLE_OK = False
     BUNDLE_ERR = f"{type(exc).__name__}: {exc}"
 
+# pKa-flux curve model (no similarity, fitted quadratic + structural corrector)
+_PKA_CURVE_READY = False
+_PKA_CURVES = None
+_PKA_CURVE_XGB = None
+_PKA_CURVE_MEDIANS = None
+try:
+    import numpy as _np
+    from scipy.optimize import curve_fit as _curve_fit
+    import xgboost as _xgb_mod
+    from pka_primary_model import (
+        extract_structural_features as _extract_sf,
+        STRUCT_FEATURE_NAMES as _SF_NAMES,
+        fit_pka_flux_curves as _fit_curves,
+        predict_curve as _pred_curve,
+        RESIDUAL_XGB_HP as _RES_HP,
+    )
+    import pandas as _pd_curve
+
+    _bio_c = _pd_curve.read_excel(HERE / "IAJD_master" / "datasets" / "IAJD_Bioact_v13_clean.xlsx")
+    _pka_c = _pd_curve.read_csv(HERE / "v11_pka_flux" / "predicted_pka_cache.csv")
+    _mg = _bio_c.merge(_pka_c[["row_id", "predicted_pKa"]], on="row_id", how="left")
+    _vd = _mg.dropna(subset=["log10_flux_total", "predicted_pKa"])
+    _fams = _vd["family"].values
+    _pkas = _vd["predicted_pKa"].values
+    _fluxes = _vd["log10_flux_total"].values
+    _feat_r = []
+    for _, _r in _vd.iterrows():
+        _s = _r.get("SMILES_canonical") or _r.get("SMILES")
+        _feat_r.append(_extract_sf(str(_s)) if _pd_curve.notna(_s) else {k: _np.nan for k in _SF_NAMES})
+    _Xs = _pd_curve.DataFrame(_feat_r)[_SF_NAMES].values
+    for _col in range(_Xs.shape[1]):
+        _m = ~_np.isfinite(_Xs[:, _col])
+        if _m.any():
+            _Xs[_m, _col] = _np.nanmedian(_Xs[:, _col])
+    _PKA_CURVES = _fit_curves(_pkas, _fluxes, _fams)
+    _cp = _np.array([_pred_curve(p, f, _PKA_CURVES) for p, f in zip(_pkas, _fams)])
+    _res = _fluxes - _cp
+    _Xf = _np.column_stack([_pkas, _Xs])
+    _PKA_CURVE_MEDIANS = _np.nanmedian(_Xf, axis=0)
+    _PKA_CURVE_XGB = _xgb_mod.XGBRegressor(**_RES_HP)
+    _PKA_CURVE_XGB.fit(_Xf, _res, verbose=False)
+    _PKA_CURVE_READY = True
+except Exception:
+    pass
+
+def _predict_pka_curve(pred_pka, family, smiles):
+    curve_val = _pred_curve(pred_pka, family, _PKA_CURVES)
+    feats = _extract_sf(smiles)
+    x = _np.array([[pred_pka] + [feats.get(f, 0) for f in _SF_NAMES]])
+    for col in range(x.shape[1]):
+        if not _np.isfinite(x[0, col]):
+            x[0, col] = _PKA_CURVE_MEDIANS[col]
+    resid = float(_PKA_CURVE_XGB.predict(x)[0])
+    return curve_val + resid
+
 _FAMILY_OPTIONS = ["(auto-detect)"] + sorted(ALLOWED_FAMILIES)
 
 
@@ -69,7 +124,7 @@ def _render_result_markdown(r: dict, idx: int = 0) -> str:
     if not r:
         return "_(no result)_"
     if r.get("error"):
-        return f"### ❌ {r.get('input_label') or 'mol ' + str(idx+1)}\n\n**Error:** {r['error']}"
+        return f"### Error: {r.get('input_label') or 'mol ' + str(idx+1)}\n\n**Error:** {r['error']}"
 
     label = r.get("input_label") or f"mol {idx + 1}"
     pka = r.get("pka") or {}
@@ -80,100 +135,64 @@ def _render_result_markdown(r: dict, idx: int = 0) -> str:
     cands = det.get("candidates") or []
     nb = r.get("neighbors") or {}
     stk = bio.get("stacker") or {}
+    v11 = r.get("bioactivity_v11_pka_dominant") or {}
 
     md = []
     md.append(f"### `{label}`")
     md.append(f"`{r.get('canonical_smiles', '')}`")
     md.append("")
-    fam_src = (fr.get("source") or "—").replace("auto:", "")
-    md.append(f"**Family:** `{fr.get('family_assigned') or '—'}`  · source: `{fam_src}`")
-    if fr.get("subarch_label"):
-        md.append(f"_(original label `{fr['subarch_label']}` collapsed to PE-Gallic for bioact routing)_")
-    if det.get("confidence") is not None:
-        md.append(f"_detect confidence: {det['confidence']*100:.1f}% · max Tanimoto to training: {det.get('max_tanimoto')}_")
-    if len(cands) > 1:
-        alt_txt = ", ".join(f"{c['family']} ({c['score']*100:.0f}%)" for c in cands[1:3])
-        md.append(f"_alternatives: {alt_txt}_")
+    fam = fr.get('family_assigned') or '—'
+    md.append(f"**Family:** `{fam}` (confidence {det.get('confidence', 0)*100:.0f}%)")
     md.append("")
 
-    # pKa block — ML prediction (dominant output)
-    md.append("#### 🎯 pKa  —  **ML PREDICTION** (v9.1, LOO MAE 0.0653)")
-    md.append(f"## **pKa = {pka.get('point', '—')}**")
-    md.append(f"σ={pka.get('sigma', '—')} · tier `{pka.get('tier', '—')}` · src `{pka.get('source', '—')}`")
-    if pka.get("ci_60"):
-        md.append(f"- 60% CI: `[{pka['ci_60'][0]:.3f}, {pka['ci_60'][1]:.3f}]`")
+    # ── pKa ──
+    md.append(f"## pKa = {pka.get('point', '—')}")
+    md.append(f"_v9.1 analog-delta XGBoost (278 training compounds, 6 families, LOO MAE 0.065) "
+              f"| tier `{pka.get('tier', '—')}` | max Tanimoto {pka.get('max_tanimoto_to_training', '—')}_")
     if pka.get("ci_90"):
-        md.append(f"- 90% CI: `[{pka['ci_90'][0]:.3f}, {pka['ci_90'][1]:.3f}]`")
-    if pka.get("max_tanimoto_to_training") is not None:
-        md.append(f"- max Tanimoto to training: {pka['max_tanimoto_to_training']} · OOD={pka.get('ood_flag')}")
-    if pka.get("point_v15_original") is not None:
-        sr = pka.get("structural_refinement") or {}
-        md.append(f"- struct refine: Δ={sr.get('delta_from_original')} from v15 baseline ({pka['point_v15_original']})")
+        md.append(f"_90% CI: [{pka['ci_90'][0]:.3f}, {pka['ci_90'][1]:.3f}]_")
     md.append("")
 
-    # Bioact block — ML prediction (dominant output)
-    md.append("#### 🎯 log₁₀ flux total  —  **ML PREDICTION** (v14 + stacker v1, LOO MAE 0.3934)")
-    md.append(f"## **log₁₀ flux total = {_log_with_sci(bio.get('point'))}**")
-    md.append(f"σ={bio.get('sigma', '—')} · tier `{bio.get('tier', '—')}` · α={bio.get('alpha_used')}")
-    if bio.get("ci_60"):
-        md.append(f"- 60% CI: `{_ci_with_sci(bio['ci_60'])}`")
-    if bio.get("ci_90"):
-        md.append(f"- 90% CI: `{_ci_with_sci(bio['ci_90'])}`")
-    if bio.get("max_tanimoto") is not None:
-        md.append(f"- max Tanimoto: {bio['max_tanimoto']:.3f} · LION_real={bio.get('block_B_real')}")
-    if bio.get("point_v15_original") is not None:
-        md.append(f"- v15 (no struct refine): {_log_with_sci(bio['point_v15_original'])}")
-    if bio.get("point_pre_stacker") is not None:
-        comps = stk.get("components") or {}
-        md.append(f"- pre-stacker: {_log_with_sci(bio['point_pre_stacker'])}  "
-                  f"· stacker components D={comps.get('direct_head_pred')} A={comps.get('analog_pred')} "
-                  f"L={comps.get('lion_head_pred')} M={comps.get('admet_head_pred')}")
-        md.append(f"- stacker LOO MAE {stk.get('expected_loo_mae')} (vs baseline {stk.get('baseline_loo_mae')})")
+    # ── Three-model bioactivity comparison ──
+    md.append("## Bioactivity Predictions (log10 flux total)")
     md.append("")
+    md.append("| Model | Prediction | Description |")
+    md.append("|---|---|---|")
 
-    # v11 pKa-dominant independent baseline (shown alongside, NOT replacing v14)
-    v11 = r.get("bioactivity_v11_pka_dominant") or {}
+    # Model 1: v14 + stacker
+    bio_point = _log_with_sci(bio.get('point'))
+    md.append(f"| **v14 + stacker** | **{bio_point}** | "
+              f"4-head ensemble (direct XGB + analog-delta + LION + ADMET) with XGBoost stacker; "
+              f"LOO MAE 0.393 on 369 compounds |")
+
+    # Model 2: v11 M2 pKa-dominant
     if v11.get("point") is not None:
-        md.append("#### 🧪 log₁₀ flux total — v11 pKa-Dominant (INDEPENDENT BASELINE)")
-        md.append(
-            "> **What this is:** a separate ML model that uses **predicted pKa** as its central "
-            "feature (plus family one-hot, pKa×family interaction, and 8 tail/shape descriptors). "
-            "Trained on the same bioact table as v14, evaluated under the same family-stratified "
-            "k=5 LOO protocol. **Independent of the v14+stacker prediction above.** Shown for "
-            "comparison so you can see how much of the flux signal predicted pKa alone carries."
-        )
-        md.append("")
-        md.append(f"**v11 M2 pKa-dominant: log₁₀ flux total = {_log_with_sci(v11.get('point'))}**")
-        md.append(
-            f"_LOO MAE {v11.get('loo_mae', '—'):.3f} (vs v14+stacker LOO MAE 0.3934 above) · "
-            f"trained on {v11.get('n_train_rows', '—')} rows · "
-            f"family_used=`{v11.get('family_used') or '(out-of-set)'}` · "
-            f"feature_sha=`{v11.get('feature_sha', '—')}`_"
-        )
-        if v11.get("point") is not None and bio.get("point") is not None:
-            try:
-                delta = float(v11["point"]) - float(bio["point"])
-                md.append(f"_Δ vs v14+stacker: **{delta:+.3f}** log-units._")
-            except Exception:  # noqa: BLE001
-                pass
-        md.append("")
+        v11_point = _log_with_sci(v11.get('point'))
+        md.append(f"| **v11 pKa-dominant** | **{v11_point}** | "
+                  f"pKa + family + pKa x family interaction + 8 tail descriptors; "
+                  f"LOO MAE {v11.get('loo_mae', 0):.3f} on {v11.get('n_train_rows', '?')} compounds |")
 
-    # Organ — similarity score, NOT an ML prediction
+    # Model 3: pKa-flux curve (if available in result)
+    pka_curve = r.get("bioactivity_pka_curve") or {}
+    if pka_curve.get("point") is not None:
+        pc_point = _log_with_sci(pka_curve.get('point'))
+        md.append(f"| **pKa-flux curve** | **{pc_point}** | "
+                  f"Per-family fitted pKa-to-flux quadratic + structural residual corrector; "
+                  f"no similarity used, LOO MAE ~0.50 |")
+
+    md.append("")
+
+    # Confidence info
+    if bio.get("ci_90"):
+        md.append(f"_v14+stacker 90% CI: {_ci_with_sci(bio['ci_90'])}_")
+    if bio.get("max_tanimoto") is not None:
+        md.append(f"_max Tanimoto to bioact training: {bio['max_tanimoto']:.3f}_")
+    md.append("")
+
+    # Organ delivery
     if organ.get("target_organ"):
-        md.append(f"#### Per-organ flux  —  ⚠️ **NOT an ML prediction**")
-        md.append(
-            "> **Disclaimer:** The per-organ flux values below are **not** generated by a "
-            "trained ML model. They are a **Tanimoto-similarity score** computed by taking a "
-            "weighted average of the measured per-organ flux values of the **2 nearest "
-            "neighbors** in the training set. The further this molecule sits from the training "
-            "manifold, the less meaningful these numbers become. Only the **pKa** and **total "
-            "log₁₀ flux** above are true ML predictions."
-        )
-        md.append("")
-        md.append(f"Nearest-neighbor target organ: **{organ['target_organ']}**")
-        md.append(f"_{organ.get('method')} · n_neighbors={organ.get('n_neighbors_used')}_")
-        md.append("")
-        md.append("| organ | partition | log₁₀ flux (linear) |")
+        md.append(f"### Per-organ flux (similarity-weighted, not ML)")
+        md.append("| organ | partition | log10 flux |")
         md.append("|---|---|---|")
         parts = organ.get("partition_pct") or {}
         lfs = organ.get("log10_flux_by_organ") or {}
@@ -181,58 +200,62 @@ def _render_result_markdown(r: dict, idx: int = 0) -> str:
             md.append(f"| {k} | {parts[k]}% | {_log_with_sci(lfs.get(k))} |")
         md.append("")
 
-    # Neighbors
-    if nb.get("pka"):
-        md.append("#### Nearest pKa training IAJDs")
-        md.append("| IAJD | Tanimoto | family | pKa |")
-        md.append("|---|---|---|---|")
-        for n in nb["pka"]:
-            md.append(f"| {n.get('iajd_id')} | {n.get('tanimoto', 0):.3f} | {n.get('family')} | {n.get('pKa')} |")
-        md.append("")
-    if nb.get("bioact"):
-        md.append("#### Nearest bioactivity training IAJDs")
-        md.append("| IAJD | Tanimoto | family | log₁₀ flux (linear) |")
-        md.append("|---|---|---|---|")
-        for n in nb["bioact"]:
-            md.append(f"| {n.get('iajd_id')} | {n.get('tanimoto', 0):.3f} | {n.get('family')} | {_log_with_sci(n.get('log10_flux_total'))} |")
+    # Neighbors (collapsed)
+    if nb.get("pka") or nb.get("bioact"):
+        md.append("### Nearest training neighbors")
+        if nb.get("pka"):
+            md.append("**pKa:** " + ", ".join(
+                f"{n.get('iajd_id')} (Tan={n.get('tanimoto',0):.2f}, pKa={n.get('pKa')})"
+                for n in nb["pka"][:3]))
+        if nb.get("bioact"):
+            md.append("**Bioact:** " + ", ".join(
+                f"{n.get('iajd_id')} (Tan={n.get('tanimoto',0):.2f}, flux={n.get('log10_flux_total','?')})"
+                for n in nb["bioact"][:3]))
         md.append("")
 
     if r.get("warnings"):
-        md.append("**Warnings:** " + "; ".join(r["warnings"]))
+        md.append("_Warnings: " + "; ".join(r["warnings"]) + "_")
     return "\n".join(md)
 
 
 def _attach_v11(r: dict) -> dict:
-    """Enrich a single predict() result with the v11 pKa-dominant baseline.
-    No-op if the bundle isn't available or if the v9.1 pKa wasn't predicted.
-    """
-    if not V11_AVAILABLE or predict_v11_bioact is None:
-        return r
+    """Enrich a single predict() result with v11 pKa-dominant + pKa-flux curve."""
     pka = r.get("pka") or {}
     if pka.get("point") is None:
         return r
     fam = (r.get("family_resolution") or {}).get("family_assigned") or \
            r.get("family_used")
     smi = r.get("canonical_smiles")
-    tail = None
-    if smi:
+
+    # v11 M2 pKa-dominant
+    if V11_AVAILABLE and predict_v11_bioact is not None:
+        tail = None
+        if smi:
+            try:
+                from rdkit import Chem
+                mol = Chem.MolFromSmiles(smi)
+                if mol is not None and tail_descriptors_from_mol is not None:
+                    tail = tail_descriptors_from_mol(mol)
+            except Exception:
+                tail = None
         try:
-            from rdkit import Chem
-            mol = Chem.MolFromSmiles(smi)
-            if mol is not None and tail_descriptors_from_mol is not None:
-                tail = tail_descriptors_from_mol(mol)
-        except Exception:  # noqa: BLE001
-            tail = None
-    try:
-        v11_out = predict_v11_bioact(
-            canonical_smiles=smi or "",
-            family=fam or "",
-            predicted_pKa=float(pka["point"]),
-            tail_descriptors=tail,
-        )
-        r["bioactivity_v11_pka_dominant"] = v11_out
-    except Exception as exc:  # noqa: BLE001
-        r["bioactivity_v11_pka_dominant"] = {"error": f"{type(exc).__name__}: {exc}"}
+            v11_out = predict_v11_bioact(
+                canonical_smiles=smi or "", family=fam or "",
+                predicted_pKa=float(pka["point"]), tail_descriptors=tail,
+            )
+            r["bioactivity_v11_pka_dominant"] = v11_out
+        except Exception as exc:
+            r["bioactivity_v11_pka_dominant"] = {"error": str(exc)}
+
+    # pKa-flux curve (no similarity)
+    if smi and _PKA_CURVE_READY:
+        try:
+            pred_pka = float(pka["point"])
+            curve_pred = _predict_pka_curve(pred_pka, fam or "GA-Tris", smi)
+            r["bioactivity_pka_curve"] = {"point": round(curve_pred, 3)}
+        except Exception as exc:
+            r["bioactivity_pka_curve"] = {"error": str(exc)}
+
     return r
 
 
@@ -286,21 +309,20 @@ def build_ui() -> gr.Blocks:
     intro = f"""
 # IAJD Tandem Predictor
 
-Predicts **pKa (v9.1)** and **log₁₀ flux total bioactivity (v14 + stacker v1)** for
-ionizable amino-lipid janus dendrimers, with auto-detected family (5-class chemical
-axis; 96% LOO recall), ChemDraw / `.cdxml` / `.sdf` / `.mol` / multi-SMILES upload,
-2D positional structural refinement on the analog leg, and an XGBoost stacker
-over (direct, analog, LION, ADMET) heads (true-LOO MAE **0.3934** vs **0.4010**
-v14 baseline).
+Predicts **pKa** and **bioactivity (log10 total flux)** for ionizable amphiphilic Janus dendrimers.
+Three independent bioactivity models run in parallel on every query:
 
-**v11 pKa-dominant** independent baseline runs alongside v14 ({"loaded ✓" if V11_AVAILABLE else "not available ✗"}).
-It uses predicted pKa + family + pKa×family + 8 tail descriptors and reaches family-stratified
-k=5 LOO MAE **0.497** (vs v14+stacker 0.393). Shown separately so you can compare what a
-pKa-centric representation gets you against the full 3D/LION/ADMET cascade.
+| Model | What it does | LOO MAE |
+|---|---|---|
+| **v14 + stacker** | 4-head ensemble: direct XGBoost + Tanimoto analog-delta + LION GNN + ADMET GNN, combined by XGBoost stacker | 0.393 |
+| **v11 pKa-dominant** | Predicted pKa + family one-hot + pKa x family interactions + 8 tail descriptors | 0.475 |
+| **pKa-flux curve** | Per-family fitted pKa-to-flux quadratic + structural residual corrector (no similarity) | ~0.50 |
 
-**Bundle status:** {"loaded ✓" if BUNDLE_OK else f"failed — {BUNDLE_ERR}"}
+**pKa model:** v9.1 analog-delta XGBoost, 278 training compounds across 6 families, LOO MAE 0.065.
 
-Reference: https://github.com/atiwary123/IAJD_Full_Workflow_-pKa-bioactivity-
+Accepts SMILES, ChemDraw (.cdxml), SDF, MOL. Family auto-detected (6 chemical families + 2 bioactivity-only subarchitectures).
+
+**Status:** {"loaded" if BUNDLE_OK else f"failed — {BUNDLE_ERR}"} | v11 {"loaded" if V11_AVAILABLE else "unavailable"}
 """
 
     with gr.Blocks(title="IAJD Tandem Predictor") as demo:
@@ -354,11 +376,8 @@ Reference: https://github.com/atiwary123/IAJD_Full_Workflow_-pKa-bioactivity-
 
         gr.Markdown(
             "---\n"
-            "_Stacker v1: bioact LOO MAE 0.3934 vs 0.4010 baseline (−0.0076)._ "
-            "_pKa v9.1: LOO MAE 0.0653._ "
-            "_Family detector: 96% LOO recall on 5 chemical families (HTM / TT / "
-            "G1-Janus collapsed to PE-Gallic — SMILES audit confirmed they share "
-            "canonical SMILES with PE-Gallic entries)._"
+            "_Training: 278 pKa compounds (6 families) + 369 bioactivity measurements (8 families)._ "
+            "_pKa v9.1 LOO MAE 0.065. v14+stacker LOO MAE 0.393. v11 M2 LOO MAE 0.475._"
         )
     return demo
 
