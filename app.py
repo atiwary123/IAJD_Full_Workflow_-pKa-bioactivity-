@@ -44,7 +44,7 @@ except Exception as exc:  # noqa: BLE001
     BUNDLE_OK = False
     BUNDLE_ERR = f"{type(exc).__name__}: {exc}"
 
-# pKa-flux curve model (no similarity, fitted quadratic + structural corrector)
+# pKa-flux curve model (fitted quadratic + structural corrector; pKa input carries indirect similarity from v9.1)
 _PKA_CURVE_READY = False
 _PKA_CURVES = None
 _PKA_CURVE_XGB = None
@@ -178,7 +178,7 @@ def _render_result_markdown(r: dict, idx: int = 0) -> str:
         pc_point = _log_with_sci(pka_curve.get('point'))
         md.append(f"| **pKa-flux curve** | **{pc_point}** | "
                   f"Per-family fitted pKa-to-flux quadratic + structural residual corrector; "
-                  f"no similarity used, LOO MAE ~0.50 |")
+                  f"flux step uses no similarity, but pKa input carries indirect similarity from v9.1; LOO MAE ~0.50 |")
 
     md.append("")
 
@@ -247,7 +247,7 @@ def _attach_v11(r: dict) -> dict:
         except Exception as exc:
             r["bioactivity_v11_pka_dominant"] = {"error": str(exc)}
 
-    # pKa-flux curve (no similarity)
+    # pKa-flux curve (flux step has no similarity; pKa input carries indirect similarity)
     if smi and _PKA_CURVE_READY:
         try:
             pred_pka = float(pka["point"])
@@ -316,7 +316,7 @@ Three independent bioactivity models run in parallel on every query:
 |---|---|---|
 | **v14 + stacker** | 4-head ensemble: direct XGBoost + Tanimoto analog-delta + LION GNN + ADMET GNN, combined by XGBoost stacker | 0.393 |
 | **v11 pKa-dominant** | Predicted pKa + family one-hot + pKa x family interactions + 8 tail descriptors | 0.475 |
-| **pKa-flux curve** | Per-family fitted pKa-to-flux quadratic + structural residual corrector (no similarity) | ~0.50 |
+| **pKa-flux curve** | Per-family fitted pKa-to-flux quadratic + structural residual corrector; flux step uses no similarity, but pKa input carries indirect similarity from v9.1 | ~0.50 |
 
 **pKa model:** v9.1 analog-delta XGBoost, 278 training compounds across 6 families, LOO MAE 0.065.
 
