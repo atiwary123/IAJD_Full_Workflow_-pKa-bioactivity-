@@ -161,9 +161,13 @@ def _render_result_markdown(r: dict, idx: int = 0) -> str:
 
     # Model 1: v14 + stacker
     bio_point = _log_with_sci(bio.get('point'))
-    md.append(f"| **v14 + stacker v2** | **{bio_point}** | "
-              f"5-head ensemble (direct XGB + analog-delta + LION + ADMET + AGILE GNN) with XGBoost stacker; "
-              f"LOO MAE 0.408 on 335 compounds |")
+    stk_mode = stk.get("mode", "static") if stk.get("applied") else "off"
+    novelty = stk.get("components", {}).get("novelty")
+    nov_str = f" novelty={novelty:.2f}" if novelty is not None else ""
+    md.append(f"| **v14 + adaptive stacker** | **{bio_point}** | "
+              f"6-head ensemble (direct + analog + LION + ADMET + AGILE + CPP) with OOD-aware dynamic weighting; "
+              f"physics heads (CPP/AGILE) dominate as queries drift from training;{nov_str} "
+              f"LOO MAE 0.403 on 335 compounds |")
 
     # Model 2: v11 M2 pKa-dominant
     if v11.get("point") is not None:
@@ -314,7 +318,7 @@ Three independent bioactivity models run in parallel on every query:
 
 | Model | What it does | LOO MAE |
 |---|---|---|
-| **v14 + stacker v2** | 5-head ensemble: direct XGBoost + Tanimoto analog-delta + LION GNN + ADMET GNN + AGILE GNN (pretrained on 60k lipids), combined by XGBoost stacker | 0.408 |
+| **v14 + adaptive stacker** | 6-head ensemble with OOD-aware dynamic weighting: as queries drift from training, physics heads (CPP packing parameter + AGILE GNN) automatically dominate over similarity-dependent heads | 0.403 |
 | **v11 pKa-dominant** | Predicted pKa + family one-hot + pKa x family interactions + 8 tail descriptors | 0.475 |
 | **pKa-flux curve** | Per-family fitted pKa-to-flux quadratic + structural residual corrector; flux step uses no similarity, but pKa input carries indirect similarity from v9.1 | ~0.50 |
 
@@ -377,7 +381,7 @@ Accepts SMILES, ChemDraw (.cdxml), SDF, MOL. Family auto-detected (6 chemical fa
         gr.Markdown(
             "---\n"
             "_Training: 278 pKa compounds (6 families) + 369 bioactivity measurements (8 families)._ "
-            "_pKa v9.1 LOO MAE 0.065. v14+stacker v2 (5-head w/ AGILE) LOO MAE 0.408. v11 M2 LOO MAE 0.475._"
+            "_pKa v9.1 LOO MAE 0.065. Adaptive stacker (6-head, OOD-aware) LOO MAE 0.403. v11 M2 LOO MAE 0.475._"
         )
     return demo
 

@@ -91,10 +91,13 @@ def _load_bioact_stacker():
     return _STACKER_BUNDLE
 
 
-def _bioact_stacker_predict(X_full_row, analog_pred, smiles=None):
-    """Apply the bioactivity stacker. Returns
-        {"point": float, "direct": float, "analog": float,
-         "lion": float, "admet": float, "agile": float (if available)}
+def _bioact_stacker_predict(X_full_row, analog_pred, smiles=None, max_tanimoto=None):
+    """Apply the bioactivity stacker. Adaptive version (v3):
+    dynamically weights 6 heads based on query novelty.
+
+    Returns {"point": float, "direct": float, "analog": float,
+             "lion": float, "admet": float, "agile": float, "cpp": float,
+             "novelty": float, "weights": dict}
     or None if the bundle isn't loaded."""
     import numpy as np
     sb = _load_bioact_stacker()
@@ -106,7 +109,7 @@ def _bioact_stacker_predict(X_full_row, analog_pred, smiles=None):
     lion = float(sb["lion_head"].predict(x[:, bl_a:bl_b])[0])
     admet = float(sb["admet_head"].predict(x[:, bc_a:bc_b])[0])
 
-    # AGILE head (v2+): extract GNN embedding and predict
+    # AGILE head
     agile_val = None
     if "agile_head" in sb and smiles:
         try:
@@ -114,15 +117,69 @@ def _bioact_stacker_predict(X_full_row, analog_pred, smiles=None):
         except Exception:
             agile_val = None
 
-    if agile_val is not None and "agile" in sb.get("stack_features", []):
-        feats = np.asarray([[direct, float(analog_pred), lion, admet, agile_val]])
-    else:
-        feats = np.asarray([[direct, float(analog_pred), lion, admet]])
-    point = float(sb["stacker"].predict(feats)[0])
-    result = {"point": point, "direct": direct, "analog": float(analog_pred),
-              "lion": lion, "admet": admet}
+    # CPP head
+    cpp_val = None
+    if "cpp_head" in sb and smiles:
+        try:
+            cpp_val = _cpp_predict_single(smiles, sb)
+        except Exception:
+            cpp_val = None
+
+    head_preds = {"direct": direct, "analog": float(analog_pred),
+                  "lion": lion, "admet": admet}
     if agile_val is not None:
-        result["agile"] = agile_val
+        head_preds["agile"] = agile_val
+    if cpp_val is not None:
+        head_preds["cpp"] = cpp_val
+
+    # Adaptive weighting if params available
+    adaptive = sb.get("adaptive_params")
+    if adaptive and max_tanimoto is not None:
+        novelty = 1.0 - max_tanimoto
+        base_w = adaptive["base_weights"]
+        k_decay = adaptive["k_decay"]
+        k_grow = adaptive["k_grow"]
+
+        HEAD_TYPES = {'direct':'stable','analog':'similarity','lion':'gnn',
+                      'admet':'gnn','agile':'physics','cpp':'physics'}
+        raw_w = {}
+        for h in head_preds:
+            bw = base_w.get(h, 0.01)
+            ht = HEAD_TYPES.get(h, 'stable')
+            if ht == 'similarity':
+                raw_w[h] = bw * np.exp(-k_decay * novelty)
+            elif ht == 'gnn':
+                raw_w[h] = bw * np.exp(-k_decay * 0.5 * novelty)
+            elif ht == 'physics':
+                raw_w[h] = bw * np.exp(k_grow * novelty)
+            else:
+                raw_w[h] = bw
+
+        total = sum(raw_w.values())
+        if total == 0: total = 1.0
+        weights = {h: raw_w[h]/total for h in raw_w}
+        point = sum(weights[h] * head_preds[h] for h in head_preds)
+
+        result = {"point": point, **head_preds, "novelty": novelty, "weights": weights,
+                  "mode": "adaptive"}
+    else:
+        # Fallback: static stacker if available
+        if "stacker" in sb:
+            feats_list = [direct, float(analog_pred), lion, admet]
+            if agile_val is not None and "agile" in sb.get("stack_features", []):
+                feats_list.append(agile_val)
+            if cpp_val is not None and "cpp" in sb.get("stack_features", []):
+                feats_list.append(cpp_val)
+            feats = np.asarray([feats_list])
+            try:
+                point = float(sb["stacker"].predict(feats)[0])
+            except Exception:
+                point = float(np.mean(list(head_preds.values())))
+        else:
+            point = float(np.mean(list(head_preds.values())))
+
+        result = {"point": point, **head_preds, "mode": "static"}
+
     return result
 
 
@@ -158,6 +215,28 @@ def _agile_predict_single(smiles, sb):
         pca_emb = sb["agile_pca"].transform(scaled)
         val = float(sb["agile_head"].predict(pca_emb)[0])
         _AGILE_CACHE[smiles] = val
+        return val
+    except Exception:
+        return None
+
+
+_CPP_CACHE = {}
+
+def _cpp_predict_single(smiles, sb):
+    """Compute CPP features and predict via CPP head."""
+    if smiles in _CPP_CACHE:
+        return _CPP_CACHE[smiles]
+    import numpy as np
+    try:
+        from compute_cpp import compute_cpp_features, CPP_FEATURE_NAMES
+        feats = compute_cpp_features(smiles, pka=None)
+        if feats is None:
+            return None
+        x = np.array([[feats.get(k, 0) for k in CPP_FEATURE_NAMES]])
+        # Impute NaN with 0
+        x = np.nan_to_num(x, nan=0.0)
+        val = float(sb["cpp_head"].predict(x)[0])
+        _CPP_CACHE[smiles] = val
         return val
     except Exception:
         return None
@@ -635,8 +714,10 @@ def predict(
         # 0.4010 → −0.0154 improvement, see weight_eval_v2_results.json).
         x_full = bio_result.get("x_full")
         if x_full is not None:
-            stack_out = _bioact_stacker_predict(x_full, analog_for_stacker,
-                                                   smiles=summary.get("canonical_smiles"))
+            stack_out = _bioact_stacker_predict(
+                x_full, analog_for_stacker,
+                smiles=summary.get("canonical_smiles"),
+                max_tanimoto=bio_block.get("max_tanimoto"))
         else:
             stack_out = None
         if stack_out is not None:
