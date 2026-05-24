@@ -77,29 +77,25 @@ TUNED_XGB_HP = dict(
 # Family-conditional 90% PI half-widths from the 90th percentile of LOO
 # absolute residuals on preds_v91_final.npy.
 PI_90_TABLE = {
-    'sSS-Nonsym':     0.09,   # p90 |res| = 0.083
-    'PE-Tris':        0.12,   # p90 |res| = 0.110
-    'PE-Gallic':      0.30,   # p90 |res| = 0.300
-    'GA-Tris':        0.17,   # p90 |res| = 0.161
-    'Dialkoxybenzyl': 0.58,   # p90 |res| = 0.576 (OOD outliers dominate)
-    # Bioact-only families: no training pKa data. PIs widened
-    # conservatively. Predictions for these come from the same
-    # uniform analog-delta path, just using v21 neighbors as anchors.
-    'G1-Janus-Dendrimer': 0.60,
+    'sSS-Nonsym':     0.28,   # p90 |res| = 0.268 (expanded v21, n=153)
+    'PE-Tris':        0.26,   # p90 |res| = 0.250 (expanded v21, n=41)
+    'PE-Gallic':      0.47,   # p90 |res| = 0.443 (expanded v21, n=52)
+    'GA-Tris':        0.20,   # p90 |res| = 0.193 (expanded v21, n=12)
+    'Dialkoxybenzyl': 0.81,   # p90 |res| = 0.772 (expanded v21, n=12)
+    'G1-Janus-Dendrimer': 0.17,  # p90 |res| = 0.166 (expanded v21, n=8)
     'HTM-Dendrimer':      0.60,
     'TT-Dendrimer':       0.60,
-    'default':        0.25,
+    'default':        0.30,
 }
 
 _AUTO_DETECT_SAFE = {'PE-Tris'}
 
-# Families with explicit debias linear models (everything in v21)
-_DEBIAS_FAMILIES = {'sSS-Nonsym', 'PE-Tris', 'PE-Gallic', 'GA-Tris', 'Dialkoxybenzyl'}
+# Families with explicit debias linear models (everything in expanded v21)
+_DEBIAS_FAMILIES = {'sSS-Nonsym', 'PE-Tris', 'PE-Gallic', 'GA-Tris',
+                    'Dialkoxybenzyl', 'G1-Janus-Dendrimer'}
 
 # Families that can be passed via family_hint but have no v21 entries.
-# These get the same 31-feature → XGBoost direct + analog-delta path,
-# just with a pooled debias fallback for the MolGpKa feature.
-_BIOACT_ONLY_FAMILIES = {'G1-Janus-Dendrimer', 'HTM-Dendrimer', 'TT-Dendrimer'}
+_BIOACT_ONLY_FAMILIES = {'HTM-Dendrimer', 'TT-Dendrimer'}
 
 # -----------------------------------------------------------------------------
 # Bundle
