@@ -61,7 +61,7 @@ from iajd_family import (  # noqa: E402
 
 ALLOWED_FAMILIES = {
     "sSS-Nonsym", "PE-Tris", "GA-Tris", "PE-Gallic", "Dialkoxybenzyl",
-    "G1-Janus-Dendrimer", "HTM-Dendrimer", "TT-Dendrimer",
+    "G1-Janus-Dendrimer",
 }
 
 # 90% -> sigma -> 60%: sigma = half90 / 1.645; half60 = 0.8416 * sigma.

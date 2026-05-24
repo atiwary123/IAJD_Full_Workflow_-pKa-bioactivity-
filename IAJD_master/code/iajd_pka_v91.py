@@ -83,8 +83,6 @@ PI_90_TABLE = {
     'GA-Tris':        0.20,   # p90 |res| = 0.193 (expanded v21, n=12)
     'Dialkoxybenzyl': 0.81,   # p90 |res| = 0.772 (expanded v21, n=12)
     'G1-Janus-Dendrimer': 0.17,  # p90 |res| = 0.166 (expanded v21, n=8)
-    'HTM-Dendrimer':      0.60,
-    'TT-Dendrimer':       0.60,
     'default':        0.30,
 }
 
@@ -94,8 +92,7 @@ _AUTO_DETECT_SAFE = {'PE-Tris'}
 _DEBIAS_FAMILIES = {'sSS-Nonsym', 'PE-Tris', 'PE-Gallic', 'GA-Tris',
                     'Dialkoxybenzyl', 'G1-Janus-Dendrimer'}
 
-# Families that can be passed via family_hint but have no v21 entries.
-_BIOACT_ONLY_FAMILIES = {'HTM-Dendrimer', 'TT-Dendrimer'}
+_BIOACT_ONLY_FAMILIES = set()
 
 # -----------------------------------------------------------------------------
 # Bundle

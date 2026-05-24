@@ -53,11 +53,10 @@ BIOACT_BUNDLE = HERE / "IAJD_master" / "bundles_caches" / "bioact_v14_bundle.pkl
 
 CHEMICAL_FAMILIES = (
     "sSS-Nonsym", "PE-Tris", "GA-Tris", "PE-Gallic", "Dialkoxybenzyl",
+    "G1-Janus-Dendrimer",
 )
-BIOACT_ONLY_SUBARCHS = (
-    "G1-Janus-Dendrimer", "HTM-Dendrimer", "TT-Dendrimer",
-)
-ALLOWED_FAMILIES = set(CHEMICAL_FAMILIES) | set(BIOACT_ONLY_SUBARCHS)
+BIOACT_ONLY_SUBARCHS = ()
+ALLOWED_FAMILIES = set(CHEMICAL_FAMILIES)
 
 # Count-Morgan-3 fingerprints (4096 bins) — sensitive to chain-length /
 # substitution-count differences that BIT fingerprints saturate on.

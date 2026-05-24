@@ -22,20 +22,19 @@ protocol family-stratified k=5 fold (the prompt's sanctioned fallback to true ne
 |---|---|---|---|---|---|
 | M0 | 0.580 | 0.834 | -0.039 | 0.322 | 344 |
 | M0_quad | 0.640 | 0.819 | -0.003 | 0.004 | 344 |
-| M1 | 0.543 | 0.788 | 0.073 | 0.369 | 344 |
-| M2 | 0.475 | 0.707 | 0.254 | 0.515 | 344 |
-| M3 | 0.430 | 0.630 | 0.386 | 0.598 | 335 |
+| M1 | 0.543 | 0.782 | 0.086 | 0.373 | 344 |
+| M2 | 0.477 | 0.711 | 0.245 | 0.511 | 344 |
+| M3 | 0.427 | 0.621 | 0.403 | 0.600 | 335 |
 
 ## Per-family MAE
 | Family | n | M0-MAE | M1-MAE | M2-MAE | M3-MAE |
 |---|---|---|---|---|---|
-| Dialkoxybenzyl | 18 | 0.198 | 0.155 | 0.125 | 0.151 |
-| G1-Janus-Dendrimer | 27 | 0.824 | 0.700 | 0.737 | 0.713 |
-| GA-Tris | 58 | 0.677 | 0.645 | 0.540 | 0.645 |
-| HTM-Dendrimer | 10 | 0.724 | 0.409 | 0.342 | 0.393 |
-| PE-Tris | 51 | 0.784 | 0.740 | 0.496 | 0.385 |
-| TT-Dendrimer | 5 | 0.824 | 0.752 | 0.660 | 0.806 |
-| sSS-Nonsym | 175 | 0.475 | 0.470 | 0.446 | 0.359 |
+| Dialkoxybenzyl | 18 | 0.198 | 0.145 | 0.130 | 0.151 |
+| G1-Janus-Dendrimer | 27 | 0.824 | 0.717 | 0.757 | 0.713 |
+| GA-Tris | 58 | 0.677 | 0.639 | 0.544 | 0.645 |
+| PE-Gallic | 15 | 0.757 | 0.557 | 0.466 | 0.461 |
+| PE-Tris | 51 | 0.784 | 0.731 | 0.502 | 0.385 |
+| sSS-Nonsym | 175 | 0.475 | 0.469 | 0.442 | 0.359 |
 
 ## Family pKa optima (inverted-U fits on held-out predictions)
 | Family | n | pKa_opt | curvature b | rmse | note |
@@ -43,24 +42,23 @@ protocol family-stratified k=5 fold (the prompt's sanctioned fallback to true ne
 | Dialkoxybenzyl | 18 | 12.000 | 0.013 | 0.232 | optimum_at_boundary_no_clear_peak |
 | G1-Janus-Dendrimer | 27 | 12.000 | 0.061 | 0.836 | optimum_at_boundary_no_clear_peak |
 | GA-Tris | 58 | 6.905 | 4.096 | 0.636 | — |
-| HTM-Dendrimer | 10 | 3.000 | 0.623 | 0.581 | optimum_at_boundary_no_clear_peak |
+| PE-Gallic | 15 | 6.252 | 21.917 | 0.901 | — |
 | PE-Tris | 51 | 3.000 | 0.680 | 1.161 | optimum_at_boundary_no_clear_peak |
-| TT-Dendrimer | 5 | — | — | — | too_few_rows |
 | sSS-Nonsym | 175 | 6.449 | 23.134 | 0.570 | — |
 
 ## SHAP top features for M2 (mean |SHAP value|, full-table refit)
 | Rank | Feature | mean |SHAP\| |
 |---|---|---|
-| 1 | `predicted_pKa` | 0.1577 |
-| 2 | `MolLogP` | 0.1352 |
-| 3 | `TPSA` | 0.1202 |
-| 4 | `RotatableBonds` | 0.1006 |
-| 5 | `pKa_x_fam_sSS-Nonsym` | 0.0736 |
-| 6 | `LabuteASA` | 0.0726 |
-| 7 | `pKa_x_fam_PE-Tris` | 0.0522 |
-| 8 | `FractionCSP3` | 0.0498 |
-| 9 | `fam_PE-Tris` | 0.0462 |
-| 10 | `NumAromaticRings` | 0.0420 |
+| 1 | `predicted_pKa` | 0.1493 |
+| 2 | `MolLogP` | 0.1400 |
+| 3 | `TPSA` | 0.1232 |
+| 4 | `RotatableBonds` | 0.1037 |
+| 5 | `pKa_x_fam_sSS-Nonsym` | 0.0667 |
+| 6 | `LabuteASA` | 0.0623 |
+| 7 | `FractionCSP3` | 0.0515 |
+| 8 | `fam_PE-Tris` | 0.0501 |
+| 9 | `pKa_x_fam_PE-Tris` | 0.0474 |
+| 10 | `NumAromaticRings` | 0.0401 |
 
 ## Caveats
 - 56 of the v21-LOO rows had a family-table label that disagreed with the v9.1 detector. They are routed through the table's family for M1/M2 features (consistent with how the bioact pipeline would run them).
@@ -82,4 +80,4 @@ Files emitted alongside this report:
 - M3 is the reference. Beating M3 with M2 would suggest the v14 3D-descriptor stack is overfitting; tying within noise would suggest the pKa-centric representation is a strictly cheaper and more interpretable choice for similar accuracy; underperforming by more than ~0.05 log-units says the 3D/LION/ADMET features carry orthogonal signal.
 
 ## Verdict
-**pKa-dominant model is a useful baseline but underperforms v1.1 by 0.046 log units** (M2 MAE=0.475, M3 MAE=0.430).
+**pKa-dominant model is a useful baseline but underperforms v1.1 by 0.051 log units** (M2 MAE=0.477, M3 MAE=0.427).

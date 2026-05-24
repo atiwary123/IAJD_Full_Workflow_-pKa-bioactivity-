@@ -176,8 +176,7 @@ def generate_predicted_pka(bio: pd.DataFrame, pka_tbl: pd.DataFrame,
 # ---------------------------------------------------------------------------
 
 FAMILIES_ORDER = ["sSS-Nonsym", "PE-Tris", "GA-Tris", "PE-Gallic",
-                  "Dialkoxybenzyl", "G1-Janus-Dendrimer",
-                  "HTM-Dendrimer", "TT-Dendrimer"]
+                  "Dialkoxybenzyl", "G1-Janus-Dendrimer"]
 
 # Tail/shape descriptors already present in the bioact table.
 # These are the minimum-set "honest" features that the mechanism section

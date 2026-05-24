@@ -62,11 +62,12 @@ from iajd_pka_v91 import (
 # Family universe
 # ---------------------------------------------------------------------------
 
-PKA_TRAINED_FAMILIES = {'sSS-Nonsym', 'PE-Tris', 'GA-Tris', 'PE-Gallic', 'Dialkoxybenzyl'}
-BIOACT_TRAINED_FAMILIES = {'sSS-Nonsym', 'PE-Tris', 'GA-Tris', 'Dialkoxybenzyl',
-                            'G1-Janus-Dendrimer', 'HTM-Dendrimer', 'TT-Dendrimer'}
+PKA_TRAINED_FAMILIES = {'sSS-Nonsym', 'PE-Tris', 'GA-Tris', 'PE-Gallic',
+                        'Dialkoxybenzyl', 'G1-Janus-Dendrimer'}
+BIOACT_TRAINED_FAMILIES = {'sSS-Nonsym', 'PE-Tris', 'GA-Tris', 'PE-Gallic',
+                            'Dialkoxybenzyl', 'G1-Janus-Dendrimer'}
 ALL_KNOWN_FAMILIES = PKA_TRAINED_FAMILIES | BIOACT_TRAINED_FAMILIES
-NEW_FAMILIES_NO_V21_DEBIAS = {'G1-Janus-Dendrimer', 'HTM-Dendrimer', 'TT-Dendrimer'}
+NEW_FAMILIES_NO_V21_DEBIAS = set()
 
 
 # ---------------------------------------------------------------------------
@@ -483,12 +484,12 @@ if __name__ == '__main__':
         ('G1-Janus-Dendrimer (full v9.1 path w/ pooled debias)',
          'CCCCCCCCCCCCOc1cc(OCCCCCCCCCCCC)c(OCCCCCCCCCCCC)c(COC(=O)CCCN2CCN(C)CC2)c1',
          'G1-Janus-Dendrimer'),
-        ('HTM-Dendrimer (full v9.1 path w/ pooled debias)',
+        ('PE-Gallic (ex-HTM architecture)',
          'CCCCCCCCCCCCN(CCO)CCOC(=O)CCCN1CCN(C)CC1',
-         'HTM-Dendrimer'),
-        ('TT-Dendrimer (full v9.1 path w/ pooled debias)',
+         'PE-Gallic'),
+        ('PE-Gallic (ex-TT architecture)',
          'CCCCCCCCCCCCOC(=O)C(NC(=O)CCN(CCO)CCO)(COCCCCCCCCCCCC)COCCCCCCCCCCCC',
-         'TT-Dendrimer'),
+         'PE-Gallic'),
     ]
     results_for_json = []
     for label, smi, fam in test_cases:
