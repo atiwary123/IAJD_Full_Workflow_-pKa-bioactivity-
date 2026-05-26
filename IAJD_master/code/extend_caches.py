@@ -133,6 +133,12 @@ def predict_admet_for_smiles(smiles_list, cache_path=None, verbose=True):
 LION_RUNNER_SCRIPT = '''
 import os, sys, json, tempfile
 import numpy as np
+import torch
+_orig_load = torch.load
+def _safe_load(*a, **kw):
+    kw.setdefault("weights_only", False)
+    return _orig_load(*a, **kw)
+torch.load = _safe_load
 LION_REPO = "{LION_REPO}"
 OUT = "{OUT}"
 todo = {TODO}
