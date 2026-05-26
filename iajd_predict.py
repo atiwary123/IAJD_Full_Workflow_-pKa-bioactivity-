@@ -36,8 +36,8 @@ DATA_DIR = HERE / "IAJD_master" / "datasets"
 # These run as fully isolated subprocesses so they never share Python state
 # (or libomp / libtorch threadpools) with the main v15 process.
 _LION_REPO_LOCAL = HERE / "lion_repo"
-_LION_PY_LOCAL = HERE / "lion_env" / "bin" / "python"
-_ADMET_PY_LOCAL = HERE / "admet_env" / "bin" / "python"
+_LION_PY_LOCAL = HERE / "lion_env" / "bin" / "python3"
+_ADMET_PY_LOCAL = HERE / "admet_env" / "bin" / "python3"
 if _LION_REPO_LOCAL.exists():
     os.environ.setdefault("LION_REPO", str(_LION_REPO_LOCAL))
 if _LION_PY_LOCAL.exists():

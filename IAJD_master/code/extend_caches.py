@@ -24,9 +24,10 @@ OUT = Path(os.environ.get(
     'IAJD_OUT_DIR',
     str(Path(__file__).resolve().parent.parent / 'bundles_caches'),
 ))
-LION_REPO = Path(os.environ.get('LION_REPO', '/home/claude/LNP_ML'))
-LION_VENV_PYTHON = os.environ.get('LION_VENV_PYTHON', '/home/claude/lion_env/bin/python3')
-ADMET_VENV_PYTHON = os.environ.get('ADMET_VENV_PYTHON', '/home/claude/admet_env/bin/python3')
+_APP_ROOT = Path(__file__).resolve().parent.parent.parent
+LION_REPO = Path(os.environ.get('LION_REPO', str(_APP_ROOT / 'lion_repo')))
+LION_VENV_PYTHON = os.environ.get('LION_VENV_PYTHON', str(_APP_ROOT / 'lion_env' / 'bin' / 'python3'))
+ADMET_VENV_PYTHON = os.environ.get('ADMET_VENV_PYTHON', str(_APP_ROOT / 'admet_env' / 'bin' / 'python3'))
 
 ADMET_COLUMNS = [
     'PPBR_AZ', 'BBB_Martins', 'VDss_Lombardo', 'HIA_Hou', 'Caco2_Wang',
