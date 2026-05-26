@@ -6,17 +6,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential git && \
     rm -rf /var/lib/apt/lists/*
 
-# Install PyTorch CPU once globally (shared by all venvs via --system-site-packages)
-RUN pip install --no-cache-dir \
-    torch==2.2.2 --index-url https://download.pytorch.org/whl/cpu
-
-# Main app deps
+# Main app deps + PyTorch CPU
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir torch==2.2.2 --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir torch-geometric && \
-    pip install --no-cache-dir --no-build-isolation torch-scatter torch-sparse
+    pip install --no-cache-dir torch-scatter torch-sparse \
+        -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
 
-# LION venv (chemprop 1.6.1 — needs its own env for API compat)
+# LION venv (chemprop 1.6.1)
 RUN python -m venv --system-site-packages /app/lion_env && \
     /app/lion_env/bin/pip install --no-cache-dir chemprop==1.6.1
 
