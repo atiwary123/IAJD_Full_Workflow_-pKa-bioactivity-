@@ -3,8 +3,10 @@
 lion_env/
 admet_env/
 
-# External model repository (clone separately when needed)
-lion_repo/
+# External model repository — keep model checkpoints, ignore bulk data
+lion_repo/data/all_data.csv
+lion_repo/data/all_data_for_paper.csv
+lion_repo/.git/
 
 # Byte-compiled
 __pycache__/
