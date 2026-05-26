@@ -622,7 +622,7 @@ def predict_bioactivity_v15(smiles: str, bundle: V15Bundle,
                 )
         except Exception as exc:  # noqa: BLE001
             out.setdefault("warnings", []).append(
-                f"LION_FETCH_FAILED: {type(exc).__name__}: {str(exc)[:300]}"
+                f"LION_FETCH_FAILED: {type(exc).__name__}: {str(exc)[:800]}"
             )
 
     if predict_admet_for_smiles is not None:
