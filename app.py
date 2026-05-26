@@ -27,6 +27,18 @@ except ImportError:
                           "hyperopt", "typed-argument-parser"])
     print("chemprop installed.")
 
+# Fix torch.load for chemprop 1.6.1: newer torch defaults to weights_only=True
+# which rejects the pickled argparse.Namespace in chemprop checkpoints.
+try:
+    import torch
+    _orig_torch_load = torch.load
+    def _patched_torch_load(*args, **kwargs):
+        kwargs.setdefault("weights_only", False)
+        return _orig_torch_load(*args, **kwargs)
+    torch.load = _patched_torch_load
+except Exception:
+    pass
+
 import gradio as gr
 
 from iajd_predict import (
