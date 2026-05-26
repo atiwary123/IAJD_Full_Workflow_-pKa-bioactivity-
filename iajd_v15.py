@@ -613,9 +613,13 @@ def predict_bioactivity_v15(smiles: str, bundle: V15Bundle,
         try:
             import json as _json
             had = canonical in _json.load(open(lion_path)) if lion_path.exists() else False
-            predict_lion_for_smiles([canonical], cache_path=str(lion_path), verbose=False)
+            predict_lion_for_smiles([canonical], cache_path=str(lion_path), verbose=True)
             now = canonical in _json.load(open(lion_path))
             live_lion = (now and not had)
+            if not now and not had:
+                out.setdefault("warnings", []).append(
+                    "LION_CALL_RETURNED_EMPTY: chemprop ran but produced no output"
+                )
         except Exception as exc:  # noqa: BLE001
             out.setdefault("warnings", []).append(
                 f"LION_FETCH_FAILED: {type(exc).__name__}: {str(exc)[:80]}"

@@ -251,8 +251,13 @@ def predict_lion_for_smiles(smiles_list, cache_path=None, verbose=True):
         )
         out = result.stdout
         if 'OUTPUT_START' not in out:
-            if verbose: print(f'LION inference failed: {result.stderr[:500]}')
-            return {}
+            err_msg = result.stderr[:500] if result.stderr else '(no stderr)'
+            out_msg = result.stdout[:500] if result.stdout else '(no stdout)'
+            if verbose:
+                print(f'LION inference failed (returncode={result.returncode}):')
+                print(f'  stderr: {err_msg}')
+                print(f'  stdout: {out_msg}')
+            raise RuntimeError(f'LION chemprop failed: {err_msg[:200]}')
         json_str = out.split('OUTPUT_START')[1].split('OUTPUT_END')[0].strip()
         z_per_tissue = json.loads(json_str)
     finally:
