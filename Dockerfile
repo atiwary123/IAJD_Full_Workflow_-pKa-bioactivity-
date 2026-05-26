@@ -14,13 +14,20 @@ RUN pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir torch-scatter torch-sparse \
         -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
 
-# LION venv (chemprop 1.6.1)
-RUN python -m venv --system-site-packages /app/lion_env && \
-    /app/lion_env/bin/pip install --no-cache-dir chemprop==1.6.1
+# LION venv — fully isolated (no system-site-packages)
+# chemprop 1.6.1 needs torch 1.x or 2.0.x
+RUN python -m venv /app/lion_env && \
+    /app/lion_env/bin/pip install --no-cache-dir \
+        torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu && \
+    /app/lion_env/bin/pip install --no-cache-dir \
+        chemprop==1.6.1 numpy pandas scikit-learn rdkit
 
-# ADMET venv
-RUN python -m venv --system-site-packages /app/admet_env && \
-    /app/admet_env/bin/pip install --no-cache-dir admet-ai
+# ADMET venv — fully isolated
+RUN python -m venv /app/admet_env && \
+    /app/admet_env/bin/pip install --no-cache-dir \
+        admet-ai numpy pandas && \
+    /app/admet_env/bin/pip install --no-cache-dir \
+        torch --index-url https://download.pytorch.org/whl/cpu
 
 COPY . .
 
