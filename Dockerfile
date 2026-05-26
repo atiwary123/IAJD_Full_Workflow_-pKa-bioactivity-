@@ -14,20 +14,23 @@ RUN pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir torch-scatter torch-sparse \
         -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
 
-# LION venv — fully isolated (no system-site-packages)
-# chemprop 1.6.1 needs torch 1.x or 2.0.x
+# LION venv — fully isolated with all chemprop 1.6.1 deps
 RUN python -m venv /app/lion_env && \
     /app/lion_env/bin/pip install --no-cache-dir \
         torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu && \
     /app/lion_env/bin/pip install --no-cache-dir \
-        chemprop==1.6.1 numpy pandas scikit-learn rdkit
+        numpy pandas scikit-learn rdkit scipy && \
+    /app/lion_env/bin/pip install --no-cache-dir \
+        tensorboard hyperopt flask typed-argument-parser && \
+    /app/lion_env/bin/pip install --no-cache-dir chemprop==1.6.1 && \
+    /app/lion_env/bin/python3 -c "from chemprop.train.make_predictions import make_predictions; print('chemprop OK')"
 
 # ADMET venv — fully isolated
 RUN python -m venv /app/admet_env && \
     /app/admet_env/bin/pip install --no-cache-dir \
-        admet-ai numpy pandas && \
+        torch --index-url https://download.pytorch.org/whl/cpu && \
     /app/admet_env/bin/pip install --no-cache-dir \
-        torch --index-url https://download.pytorch.org/whl/cpu
+        admet-ai numpy pandas
 
 COPY . .
 
