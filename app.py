@@ -8,11 +8,24 @@ provides, formatted as Markdown for Gradio.
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 import warnings
 from pathlib import Path
 
 warnings.filterwarnings("ignore")
 HERE = Path(__file__).resolve().parent
+
+# Install chemprop 1.6.1 at startup if not present (HF Spaces can't fit it
+# in a Docker image alongside torch, so we install at runtime).
+try:
+    from chemprop.train.make_predictions import make_predictions as _  # noqa: F401
+except ImportError:
+    print("Installing chemprop 1.6.1 + deps at startup...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q",
+                          "numpy<2", "chemprop==1.6.1", "tensorboard",
+                          "hyperopt", "typed-argument-parser"])
+    print("chemprop installed.")
 
 import gradio as gr
 

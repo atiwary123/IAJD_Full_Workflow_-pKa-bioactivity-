@@ -42,8 +42,12 @@ if _LION_REPO_LOCAL.exists():
     os.environ.setdefault("LION_REPO", str(_LION_REPO_LOCAL))
 if _LION_PY_LOCAL.exists():
     os.environ.setdefault("LION_VENV_PYTHON", str(_LION_PY_LOCAL))
+elif not os.environ.get("LION_VENV_PYTHON"):
+    os.environ["LION_VENV_PYTHON"] = sys.executable
 if _ADMET_PY_LOCAL.exists():
     os.environ.setdefault("ADMET_VENV_PYTHON", str(_ADMET_PY_LOCAL))
+elif not os.environ.get("ADMET_VENV_PYTHON"):
+    os.environ["ADMET_VENV_PYTHON"] = sys.executable
 os.environ.setdefault("IAJD_OUT_DIR", str(CACHE_DIR))
 
 sys.path.insert(0, str(CODE_DIR))
