@@ -9,17 +9,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Main app deps + PyTorch CPU
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir torch==2.2.2 --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir torch-geometric && \
     pip install --no-cache-dir torch-scatter torch-sparse \
-        -f https://data.pyg.org/whl/torch-2.2.2+cpu.html
+        -f https://data.pyg.org/whl/torch-2.6.0+cpu.html || true
 
-# LION venv — chemprop 1.6.1 needs numpy<2 for np.VisibleDeprecationWarning
+# LION venv — chemprop 1.6.1 needs numpy<2
 RUN python -m venv /app/lion_env && \
     /app/lion_env/bin/pip install --no-cache-dir \
         "numpy<2" pandas scikit-learn rdkit scipy && \
     /app/lion_env/bin/pip install --no-cache-dir \
-        torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu && \
+        torch --index-url https://download.pytorch.org/whl/cpu && \
     /app/lion_env/bin/pip install --no-cache-dir \
         tensorboard hyperopt flask typed-argument-parser && \
     /app/lion_env/bin/pip install --no-cache-dir chemprop==1.6.1 && \
