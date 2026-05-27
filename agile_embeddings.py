@@ -141,6 +141,9 @@ def main():
 
     # Load bioactivity SMILES
     bio = pd.read_excel('IAJD_master/datasets/IAJD_Bioact_v13_clean.xlsx', sheet_name='Sheet1')
+    _EXCLUDED_NOVEL_IAJDS = {347, 348, 365, 366, 367, 369, 372, 373}
+    if "IAJD_num" in bio.columns:
+        bio = bio[~bio["IAJD_num"].isin(_EXCLUDED_NOVEL_IAJDS)].reset_index(drop=True)
     smiles_list = []
     for _, r in bio.iterrows():
         smi = r.get('SMILES_canonical') or r.get('SMILES')

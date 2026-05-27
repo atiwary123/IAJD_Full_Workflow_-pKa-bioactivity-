@@ -260,5 +260,6 @@
       }
     }
   },
-  "noise_floor": 0.28
+  "noise_floor": 0.28,
+  "_STALE_WARNING": "Metrics computed before removal of 8 novel IAJDs (347,348,365,366,367,369,372,373). Regenerate on clean dataset."
 }

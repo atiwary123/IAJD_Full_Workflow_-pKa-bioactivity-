@@ -142,11 +142,16 @@ RESIDUAL_XGB_HP = dict(
 )
 
 
+EXCLUDED_NOVEL_IAJDS = {347, 348, 365, 366, 367, 369, 372, 373}
+
+
 def build_and_evaluate(novel_data: Optional[pd.DataFrame] = None):
     """Build pKa-primary model, evaluate LOO + novels."""
 
     # Load training data
     bio = pd.read_excel(DATA / "IAJD_Bioact_v13_clean.xlsx")
+    if "IAJD_num" in bio.columns:
+        bio = bio[~bio["IAJD_num"].isin(EXCLUDED_NOVEL_IAJDS)].reset_index(drop=True)
     pka_cache = pd.read_csv(ROOT / "v11_pka_flux" / "predicted_pka_cache.csv")
 
     merged = bio.merge(

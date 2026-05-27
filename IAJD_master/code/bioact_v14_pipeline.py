@@ -94,10 +94,15 @@ MFPGEN = AllChem.GetMorganGenerator(radius=2, fpSize=2048)
 # 1. Data loading
 # =====================================================================
 
+EXCLUDED_NOVEL_IAJDS = {347, 348, 365, 366, 367, 369, 372, 373}
+
+
 def load_v13():
     """Load v13_clean. Returns (df, smiles_list).
     Filters to rows with log10_flux_total available and valid canonical SMILES."""
     df = pd.read_excel(DATASET_PATH, sheet_name='Sheet1')
+    if "IAJD_num" in df.columns:
+        df = df[~df["IAJD_num"].isin(EXCLUDED_NOVEL_IAJDS)].reset_index(drop=True)
     print(f'  raw v13:                {len(df)} rows')
     # Require log10_flux_total and SMILES_canonical
     keep = df['log10_flux_total'].notna() & df['SMILES_canonical'].notna()

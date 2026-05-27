@@ -88,6 +88,9 @@ try:
     import pandas as _pd_curve
 
     _bio_c = _pd_curve.read_excel(HERE / "IAJD_master" / "datasets" / "IAJD_Bioact_v13_clean.xlsx")
+    _EXCLUDED_NOVELS = {347, 348, 365, 366, 367, 369, 372, 373}
+    if "IAJD_num" in _bio_c.columns:
+        _bio_c = _bio_c[~_bio_c["IAJD_num"].isin(_EXCLUDED_NOVELS)].reset_index(drop=True)
     _pka_c = _pd_curve.read_csv(HERE / "v11_pka_flux" / "predicted_pka_cache.csv")
     _mg = _bio_c.merge(_pka_c[["row_id", "predicted_pKa"]], on="row_id", how="left")
     _vd = _mg.dropna(subset=["log10_flux_total", "predicted_pKa"])

@@ -501,5 +501,6 @@
       "name": "xgb_stacker",
       "cv_mae": 0.39309903497767573
     }
-  }
+  },
+  "_STALE_WARNING": "Metrics computed before removal of 8 novel IAJDs (347,348,365,366,367,369,372,373). Regenerate on clean dataset."
 }

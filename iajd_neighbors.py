@@ -73,11 +73,16 @@ def _build_pka_index() -> Dict[str, Any]:
     return idx
 
 
+_EXCLUDED_NOVEL_IAJDS = {347, 348, 365, 366, 367, 369, 372, 373}
+
+
 def _build_bioact_index() -> Dict[str, Any]:
     if BIOACT_CACHE.exists():
         with open(BIOACT_CACHE, "rb") as f:
             return pickle.load(f)
     df = pd.read_excel(BIOACT_XLSX)
+    if "IAJD_num" in df.columns:
+        df = df[~df["IAJD_num"].isin(_EXCLUDED_NOVEL_IAJDS)].reset_index(drop=True)
     rows: List[Dict[str, Any]] = []
     fps = []
     for _, r in df.iterrows():
