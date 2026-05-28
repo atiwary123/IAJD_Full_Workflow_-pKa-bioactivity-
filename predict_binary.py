@@ -30,6 +30,8 @@ BIOACT_XLSX = ROOT / "IAJD_master/datasets/IAJD_Bioact_v13_clean.xlsx"
 _BUNDLE_CACHE: Optional[dict] = None
 _BIOACT_LOOKUP: Optional[dict] = None
 _DESC_CACHE: dict = {}
+_V91_BUNDLE_CACHE = None        # v9.1 pKa bundle, lazy-loaded
+_LIVE_PKA_CACHE: dict = {}      # canonical SMILES -> live (pKa, pKa_sd)
 
 try:
     _GEN = AllChem.GetMorganGenerator(radius=2, fpSize=2048)
@@ -79,6 +81,47 @@ def _features_for_query(smi: str) -> dict:
     return d
 
 
+def _live_pka_for_smiles(smi: str, family_hint: str = "GA-Tris") -> Tuple[float, float]:
+    """Live v9.1 pKa prediction (uses live MolGpKa + per-family debias).
+
+    Replaces the previous hardcoded `pka = 6.3` fallback in
+    bioact_v14_pipeline._compute_block_a_from_row when a query SMILES has no
+    measured pKa. No proxy fallback: if v9.1 returns no valid value the caller
+    has to decide what to do (we let it fall through to NaN).
+    """
+    global _V91_BUNDLE_CACHE
+    if smi in _LIVE_PKA_CACHE:
+        return _LIVE_PKA_CACHE[smi]
+    try:
+        from iajd_pka_v91 import load_v91_bundle, predict_pka_v91
+        if _V91_BUNDLE_CACHE is None:
+            import os
+            xlsx_dir = str((ROOT / "IAJD_master/datasets").resolve())
+            cwd = os.getcwd()
+            try:
+                os.chdir(xlsx_dir)
+                _V91_BUNDLE_CACHE = load_v91_bundle(
+                    xlsx_path="IAJD_pKa_v21_final.xlsx",
+                    debias_path="molgpka_debias_models.joblib",
+                    molgpka_npy="molgpka_preds.npy",
+                )
+            finally:
+                os.chdir(cwd)
+        r = predict_pka_v91(smi, _V91_BUNDLE_CACHE, family_hint=family_hint,
+                              return_diagnostics=False)
+        if "error" in r:
+            pair = (float("nan"), float("nan"))
+        else:
+            pi90 = r.get("pKa_PI_90") or [r.get("pKa_pred"), r.get("pKa_pred")]
+            pka = float(r.get("pKa_pred"))
+            sd = float((pi90[1] - pi90[0]) / 3.29) if len(pi90) == 2 else 0.3
+            pair = (pka, sd)
+    except Exception:
+        pair = (float("nan"), float("nan"))
+    _LIVE_PKA_CACHE[smi] = pair
+    return pair
+
+
 def _assemble_X(smiles_list: List[str], family_hint: str = "GA-Tris"):
     from bioact_v14_pipeline import assemble_X
     OUT = ROOT / "IAJD_master/bundles_caches"
@@ -94,6 +137,12 @@ def _assemble_X(smiles_list: List[str], family_hint: str = "GA-Tris"):
             row = dict(lookup[canon])
         else:
             row = dict(_features_for_query(canon))
+            # Live v9.1 pKa + per-family debias (no proxy fallback)
+            if pd.isna(row.get("pKa")):
+                pka_pred, pka_sd = _live_pka_for_smiles(canon, family_hint=family_hint)
+                if np.isfinite(pka_pred):
+                    row["pKa"] = pka_pred
+                    row["pKa_sd"] = pka_sd
         row["canonical_smi"] = canon
         if not row.get("family") or pd.isna(row.get("family")):
             row["family"] = family_hint

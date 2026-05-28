@@ -444,18 +444,25 @@ def _compute_block_a_from_row(row, mol, idx_in_df):
     out[31] = _safe_float(row.get('HBD_HBA_Ratio'), 0)
     out[32] = _safe_float(row.get('Desolvation_Proxy'), 0)
     out[33] = _safe_float(row.get('Pct_V_Bur_max'), 0)
-    # 34..41 — pKa propagation; use measured pKa if avail, else a default tier
-    pka = _safe_float(row.get('pKa'), 6.3)
-    pka_sd = _safe_float(row.get('pKa_sd'), 0.05)
+    # 34..41 — pKa propagation. Honest handling: if no measured pKa is available,
+    # we leave the pKa cells as NaN (XGBoost routes NaN through its default
+    # branch at every split — no proxy substitution).
+    raw_pka = row.get('pKa')
+    raw_pka_sd = row.get('pKa_sd')
+    pka = float(raw_pka) if raw_pka is not None and not (isinstance(raw_pka, float) and (np.isnan(raw_pka) or np.isinf(raw_pka))) else np.nan
+    pka_sd = float(raw_pka_sd) if raw_pka_sd is not None and not (isinstance(raw_pka_sd, float) and (np.isnan(raw_pka_sd) or np.isinf(raw_pka_sd))) else np.nan
     out[34] = pka
-    out[35] = pka - 2*pka_sd   # lo bound
-    out[36] = pka + 2*pka_sd   # hi bound
-    out[37] = 4 * pka_sd       # PI width
+    out[35] = (pka - 2*pka_sd) if (np.isfinite(pka) and np.isfinite(pka_sd)) else np.nan
+    out[36] = (pka + 2*pka_sd) if (np.isfinite(pka) and np.isfinite(pka_sd)) else np.nan
+    out[37] = (4 * pka_sd) if np.isfinite(pka_sd) else np.nan
     out[38] = 0                # OOD flag (training rows are by definition in-domain)
-    # tier one-hot
-    if pka >= 6.4: out[39] = 1.0   # HIGH
-    elif pka >= 6.0: out[40] = 1.0  # MED
-    else: out[41] = 1.0             # LOW
+    # tier one-hot: NaN ⇒ all three tier columns NaN (no proxy)
+    if np.isfinite(pka):
+        if pka >= 6.4: out[39] = 1.0
+        elif pka >= 6.0: out[40] = 1.0
+        else: out[41] = 1.0
+    else:
+        out[39] = np.nan; out[40] = np.nan; out[41] = np.nan
     # 42..49 — hydrophobic
     out[42] = 1.0  # chain_ratio default (we don't have explicit chain_min/max per row)
     out[43] = 0    # parity code

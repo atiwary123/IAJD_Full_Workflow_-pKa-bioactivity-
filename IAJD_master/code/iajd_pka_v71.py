@@ -265,19 +265,30 @@ def predict_pka_v71(
 
 
 def _try_live_molgpka(mol, canon_smiles):
-    """Try to compute MolGpKa pKa for a novel molecule and add to cache."""
-    molgpka_src = "/home/claude/MolGpKa/src"
+    """Compute MolGpKa pKa for a novel molecule via the local Xundrug/MolGpKa
+    install (molgpka_src/ + molgpka_models/) and add to the v52 cache.
+
+    No proxy fallback — if MolGpKa can't run, the cache entry stays unset and
+    the downstream debias step uses the family-pooled median, which is the
+    standard handling for "no MolGpKa available" already implemented in
+    iajd_pka_v91.load_v91_bundle.
+    """
+    # Resolve project root from this file: …/IAJD_master/code/iajd_pka_v71.py
+    proj_root = os.path.abspath(os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", ".."
+    ))
+    molgpka_src = os.path.join(proj_root, "molgpka_src")
+    if not os.path.isdir(molgpka_src):
+        return
     if molgpka_src not in sys.path:
         sys.path.insert(0, molgpka_src)
-    cwd = os.getcwd()
     try:
-        os.chdir(molgpka_src)
         from predict_pka import predict as molgpka_predict  # type: ignore
         base_dict, _ = molgpka_predict(mol)
         if base_dict:
             _MOLGPKA_CACHE[canon_smiles] = float(max(base_dict.values()))
-    finally:
-        os.chdir(cwd)
+    except Exception:
+        pass
 
 
 # -----------------------------------------------------------------------------

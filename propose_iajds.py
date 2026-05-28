@@ -79,6 +79,8 @@ def _tanimoto_max(query_fp, train_fps) -> float:
 
 _BIOACT_LOOKUP = None      # canonical_smiles -> dict (training row)
 _DESC_CACHE: dict = {}     # canonical_smiles -> dict of feature columns
+_V91_BUNDLE_CACHE = None   # v9.1 pKa bundle, lazy-loaded
+_LIVE_PKA_CACHE: dict = {} # canonical SMILES -> (pKa, pKa_sd) from live v9.1
 
 
 def _bioact_lookup():
@@ -125,6 +127,41 @@ def _features_for_query_smiles(smiles: str) -> dict:
     return d
 
 
+def _live_pka_for_smiles(smiles: str, family_hint: str = "GA-Tris"):
+    """Live v9.1 pKa prediction (uses live MolGpKa + per-family debias)."""
+    global _V91_BUNDLE_CACHE
+    if smiles in _LIVE_PKA_CACHE:
+        return _LIVE_PKA_CACHE[smiles]
+    try:
+        from iajd_pka_v91 import load_v91_bundle, predict_pka_v91
+        if _V91_BUNDLE_CACHE is None:
+            import os
+            xlsx_dir = str((ROOT / "IAJD_master/datasets").resolve())
+            cwd = os.getcwd()
+            try:
+                os.chdir(xlsx_dir)
+                _V91_BUNDLE_CACHE = load_v91_bundle(
+                    xlsx_path="IAJD_pKa_v21_final.xlsx",
+                    debias_path="molgpka_debias_models.joblib",
+                    molgpka_npy="molgpka_preds.npy",
+                )
+            finally:
+                os.chdir(cwd)
+        r = predict_pka_v91(smiles, _V91_BUNDLE_CACHE, family_hint=family_hint,
+                              return_diagnostics=False)
+        if "error" in r:
+            pair = (float("nan"), float("nan"))
+        else:
+            pi90 = r.get("pKa_PI_90") or [r.get("pKa_pred"), r.get("pKa_pred")]
+            pka = float(r.get("pKa_pred"))
+            sd = float((pi90[1] - pi90[0]) / 3.29) if len(pi90) == 2 else 0.3
+            pair = (pka, sd)
+    except Exception:
+        pair = (float("nan"), float("nan"))
+    _LIVE_PKA_CACHE[smiles] = pair
+    return pair
+
+
 def _featurize_for_v14(smiles_list: List[str]):
     """Run the same feature-assembly path the v14 bundle uses, returning X.
 
@@ -152,6 +189,13 @@ def _featurize_for_v14(smiles_list: List[str]):
         else:
             # New SMILES — compute descriptors on the fly
             row = _features_for_query_smiles(canon)
+            # Live v9.1 pKa + per-family debias (no proxy fallback)
+            if pd.isna(row.get("pKa")):
+                fam_hint = row.get("family") or "GA-Tris"
+                pka_pred, pka_sd = _live_pka_for_smiles(canon, family_hint=fam_hint)
+                if np.isfinite(pka_pred):
+                    row["pKa"] = pka_pred
+                    row["pKa_sd"] = pka_sd
         row["canonical_smi"] = canon
         if "family" not in row or pd.isna(row.get("family")):
             row["family"] = "GA-Tris"   # default placeholder
