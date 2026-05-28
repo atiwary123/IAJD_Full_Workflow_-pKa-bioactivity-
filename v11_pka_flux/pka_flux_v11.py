@@ -67,13 +67,9 @@ sys.path.insert(0, str(CODE))
 # 1. Load tables and align IDs
 # ---------------------------------------------------------------------------
 
-EXCLUDED_NOVEL_IAJDS = {347, 348, 365, 366, 367, 369, 372, 373}
-
-
 def load_tables() -> Tuple[pd.DataFrame, pd.DataFrame, np.ndarray]:
+    # Novel GA-Tris IAJDs (347, 348, 365, 366, 367, 369, 372, 373) reintegrated 2026-05-28.
     bio = pd.read_excel(DATA / "IAJD_Bioact_v13_clean.xlsx")
-    if "IAJD_num" in bio.columns:
-        bio = bio[~bio["IAJD_num"].isin(EXCLUDED_NOVEL_IAJDS)].reset_index(drop=True)
     pka_tbl = pd.read_excel(DATA / "IAJD_pKa_v21_final.xlsx", sheet_name="Dataset")
     pka_loo = np.load(ROOT / "preds_v91_final.npy")
     assert len(pka_loo) == len(pka_tbl), "preds_v91_final.npy row count mismatch"

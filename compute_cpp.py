@@ -276,14 +276,10 @@ CPP_FEATURE_NAMES = [
 ]
 
 
-_EXCLUDED_NOVEL_IAJDS = {347, 348, 365, 366, 367, 369, 372, 373}
-
-
 def main():
     # Compute CPP for all bioactivity training compounds
+    # Novel GA-Tris IAJDs (347, 348, 365, 366, 367, 369, 372, 373) reintegrated 2026-05-28.
     bio = pd.read_excel('IAJD_master/datasets/IAJD_Bioact_v13_clean.xlsx', sheet_name='Sheet1')
-    if "IAJD_num" in bio.columns:
-        bio = bio[~bio["IAJD_num"].isin(_EXCLUDED_NOVEL_IAJDS)].reset_index(drop=True)
     pka_cache = pd.read_csv('v11_pka_flux/predicted_pka_cache.csv')
     merged = bio.merge(pka_cache[["row_id","predicted_pKa"]], on="row_id", how="left")
 

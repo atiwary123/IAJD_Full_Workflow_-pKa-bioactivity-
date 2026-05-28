@@ -43,13 +43,9 @@ OUT = ROOT / "v11_pka_flux" / "m2_bundle.joblib"
 PKA_CACHE = ROOT / "v11_pka_flux" / "predicted_pka_cache.csv"
 
 
-EXCLUDED_NOVEL_IAJDS = {347, 348, 365, 366, 367, 369, 372, 373}
-
-
 def main():
+    # Novel GA-Tris IAJDs (347, 348, 365, 366, 367, 369, 372, 373) reintegrated 2026-05-28.
     bio = pd.read_excel(DATA / "IAJD_Bioact_v13_clean.xlsx")
-    if "IAJD_num" in bio.columns:
-        bio = bio[~bio["IAJD_num"].isin(EXCLUDED_NOVEL_IAJDS)].reset_index(drop=True)
     pka_df = pd.read_csv(PKA_CACHE)
     merged = bio.merge(
         pka_df[["row_id", "predicted_pKa", "pka_source"]],

@@ -215,9 +215,7 @@ def load_v15(tandem_bundle) -> V15Bundle:
     )
     # Pull IAJD ids and per-organ values from the xlsx (the bundle doesn't store them)
     bio_xlsx = pd.read_excel(DATA_DIR / "IAJD_Bioact_v13_clean.xlsx")
-    _EXCLUDED_NOVEL_IAJDS = {347, 348, 365, 366, 367, 369, 372, 373}
-    if "IAJD_num" in bio_xlsx.columns:
-        bio_xlsx = bio_xlsx[~bio_xlsx["IAJD_num"].isin(_EXCLUDED_NOVEL_IAJDS)].reset_index(drop=True)
+    # Novel GA-Tris IAJDs (347, 348, 365, 366, 367, 369, 372, 373) reintegrated 2026-05-28.
     bio_lookup_by_smi: Dict[str, Dict[str, Any]] = {}
     for _, r in bio_xlsx.iterrows():
         smi_raw = str(r.get("SMILES_canonical") or r.get("SMILES") or "").strip()

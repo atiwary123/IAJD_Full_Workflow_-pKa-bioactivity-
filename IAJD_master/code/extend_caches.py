@@ -276,7 +276,13 @@ def predict_lion_for_smiles(smiles_list, cache_path=None, verbose=True):
         import pickle
         with open(fps_path, 'rb') as f:
             train_fps = pickle.load(f)
-    mfp = AllChem.GetMorganGenerator(radius=2, fpSize=2048)
+    try:
+        mfp_gen = AllChem.GetMorganGenerator(radius=2, fpSize=2048)
+        def _fp(mol):
+            return mfp_gen.GetFingerprint(mol)
+    except AttributeError:
+        def _fp(mol):
+            return AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048)
     tissues = ['liver_IV','lung_IT','lung_inh','lung_neb','muscle_IM','nasal']
     for i, c in enumerate(todo):
         z = np.array([z_per_tissue[t][i] for t in tissues])
@@ -291,7 +297,7 @@ def predict_lion_for_smiles(smiles_list, cache_path=None, verbose=True):
         # OOD
         m = Chem.MolFromSmiles(c)
         if m and train_fps:
-            fp = mfp.GetFingerprint(m)
+            fp = _fp(m)
             max_sim = max((TanimotoSimilarity(fp, tf) for tf in train_fps), default=0.0)
             ood = int(max_sim < 0.30)
         else:
