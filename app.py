@@ -577,19 +577,24 @@ def build_ui() -> gr.Blocks:
 # IAJD Tandem Predictor
 
 Predicts **pKa** and **bioactivity (log10 total flux)** for ionizable amphiphilic Janus dendrimers.
+
+**pKa model:** v9.2 three-head blend (per-query):
+- Analog @ K=5 Tanimoto neighbors (sim≥0.6 floor, sim⁴ weighting)
+- Pure XGB on 30 base RDKit/structural features (orthogonal to MolGpKa)
+- Live MolGpKa GCN → per-family linear debias (no proxies — runs at every query)
+- Per-family optimal weights; **LOO MAE 0.1250** on 278 compounds
+
 Three independent bioactivity models run in parallel on every query:
 
 | Model | What it does | LOO MAE |
 |---|---|---|
-| **v14 + adaptive stacker** | 6-head ensemble with OOD-aware dynamic weighting: as queries drift from training, physics heads (CPP packing parameter + AGILE GNN) automatically dominate over similarity-dependent heads | 0.403 |
-| **v11 pKa-dominant** | Predicted pKa + family one-hot + pKa x family interactions + 8 tail descriptors | 0.475 |
-| **pKa-flux curve** | Per-family fitted pKa-to-flux quadratic + structural residual corrector; flux step uses no similarity, but pKa input carries indirect similarity from v9.1 | ~0.50 |
+| **v14 + adaptive stacker** | 6-head ensemble (direct + analog + LION + ADMET + AGILE + CPP) with OOD-aware dynamic weighting | 0.431 |
+| **v11 M2 pKa-dominant** | Predicted pKa + family one-hot + pKa × family interactions + 8 tail descriptors | 0.475 |
+| **Binary classifier (tunable T)** | P(log10 flux ≥ T) for any T ∈ [6.5, 9.5] via per-threshold sigmoid calibrators on the v14 regressor's LOO outputs | ROC-AUC 0.81 at T=8.0 |
 
-**pKa model:** v9.1 analog-delta XGBoost, 278 training compounds across 6 families, LOO MAE 0.065.
+Accepts SMILES, ChemDraw (.cdxml), SDF, MOL. Family auto-detected.
 
-Accepts SMILES, ChemDraw (.cdxml), SDF, MOL. Family auto-detected (6 chemical families + 2 bioactivity-only subarchitectures).
-
-**Status:** {"loaded" if BUNDLE_OK else f"failed — {BUNDLE_ERR}"} | v11 {"loaded" if V11_AVAILABLE else "unavailable"}
+**Status:** {"loaded" if BUNDLE_OK else f"failed — {BUNDLE_ERR}"} | v11 {"loaded" if V11_AVAILABLE else "unavailable"} | v9.2 {"loaded" if PKA_V92_AVAILABLE else "unavailable"} | binary {"loaded" if BIN_AVAILABLE else "unavailable"} | proposer {"loaded" if PROPOSE_AVAILABLE else "unavailable"}
 """
 
     with gr.Blocks(title="IAJD Tandem Predictor") as demo:
@@ -677,10 +682,11 @@ Accepts SMILES, ChemDraw (.cdxml), SDF, MOL. Family auto-detected (6 chemical fa
 
         gr.Markdown(
             "---\n"
-            "_Training: 286 pKa compounds + 273 bioactivity measurements (6 families)._\n\n"
-            "_pKa v9.1 LOO MAE 0.160. v14+stacker LOO MAE 0.428. v11 M2 LOO MAE 0.475. "
-            "Binary classifier (tunable T): ROC-AUC 0.82 at T=8.0._\n\n"
-            "_8 GA-Tris IAJDs (347, 348, 365, 366, 367, 369, 372, 373) reintegrated 2026-05-28._"
+            "_Training: 278 pKa compounds + 273 bioactivity measurements (6 families)._\n\n"
+            "_pKa v9.2 three-head blend LOO MAE 0.125. v14+stacker LOO MAE 0.431. "
+            "v11 M2 LOO MAE 0.475. Binary classifier (tunable T): ROC-AUC 0.81 at T=8.0._\n\n"
+            "_8 GA-Tris IAJDs (347, 348, 365, 366, 367, 369, 372, 373) reintegrated 2026-05-28 "
+            "with bioactivity measurements only — no measured pKa, so they're absent from the pKa table._"
         )
     return demo
 
