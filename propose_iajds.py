@@ -42,6 +42,7 @@ sys.path.insert(0, str(ROOT / "IAJD_master/code"))
 from iajd_grammar import (
     Library, Seed, build_library, decompose_row,
     propose_single_mutations, FAMILY_ASSEMBLERS,
+    humanize_mutation_tag,
 )
 
 BIOACT_XLSX = ROOT / "IAJD_master/datasets/IAJD_Bioact_v13_clean.xlsx"
@@ -308,6 +309,7 @@ def beam_search(threshold: float, beam: int, depth: int,
             "yhat_seed": float(yh),
             "delta_vs_seed": 0.0,
             "mutation_trail": ["seed"],
+            "mutation_description": "Original seed (no mutation)",
             # score = improvement over seed × confidence that result clears T
             "score": float(p) * max(0.0, float(yh) - float(yh)),  # seed Δ=0
         })
@@ -341,6 +343,7 @@ def beam_search(threshold: float, beam: int, depth: int,
                     "seed": cand_seed,
                     "parent_smiles": parent["smiles"],
                     "mutation_tag": tag,
+                    "mutation_description": humanize_mutation_tag(tag),
                     "mutation_trail": parent["mutation_trail"] + [tag],
                     "tanim_max_to_train": float(tanim),
                     "yhat_seed": parent["yhat_seed"],
@@ -439,7 +442,8 @@ def main():
     # Trim columns for CSV
     out_cols = ["smiles", "yhat", "yhat_seed", "delta_vs_seed", "p_above",
                 "score", "tanim_max_to_train",
-                "mutation_tag", "mutation_trail", "parent_smiles"]
+                "mutation_description", "mutation_tag",
+                "mutation_trail", "parent_smiles"]
     for c in out_cols:
         if c not in result.columns:
             result[c] = None

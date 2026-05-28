@@ -527,10 +527,10 @@ def propose_better(seed_smiles: str, threshold: float, beam: int, depth: int,
           f"(Δŷ) × P(≥T) — so a candidate only ranks above the seed if the model "
           f"thinks it actually beats the seed_",
           ""]
-    md.append("| rank | Δ vs seed | ŷ (log10 flux) | seed ŷ | P(≥T) | Tanim | mutation trail | SMILES |")
+    md.append("| rank | Δ vs seed | ŷ (log10 flux) | seed ŷ | P(≥T) | Tanim | What changed | SMILES |")
     md.append("|---|---|---|---|---|---|---|---|")
     for i, (_, r) in enumerate(result.head(20).iterrows()):
-        trail = " → ".join((r.get("mutation_trail") or [])[-3:])
+        desc = r.get("mutation_description") or " → ".join((r.get("mutation_trail") or [])[-2:])
         tanim = r.get("tanim_max_to_train")
         tanim_s = f"{tanim:.2f}" if tanim == tanim else "—"
         delta = r.get("delta_vs_seed", 0)
@@ -538,7 +538,7 @@ def propose_better(seed_smiles: str, threshold: float, beam: int, depth: int,
         seed_y = r.get("yhat_seed")
         seed_y_s = f"{seed_y:.2f}" if seed_y == seed_y else "—"
         md.append(f"| {i+1} | **{delta_s}** | {r['yhat']:.2f} | {seed_y_s} "
-                  f"| {r['p_above']:.2%} | {tanim_s} | `{trail}` | `{r['smiles']}` |")
+                  f"| {r['p_above']:.2%} | {tanim_s} | {desc} | `{r['smiles']}` |")
     md.append("")
     md.append(f"_Total scored: {len(result)}; novel (Tanim < 0.85): "
               f"{int((result['tanim_max_to_train'] < 0.85).sum())}_")

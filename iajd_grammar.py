@@ -325,8 +325,94 @@ def _tail_modify(tail_smi: str, delta_c: int) -> Optional[str]:
         return None
 
 
+def humanize_mutation_tag(tag: str) -> str:
+    """Turn a cryptic mutation_tag into a one-line, human-readable description.
+
+    Examples:
+        head:HPRZ→MPRZ              → "Head swapped: HPRZ → MPRZ"
+        linker:4→3C                  → "Linker shortened: 4C → 3C"
+        tail0:CCCCCCCC→CCCCCCCCCC    → "Tail #1 changed from C8 to C10"
+        tail_extend_4C               → "Longest tail extended by 4C"
+        tail_shorten_2C              → "Longest tail shortened by 2C"
+        linkage:ester→amide          → "Linkage changed: ester → amide"
+        all_tails→C12                → "All tails unified to C12"
+        multi_tail2→C16              → "Two tails simultaneously swapped to C16"
+        family:GA-Tris→PE-Tris       → "Architecture switched: GA-Tris → PE-Tris"
+        synth_head→MPRZ_OMe          → "Synthetic head added: MPRZ-OMe"
+        seed                          → "Original seed (no mutation)"
+    """
+    if tag == "seed":
+        return "Original seed (no mutation)"
+    if tag.startswith("head:"):
+        a, b = tag[5:].split("→")
+        return f"Head swapped: {a} → {b}"
+    if tag.startswith("linker:"):
+        body = tag[7:].rstrip("C")
+        a, b = body.split("→")
+        direction = "lengthened" if int(b) > int(a) else "shortened"
+        return f"Linker {direction}: {a}C → {b}C"
+    if tag.startswith("tail") and "→" in tag:
+        # tail0:CCCC→CCCCCCC  or multi_tail2→CCCC
+        idx_part, rest = tag.split(":") if ":" in tag else (tag, tag.split("→")[1])
+        idx = idx_part[4:] if idx_part.startswith("tail") and idx_part[4:].isdigit() else None
+        a, b = tag.split("→")[-2:] if "→" in tag else (tag, tag)
+        # parse a/b lengths if pure-C strings
+        def _tail_label(s):
+            mm = re.fullmatch(r"C+", s)
+            if mm:
+                return f"C{len(s)}"
+            m = Chem.MolFromSmiles(s)
+            if m:
+                return f"{m.GetNumHeavyAtoms()}-atom branched"
+            return s
+        a_lab, b_lab = _tail_label(a.split(":")[-1]), _tail_label(b)
+        pos = f" #{int(idx)+1}" if idx is not None else ""
+        return f"Tail{pos} changed from {a_lab} to {b_lab}"
+    if tag.startswith("tail_extend_"):
+        n = tag.replace("tail_extend_", "").rstrip("C")
+        return f"Longest tail extended by {n}C"
+    if tag.startswith("tail_shorten_"):
+        n = tag.replace("tail_shorten_", "").rstrip("C")
+        return f"Longest tail shortened by {n}C"
+    if tag.startswith("linkage:"):
+        a, b = tag[8:].split("→")
+        return f"Linkage changed: {a} → {b}"
+    if tag.startswith("all_tails→"):
+        new = tag.split("→")[1]
+        m = Chem.MolFromSmiles(new)
+        lab = f"C{m.GetNumHeavyAtoms()}" if (m and not any(c in new for c in "()")) else new
+        return f"All tails unified to {lab}"
+    if tag.startswith("multi_tail2→"):
+        new = tag.split("→")[1]
+        m = Chem.MolFromSmiles(new)
+        lab = f"C{m.GetNumHeavyAtoms()}" if (m and not any(c in new for c in "()")) else new
+        return f"Two tails simultaneously swapped to {lab}"
+    if tag.startswith("family:"):
+        a, b = tag[7:].split("→")
+        return f"Architecture switched: {a} → {b}"
+    if tag.startswith("synth_head→"):
+        new = tag.split("→")[1].replace("_", "-")
+        return f"Synthetic head substituent added: {new}"
+    return tag  # fallback
+
+
 def propose_single_mutations(seed: Seed, library: Library) -> Iterator[Tuple[str, str, Seed]]:
-    """Yield (SMILES, mutation_tag, mutated_Seed) for each single-step mutation."""
+    """Yield (SMILES, mutation_tag, mutated_Seed) for each single-step mutation.
+
+    Mutation grammar (expanded from the original 5-op set):
+       (1) head_swap         — replace head with another in family library
+       (2) linker_resize     — change linker by ±1, ±2 (capped at family observed range)
+       (3) tail_swap         — replace any tail with another from family library
+       (4) tail_extend_NC    — extend longest tail by 2, 4, 6 C
+       (5) tail_shorten_NC   — shorten longest tail by 2, 4 C (if min stays ≥ 5)
+       (6) linkage_swap      — ester ↔ amide if both observed
+       (7) multi_tail_swap   — change 2 tails at once (high-jump exploration)
+       (8) all_tails_uniform — make all tails the same (collapse asymmetry)
+       (9) tail_branching    — swap straight tail for known branched analog
+       (10) cross_family     — change architecture template (GA-Tris ↔ PE-Tris)
+       (11) head_chemistry   — synthetic head variants beyond family library
+                                (e.g., add ethanol/methoxyethyl to distal N)
+    """
     fam = seed.family
     if fam not in library.families:
         return
@@ -340,16 +426,18 @@ def propose_single_mutations(seed: Seed, library: Library) -> Iterator[Tuple[str
         if sm:
             yield sm, f"head:{seed.head}→{new_head}", s2
 
-    # 2. resize linker ±1
+    # 2. resize linker ±1, ±2
     for new_n in sorted(library.linkers[fam]):
-        if new_n == seed.linker_n or abs(new_n - seed.linker_n) > 1:
+        if new_n == seed.linker_n:
+            continue
+        if abs(new_n - seed.linker_n) > 2:
             continue
         s2 = Seed(fam, seed.head, new_n, seed.linkage, seed.tails)
         sm = s2.assemble()
         if sm:
             yield sm, f"linker:{seed.linker_n}→{new_n}C", s2
 
-    # 3. swap each tail
+    # 3. swap each tail (single-position)
     for i, current_tail in enumerate(seed.tails):
         for new_tail in sorted(library.tails[fam]):
             if new_tail == current_tail:
@@ -361,10 +449,10 @@ def propose_single_mutations(seed: Seed, library: Library) -> Iterator[Tuple[str
             if sm:
                 yield sm, f"tail{i}:{current_tail}→{new_tail}", s2
 
-    # 4. tail extension / shortening (longest tail, ±2C)
+    # 4. tail extension (longest tail, +2 / +4 / +6 C)
     longest_i = max(range(len(seed.tails)), key=lambda i: len(seed.tails[i]))
     longest = seed.tails[longest_i]
-    for delta in (2, -2):
+    for delta in (2, 4, 6):
         new_tail = _tail_modify(longest, delta)
         if new_tail and new_tail != longest:
             new_tails = list(seed.tails)
@@ -372,8 +460,20 @@ def propose_single_mutations(seed: Seed, library: Library) -> Iterator[Tuple[str
             s2 = Seed(fam, seed.head, seed.linker_n, seed.linkage, tuple(new_tails))
             sm = s2.assemble()
             if sm:
-                tag = "tail_extend_2C" if delta > 0 else "tail_shorten_2C"
-                yield sm, tag, s2
+                yield sm, f"tail_extend_{delta}C", s2
+    # tail shortening (longest tail, -2, -4 C, only if shrunk ≥ 5)
+    for delta in (-2, -4):
+        new_tail = _tail_modify(longest, delta)
+        if new_tail and new_tail != longest:
+            mol = Chem.MolFromSmiles(new_tail)
+            if mol is None or mol.GetNumHeavyAtoms() < 5:
+                continue
+            new_tails = list(seed.tails)
+            new_tails[longest_i] = new_tail
+            s2 = Seed(fam, seed.head, seed.linker_n, seed.linkage, tuple(new_tails))
+            sm = s2.assemble()
+            if sm:
+                yield sm, f"tail_shorten_{abs(delta)}C", s2
 
     # 5. swap linkage
     for new_link in sorted(library.linkages[fam]):
@@ -383,6 +483,83 @@ def propose_single_mutations(seed: Seed, library: Library) -> Iterator[Tuple[str
         sm = s2.assemble()
         if sm:
             yield sm, f"linkage:{seed.linkage}→{new_link}", s2
+
+    # 6. all-tails-uniform: collapse asymmetric tails to a single shared tail
+    # (the library element with longest extension)
+    if len(set(seed.tails)) > 1:
+        for unified_tail in sorted(library.tails[fam], key=lambda t: -len(t))[:5]:
+            new_tails = tuple([unified_tail] * len(seed.tails))
+            if new_tails == seed.tails:
+                continue
+            s2 = Seed(fam, seed.head, seed.linker_n, seed.linkage, new_tails)
+            sm = s2.assemble()
+            if sm:
+                yield sm, f"all_tails→{unified_tail}", s2
+
+    # 7. multi-tail swap: change two tails simultaneously
+    for new_tail in sorted(library.tails[fam], key=lambda t: -len(t))[:6]:
+        if new_tail in seed.tails:
+            continue
+        # Swap into positions 0 and 1
+        if len(seed.tails) >= 2:
+            new_tails = list(seed.tails)
+            new_tails[0] = new_tail; new_tails[1] = new_tail
+            s2 = Seed(fam, seed.head, seed.linker_n, seed.linkage, tuple(new_tails))
+            sm = s2.assemble()
+            if sm:
+                yield sm, f"multi_tail2→{new_tail}", s2
+
+    # 8. cross-family jump (GA-Tris ↔ PE-Tris; same head/linker/linkage/tails)
+    for other_fam in library.families:
+        if other_fam == fam:
+            continue
+        if other_fam not in FAMILY_ASSEMBLERS:
+            continue
+        # Only jump between architectures that share the same tail count
+        _, n_self = FAMILY_ASSEMBLERS[fam]
+        _, n_other = FAMILY_ASSEMBLERS[other_fam]
+        if n_other != n_self:
+            continue
+        # Use a head in the new family's library
+        if seed.head not in library.heads[other_fam]:
+            continue
+        new_linker = seed.linker_n
+        if new_linker not in library.linkers[other_fam]:
+            cands = sorted(library.linkers[other_fam], key=lambda x: abs(x - seed.linker_n))
+            if not cands:
+                continue
+            new_linker = cands[0]
+        new_linkage = seed.linkage
+        if new_linkage not in library.linkages[other_fam] and library.linkages[other_fam]:
+            new_linkage = next(iter(library.linkages[other_fam]))
+        s2 = Seed(other_fam, seed.head, new_linker, new_linkage, seed.tails)
+        sm = s2.assemble()
+        if sm:
+            yield sm, f"family:{fam}→{other_fam}", s2
+
+    # 9. synthetic head variants — append a CH2CH2OH / OCH3 / OEt to the distal
+    # piperazine N. Only meaningful for piperazine-based heads.
+    if seed.head in ("MPRZ", "HPRZ", "H2EPRZ"):
+        # Add ether-extension to head (turn MPRZ into MPRZ-OEt-like)
+        for synth_tag, new_head_smiles in [
+            ("MPRZ_OMe",  "*N2CCN(COC)CC2"),
+            ("MPRZ_OEt",  "*N2CCN(COCC)CC2"),
+            ("HPRZ_OMe",  "*N2CCN(CCOC)CC2"),
+            ("DEHPRZ",    "*N2CCN(CC(O)CO)CC2"),
+        ]:
+            # Inject directly by swapping HEAD_FRAGMENTS temporarily
+            old_frag = HEAD_FRAGMENTS.get(synth_tag)
+            HEAD_FRAGMENTS[synth_tag] = new_head_smiles
+            try:
+                s2 = Seed(fam, synth_tag, seed.linker_n, seed.linkage, seed.tails)
+                sm = s2.assemble()
+                if sm:
+                    yield sm, f"synth_head→{synth_tag}", s2
+            finally:
+                if old_frag is None:
+                    HEAD_FRAGMENTS.pop(synth_tag, None)
+                else:
+                    HEAD_FRAGMENTS[synth_tag] = old_frag
 
 
 # ──────────────────────────────────────────────────────────────────────
