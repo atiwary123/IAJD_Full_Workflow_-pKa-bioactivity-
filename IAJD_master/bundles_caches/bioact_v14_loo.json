@@ -7,6 +7,14 @@
         "n": 11,
         "mae": 0.723290881798369
       },
+      "G1-Janus-Dendrimer": {
+        "n": 21,
+        "mae": 0.6213539565063533
+      },
+      "GA-Tris": {
+        "n": 20,
+        "mae": 0.34537660493762345
+      },
       "sSS-Nonsym": {
         "n": 144,
         "mae": 0.40048420768616677
@@ -14,14 +22,6 @@
       "Dialkoxybenzyl": {
         "n": 10,
         "mae": 0.35062690894222126
-      },
-      "GA-Tris": {
-        "n": 20,
-        "mae": 0.34537660493762345
-      },
-      "G1-Janus-Dendrimer": {
-        "n": 21,
-        "mae": 0.6213539565063533
       },
       "PE-Tris": {
         "n": 41,
@@ -38,6 +38,14 @@
         "n": 11,
         "mae": 0.6997961615915966
       },
+      "G1-Janus-Dendrimer": {
+        "n": 21,
+        "mae": 0.593630243702092
+      },
+      "GA-Tris": {
+        "n": 20,
+        "mae": 0.2928186952910669
+      },
       "sSS-Nonsym": {
         "n": 144,
         "mae": 0.3985992302734191
@@ -46,14 +54,6 @@
         "n": 10,
         "mae": 0.2492534123474172
       },
-      "GA-Tris": {
-        "n": 20,
-        "mae": 0.2928186952910669
-      },
-      "G1-Janus-Dendrimer": {
-        "n": 21,
-        "mae": 0.593630243702092
-      },
       "PE-Tris": {
         "n": 41,
         "mae": 0.49972228026397125
@@ -61,26 +61,26 @@
     },
     "best_alpha": {
       "PE-Gallic": 1.0,
+      "G1-Janus-Dendrimer": 1.0,
+      "GA-Tris": 1.0,
       "sSS-Nonsym": 0.5,
       "Dialkoxybenzyl": 0.3,
-      "GA-Tris": 1.0,
-      "G1-Janus-Dendrimer": 1.0,
       "PE-Tris": 0.9
     },
     "block_b_active": {
       "PE-Gallic": true,
+      "G1-Janus-Dendrimer": true,
+      "GA-Tris": true,
       "sSS-Nonsym": true,
       "Dialkoxybenzyl": false,
-      "GA-Tris": true,
-      "G1-Janus-Dendrimer": true,
       "PE-Tris": false
     },
     "block_c_active": {
       "PE-Gallic": true,
+      "G1-Janus-Dendrimer": false,
+      "GA-Tris": false,
       "sSS-Nonsym": true,
       "Dialkoxybenzyl": false,
-      "GA-Tris": false,
-      "G1-Janus-Dendrimer": false,
       "PE-Tris": false
     }
   },

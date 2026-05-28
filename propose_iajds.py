@@ -51,7 +51,10 @@ V14_BUNDLE  = ROOT / "IAJD_master/bundles_caches/bioact_v14_bundle.pkl"
 # Filters
 MAX_MW = 1500.0
 MAX_ROTATABLE = 50
-NOVELTY_TANIMOTO_MAX = 0.85
+# Tanimoto gating: only require candidate != training compound (1.0 means
+# identical). Higher similarity is desirable here because the regressor was
+# trained on those nearby compounds and can score them confidently.
+NOVELTY_TANIMOTO_MAX = 0.999
 
 try:
     _MFP_GEN = AllChem.GetMorganGenerator(radius=2, fpSize=2048)
@@ -322,9 +325,9 @@ def beam_search(threshold: float, beam: int, depth: int,
                 m = Chem.MolFromSmiles(cand_smi)
                 cand_fp = _fp(m)
                 tanim = _tanimoto_max(cand_fp, train_fps)
-                if tanim > NOVELTY_TANIMOTO_MAX:
-                    # too close to a training compound — skip for novelty
-                    pass  # but keep scoring for the report
+                if tanim >= NOVELTY_TANIMOTO_MAX:
+                    # identical to a training compound — skip
+                    continue
                 explored.add(cand_smi)
                 next_pool.append({
                     "smiles": cand_smi,

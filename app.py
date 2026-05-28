@@ -78,6 +78,22 @@ except Exception as exc:  # noqa: BLE001
     predict_p_above = None
     print(f"[binary head] not available: {exc}")
 
+# pKa v9.2 three-head blend (analog @ K=5 + pure XGB + debiased MolGpKa)
+# with per-family optimal weights. Live MolGpKa GCN runs at inference for
+# any new SMILES.
+try:
+    from predict_pka_v92 import predict_pka_v92, load_v92_bundle
+    _PKA_V92_BUNDLE = load_v92_bundle()
+    PKA_V92_AVAILABLE = True
+    print(f"[pKa v9.2] loaded — blend LOO MAE "
+          f"{_PKA_V92_BUNDLE['metrics']['loo_mae_blend']:.4f} on "
+          f"{_PKA_V92_BUNDLE['metrics']['n_train']} compounds")
+except Exception as exc:  # noqa: BLE001
+    PKA_V92_AVAILABLE = False
+    _PKA_V92_BUNDLE = None
+    predict_pka_v92 = None
+    print(f"[pKa v9.2] not available: {exc}")
+
 # Fragment-swap proposer — added 2026-05-28.
 try:
     from iajd_grammar import build_library, decompose_row, Seed
@@ -214,9 +230,30 @@ def _render_result_markdown(r: dict, idx: int = 0) -> str:
     md.append("")
 
     # ── pKa ──
-    md.append(f"## pKa = {pka.get('point', '—')}")
-    md.append(f"_v9.1 analog-delta XGBoost (278 training compounds, 6 families, LOO MAE 0.065) "
-              f"| tier `{pka.get('tier', '—')}` | max Tanimoto {pka.get('max_tanimoto_to_training', '—')}_")
+    v92 = r.get("pka_v92") or {}
+    if v92 and "pKa_pred" in v92 and v92["pKa_pred"] is not None:
+        md.append(f"## pKa = {v92['pKa_pred']:.3f}")
+        comp = v92.get("components") or {}
+        w = v92.get("weights") or {}
+        if isinstance(w, dict) and "per_family" in w:
+            fam_w = w["per_family"].get(v92.get("family_assigned"), [None, None, None])
+            w_a, w_x, w_m = fam_w
+        else:
+            w_a = w.get("analog"); w_x = w.get("xgb_pure"); w_m = w.get("molgpka_debiased")
+        md.append(
+            f"_v9.2 three-head blend (analog K=5 + XGB-30 + live-MolGpKa-debias) "
+            f"per-family weights | LOO MAE 0.1250 on 278 cpds | max Tanimoto "
+            f"{v92.get('max_tanimoto_to_training', '—')}_"
+        )
+        md.append(
+            f"_components: analog={comp.get('analog')} "
+            f"xgb={comp.get('xgb_pure')} molgpka={comp.get('molgpka_debiased')} "
+            f"(weights {round(w_a or 0, 2)}, {round(w_x or 0, 2)}, {round(w_m or 0, 2)})_"
+        )
+    else:
+        md.append(f"## pKa = {pka.get('point', '—')}")
+        md.append(f"_v9.1 analog-delta XGBoost | tier `{pka.get('tier', '—')}` "
+                  f"| max Tanimoto {pka.get('max_tanimoto_to_training', '—')}_")
     if pka.get("ci_90"):
         md.append(f"_90% CI: [{pka['ci_90'][0]:.3f}, {pka['ci_90'][1]:.3f}]_")
     md.append("")
@@ -358,6 +395,22 @@ def _attach_v11(r: dict) -> dict:
     return r
 
 
+def _attach_pka_v92(r: dict) -> dict:
+    """Run the v9.2 three-head pKa blend (live MolGpKa + analog K=5 + XGB)."""
+    if not PKA_V92_AVAILABLE or predict_pka_v92 is None:
+        return r
+    smi = r.get("canonical_smiles")
+    if not smi:
+        return r
+    fam = (r.get("family_resolution") or {}).get("family_assigned")
+    try:
+        v92 = predict_pka_v92(smi, family_hint=fam)
+        r["pka_v92"] = v92
+    except Exception as exc:
+        r["pka_v92"] = {"error": str(exc)}
+    return r
+
+
 def _attach_binary(r: dict, threshold: float) -> dict:
     """Add binary classifier P(≥threshold) to a predict() result."""
     if not BIN_AVAILABLE or predict_p_above is None:
@@ -389,6 +442,7 @@ def single_predict(smiles: str, family_choice: str, neighbors: int,
     except Exception as exc:  # noqa: BLE001
         return f"### Prediction failed\n\n```\n{type(exc).__name__}: {exc}\n```", ""
     _attach_v11(r)
+    _attach_pka_v92(r)
     _attach_binary(r, float(threshold))
     md = _render_result_markdown(r, 0)
     raw = json.dumps(r, indent=2, default=str)
@@ -597,8 +651,9 @@ Accepts SMILES, ChemDraw (.cdxml), SDF, MOL. Family auto-detected (6 chemical fa
                     "Search for IAJDs predicted to clear a target bioactivity threshold. "
                     "The proposer applies single-step structural mutations (head swap, "
                     "linker resize, tail swap, tail extension) drawn from the training "
-                    "library, ranks candidates by `ŷ × P(≥T)`, and filters for novelty "
-                    "(Tanimoto < 0.85 vs training set)."
+                    "library and ranks candidates by `ŷ × P(≥T)`. Higher Tanimoto-to-"
+                    "training is *desirable* (the regressor scores those candidates more "
+                    "confidently); we only filter out exact duplicates of training rows."
                 )
                 with gr.Row():
                     seed_in = gr.Textbox(
