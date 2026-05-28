@@ -615,7 +615,7 @@ Accepts SMILES, ChemDraw (.cdxml), SDF, MOL. Family auto-detected (6 chemical fa
                 go_p = gr.Button("Propose", variant="primary")
                 out_p_md = gr.Markdown()
                 with gr.Accordion("Candidate CSV (top 50)", open=False):
-                    out_p_csv = gr.Code(language="csv")
+                    out_p_csv = gr.Code()
                 go_p.click(propose_better,
                             inputs=[seed_in, p_threshold, p_beam, p_depth, p_seeds],
                             outputs=[out_p_md, out_p_csv])
