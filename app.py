@@ -523,16 +523,22 @@ def propose_better(seed_smiles: str, threshold: float, beam: int, depth: int,
     # Render top 20
     md = ["## Proposed IAJDs",
           f"_threshold T={threshold}, beam={beam}, depth={depth}, "
-          f"{len(seeds)} seed(s); ranked by ŷ × P(≥T)_",
+          f"{len(seeds)} seed(s); ranked by **improvement over seed** "
+          f"(Δŷ) × P(≥T) — so a candidate only ranks above the seed if the model "
+          f"thinks it actually beats the seed_",
           ""]
-    md.append("| rank | ŷ (log10 flux) | P(≥T) | Tanim_max | mutation trail | SMILES |")
-    md.append("|---|---|---|---|---|---|")
+    md.append("| rank | Δ vs seed | ŷ (log10 flux) | seed ŷ | P(≥T) | Tanim | mutation trail | SMILES |")
+    md.append("|---|---|---|---|---|---|---|---|")
     for i, (_, r) in enumerate(result.head(20).iterrows()):
         trail = " → ".join((r.get("mutation_trail") or [])[-3:])
         tanim = r.get("tanim_max_to_train")
-        tanim_s = f"{tanim:.2f}" if tanim == tanim else "—"   # NaN check
-        md.append(f"| {i+1} | {r['yhat']:.2f} | {r['p_above']:.2%} | {tanim_s} "
-                  f"| `{trail}` | `{r['smiles']}` |")
+        tanim_s = f"{tanim:.2f}" if tanim == tanim else "—"
+        delta = r.get("delta_vs_seed", 0)
+        delta_s = f"{'+' if delta >= 0 else ''}{delta:.2f}" if delta == delta else "—"
+        seed_y = r.get("yhat_seed")
+        seed_y_s = f"{seed_y:.2f}" if seed_y == seed_y else "—"
+        md.append(f"| {i+1} | **{delta_s}** | {r['yhat']:.2f} | {seed_y_s} "
+                  f"| {r['p_above']:.2%} | {tanim_s} | `{trail}` | `{r['smiles']}` |")
     md.append("")
     md.append(f"_Total scored: {len(result)}; novel (Tanim < 0.85): "
               f"{int((result['tanim_max_to_train'] < 0.85).sum())}_")

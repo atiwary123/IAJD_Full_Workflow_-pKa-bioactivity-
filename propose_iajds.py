@@ -298,11 +298,18 @@ def beam_search(threshold: float, beam: int, depth: int,
     seeds = seed_kept
     seed_yhat, seed_p = _score_with_v14(seed_smis, bundle_v14, bundle_bin, threshold,
                                           extend_cache=False)  # training seeds already cached
+    # Per-seed reference ŷ used to compute Δ vs seed for each candidate.
+    # Each candidate inherits its starting seed's ŷ_seed (so beam search across
+    # multiple seeds doesn't unfairly compare a sSS-Nonsym mutant against a
+    # GA-Tris seed's ŷ).
     for s, sm, yh, p in zip(seeds, seed_smis, seed_yhat, seed_p):
         current.append({
             "smiles": sm, "seed": s, "yhat": float(yh), "p_above": float(p),
+            "yhat_seed": float(yh),
+            "delta_vs_seed": 0.0,
             "mutation_trail": ["seed"],
-            "score": float(yh) * float(p),
+            # score = improvement over seed × confidence that result clears T
+            "score": float(p) * max(0.0, float(yh) - float(yh)),  # seed Δ=0
         })
         explored.add(sm)
 
@@ -336,6 +343,7 @@ def beam_search(threshold: float, beam: int, depth: int,
                     "mutation_tag": tag,
                     "mutation_trail": parent["mutation_trail"] + [tag],
                     "tanim_max_to_train": float(tanim),
+                    "yhat_seed": parent["yhat_seed"],
                 })
 
         # Score this round's pool in a single batch (faster)
@@ -347,12 +355,20 @@ def beam_search(threshold: float, beam: int, depth: int,
         for r, yh, p in zip(next_pool, yhats, ps):
             r["yhat"] = float(yh)
             r["p_above"] = float(p)
-            r["score"] = float(yh) * float(p)
+            r["delta_vs_seed"] = float(yh) - r["yhat_seed"]
+            # Rank by improvement over seed × P(≥T): rewards candidates
+            # predicted to actually push *past* the seed, not just clear T.
+            # max(0, delta) so we don't reward worse-than-seed candidates.
+            r["score"] = float(p) * max(0.0, r["delta_vs_seed"])
         all_candidates.extend(next_pool)
         current = next_pool
 
     df = pd.DataFrame(all_candidates)
-    df = df.sort_values("score", ascending=False).reset_index(drop=True)
+    # Primary sort: score (Δ × P(≥T)). Tie-breaker: raw ŷ so even seeds with
+    # negative delta candidates still show meaningful ordering.
+    df["_tiebreak_yhat"] = df["yhat"]
+    df = df.sort_values(["score", "_tiebreak_yhat"], ascending=[False, False]).reset_index(drop=True)
+    df = df.drop(columns=["_tiebreak_yhat"])
     return df
 
 
@@ -421,7 +437,8 @@ def main():
                          seeds_list, library, bundle_v14, bundle_bin, train_fps)
 
     # Trim columns for CSV
-    out_cols = ["smiles", "yhat", "p_above", "score", "tanim_max_to_train",
+    out_cols = ["smiles", "yhat", "yhat_seed", "delta_vs_seed", "p_above",
+                "score", "tanim_max_to_train",
                 "mutation_tag", "mutation_trail", "parent_smiles"]
     for c in out_cols:
         if c not in result.columns:
