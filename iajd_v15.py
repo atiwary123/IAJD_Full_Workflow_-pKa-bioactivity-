@@ -63,12 +63,20 @@ sys.path.insert(0, str(CODE_DIR))
 # Count-Morgan fingerprints + MinMax Tanimoto
 # ---------------------------------------------------------------------------
 
-_FP_GEN = AllChem.GetMorganGenerator(radius=3, fpSize=4096)
+try:
+    _FP_GEN = AllChem.GetMorganGenerator(radius=3, fpSize=4096)
+    _USE_GEN = True
+except AttributeError:
+    _FP_GEN = None
+    _USE_GEN = False
 
 
 def count_fp(mol) -> Dict[int, int]:
     """Return Morgan-3 count fingerprint as a {bit -> count} dict."""
-    fp = _FP_GEN.GetCountFingerprint(mol)
+    if _USE_GEN:
+        fp = _FP_GEN.GetCountFingerprint(mol)
+    else:
+        fp = AllChem.GetHashedMorganFingerprint(mol, radius=3, nBits=4096)
     return dict(fp.GetNonzeroElements())
 
 
@@ -641,9 +649,11 @@ def predict_bioactivity_v15(smiles: str, bundle: V15Bundle,
 
     # 3. Build the 88-d feature row (LION + ADMET via assemble_X)
     bio_b = bundle.tandem.bioact_bundle
-    fam_detected, family_method = _detect_family(
-        mol, AllChem.GetMorganGenerator(radius=2, fpSize=2048).GetFingerprint(mol), bio_b
-    )
+    try:
+        _mfp2 = AllChem.GetMorganGenerator(radius=2, fpSize=2048).GetFingerprint(mol)
+    except AttributeError:
+        _mfp2 = AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048)
+    fam_detected, family_method = _detect_family(mol, _mfp2, bio_b)
     fam = family_hint or fam_detected
     out["family_assigned"] = fam
 
@@ -658,8 +668,7 @@ def predict_bioactivity_v15(smiles: str, bundle: V15Bundle,
     lion_path = CACHE_DIR / "lion_cache_v13.json"
     admet_path = CACHE_DIR / "admet_cache_v13.json"
     X_q, lion_modes = assemble_X(
-        df_q, [mol], [AllChem.GetMorganGenerator(radius=2, fpSize=2048).GetFingerprint(mol)],
-        [canonical],
+        df_q, [mol], [_mfp2], [canonical],
         lion_cache_path=str(lion_path) if lion_path.exists() else None,
         admet_cache_path=str(admet_path) if admet_path.exists() else None,
     )

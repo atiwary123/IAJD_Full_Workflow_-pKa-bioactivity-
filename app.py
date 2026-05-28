@@ -16,6 +16,27 @@ from pathlib import Path
 warnings.filterwarnings("ignore")
 HERE = Path(__file__).resolve().parent
 
+# Compat shim: older rdkit builds (notably the one pinned in this env) don't
+# expose AllChem.GetMorganGenerator. Many of our modules reference it at
+# import time, so patch in a thin wrapper that falls back to the legacy API.
+try:
+    from rdkit.Chem import AllChem as _AllChem_shim
+    if not hasattr(_AllChem_shim, "GetMorganGenerator"):
+        class _ShimGen:
+            def __init__(self, radius, fpSize):
+                self.radius = radius; self.fpSize = fpSize
+            def GetFingerprint(self, mol):
+                return _AllChem_shim.GetMorganFingerprintAsBitVect(
+                    mol, self.radius, nBits=self.fpSize)
+            def GetCountFingerprint(self, mol):
+                return _AllChem_shim.GetHashedMorganFingerprint(
+                    mol, radius=self.radius, nBits=self.fpSize)
+        _AllChem_shim.GetMorganGenerator = (
+            lambda radius=2, fpSize=2048, **kw: _ShimGen(radius, fpSize)
+        )
+except Exception:
+    pass
+
 # Install chemprop 1.6.1 at startup if not present (HF Spaces can't fit it
 # in a Docker image alongside torch, so we install at runtime).
 try:
@@ -45,6 +66,27 @@ from iajd_predict import (
     predict, predict_batch, _load_bundle, ALLOWED_FAMILIES,
 )
 from iajd_family import CHEMICAL_FAMILIES, BIOACT_ONLY_SUBARCHS
+
+# Binary (tunable-threshold) classifier head — added 2026-05-28.
+try:
+    from predict_binary import load_binary_bundle, predict_p_above
+    _BIN_BUNDLE = load_binary_bundle()
+    BIN_AVAILABLE = True
+except Exception as exc:  # noqa: BLE001
+    BIN_AVAILABLE = False
+    _BIN_BUNDLE = None
+    predict_p_above = None
+    print(f"[binary head] not available: {exc}")
+
+# Fragment-swap proposer — added 2026-05-28.
+try:
+    from iajd_grammar import build_library, decompose_row, Seed
+    import propose_iajds as _propose
+    _PROPOSE_LIB = None
+    PROPOSE_AVAILABLE = True
+except Exception as exc:  # noqa: BLE001
+    PROPOSE_AVAILABLE = False
+    print(f"[proposer] not available: {exc}")
 
 # v11 pKa-dominant independent baseline (M2 bundle). Optional — the Space
 # still works if the bundle file isn't shipped.
@@ -234,6 +276,18 @@ def _render_result_markdown(r: dict, idx: int = 0) -> str:
         md.append(f"_max Tanimoto to bioact training: {bio['max_tanimoto']:.3f}_")
     md.append("")
 
+    # Binary head: P(≥ threshold)
+    bin = r.get("binary_above_threshold") or {}
+    if bin and "p_above" in bin:
+        T = bin["threshold"]
+        p = bin["p_above"]
+        flux10 = 10 ** T
+        verdict = "✅ likely **above**" if p >= 0.5 else "⚠️ likely **below**"
+        md.append(f"## Will log10 flux ≥ {T} (= {flux10:.0e})?  {verdict}")
+        md.append(f"**P(log10 flux ≥ {T}) = {p:.2%}**  "
+                  f"(continuous-threshold head; tunable T at inference)")
+        md.append("")
+
     # Organ delivery
     if organ.get("target_organ"):
         md.append(f"### Per-organ flux (similarity-weighted, not ML)")
@@ -304,7 +358,29 @@ def _attach_v11(r: dict) -> dict:
     return r
 
 
-def single_predict(smiles: str, family_choice: str, neighbors: int):
+def _attach_binary(r: dict, threshold: float) -> dict:
+    """Add binary classifier P(≥threshold) to a predict() result."""
+    if not BIN_AVAILABLE or predict_p_above is None:
+        return r
+    smi = r.get("canonical_smiles")
+    if not smi:
+        return r
+    fam = (r.get("family_resolution") or {}).get("family_assigned") or "GA-Tris"
+    try:
+        yhat, p = predict_p_above(smi, threshold, _BIN_BUNDLE, family_hint=fam)
+        r["binary_above_threshold"] = {
+            "threshold": float(threshold),
+            "yhat_regressor": round(float(yhat), 3),
+            "p_above": round(float(p), 4),
+            "decision": bool(p >= 0.5),
+        }
+    except Exception as exc:
+        r["binary_above_threshold"] = {"error": str(exc)}
+    return r
+
+
+def single_predict(smiles: str, family_choice: str, neighbors: int,
+                    threshold: float = 8.0):
     if not smiles or not smiles.strip():
         return "_Enter a SMILES._", ""
     family = None if (not family_choice or family_choice == "(auto-detect)") else family_choice
@@ -313,9 +389,101 @@ def single_predict(smiles: str, family_choice: str, neighbors: int):
     except Exception as exc:  # noqa: BLE001
         return f"### Prediction failed\n\n```\n{type(exc).__name__}: {exc}\n```", ""
     _attach_v11(r)
+    _attach_binary(r, float(threshold))
     md = _render_result_markdown(r, 0)
     raw = json.dumps(r, indent=2, default=str)
     return md, raw
+
+
+def propose_better(seed_smiles: str, threshold: float, beam: int, depth: int,
+                    top_seeds: int):
+    """Run the fragment-swap proposer; render top candidates as Markdown."""
+    if not PROPOSE_AVAILABLE:
+        return "_Proposer module unavailable._", ""
+    global _PROPOSE_LIB
+    if _PROPOSE_LIB is None:
+        _PROPOSE_LIB = build_library(HERE / "IAJD_master/datasets/IAJD_Bioact_v13_clean.xlsx")
+
+    import pandas as _pd
+    df_bio = _pd.read_excel(HERE / "IAJD_master/datasets/IAJD_Bioact_v13_clean.xlsx")
+    seeds = []
+    if seed_smiles and seed_smiles.strip():
+        from rdkit import Chem as _Chem
+        m = _Chem.MolFromSmiles(seed_smiles.strip())
+        if m is None:
+            return f"_Could not parse SMILES: {seed_smiles}_", ""
+        canon = _Chem.MolToSmiles(m)
+        # Find a matching training row for family/head/linker context
+        row = None
+        for _, r in df_bio.iterrows():
+            sm = r.get("SMILES_canonical") or r.get("SMILES")
+            if _Chem.MolToSmiles(_Chem.MolFromSmiles(str(sm))) == canon:
+                row = r.to_dict()
+                break
+        if row is None:
+            # Synthesize a generic GA-Tris row
+            row = {"family": "GA-Tris", "head_group": "HPRZ",
+                   "linker_length": 4, "linkage": "ester",
+                   "SMILES_canonical": canon}
+        seed = decompose_row(row)
+        if seed is not None:
+            seeds = [seed]
+    if not seeds:
+        # default to top-K winners
+        rows = (df_bio.dropna(subset=["log10_flux_total"])
+                       .sort_values("log10_flux_total", ascending=False)
+                       .head(int(top_seeds)))
+        for _, r in rows.iterrows():
+            s = decompose_row(r.to_dict())
+            if s: seeds.append(s)
+    if not seeds:
+        return "_No usable seeds found._", ""
+
+    # Train fingerprints for novelty
+    train_fps = []
+    from rdkit import Chem as _Chem
+    from rdkit.Chem import AllChem as _AC
+    try:
+        _gen = _AC.GetMorganGenerator(radius=2, fpSize=2048)
+        _fp_fn = lambda m: _gen.GetFingerprint(m)
+    except AttributeError:
+        _fp_fn = lambda m: _AC.GetMorganFingerprintAsBitVect(m, 2, nBits=2048)
+    for _, r in df_bio.iterrows():
+        sm = r.get("SMILES_canonical") or r.get("SMILES")
+        if _pd.isna(sm): continue
+        m = _Chem.MolFromSmiles(str(sm))
+        if m is not None:
+            train_fps.append(_fp_fn(m))
+
+    import pickle as _pickle
+    with open(HERE / "IAJD_master/bundles_caches/bioact_v14_bundle.pkl", "rb") as f:
+        bundle_v14 = _pickle.load(f)
+    try:
+        result = _propose.beam_search(
+            float(threshold), int(beam), int(depth), seeds, _PROPOSE_LIB,
+            bundle_v14, _BIN_BUNDLE, train_fps
+        )
+    except Exception as exc:
+        return f"### Proposer failed\n\n```\n{type(exc).__name__}: {exc}\n```", ""
+
+    # Render top 20
+    md = ["## Proposed IAJDs",
+          f"_threshold T={threshold}, beam={beam}, depth={depth}, "
+          f"{len(seeds)} seed(s); ranked by ŷ × P(≥T)_",
+          ""]
+    md.append("| rank | ŷ (log10 flux) | P(≥T) | Tanim_max | mutation trail | SMILES |")
+    md.append("|---|---|---|---|---|---|")
+    for i, (_, r) in enumerate(result.head(20).iterrows()):
+        trail = " → ".join((r.get("mutation_trail") or [])[-3:])
+        tanim = r.get("tanim_max_to_train")
+        tanim_s = f"{tanim:.2f}" if tanim == tanim else "—"   # NaN check
+        md.append(f"| {i+1} | {r['yhat']:.2f} | {r['p_above']:.2%} | {tanim_s} "
+                  f"| `{trail}` | `{r['smiles']}` |")
+    md.append("")
+    md.append(f"_Total scored: {len(result)}; novel (Tanim < 0.85): "
+              f"{int((result['tanim_max_to_train'] < 0.85).sum())}_")
+    csv = result.head(50).to_csv(index=False)
+    return "\n".join(md), csv
 
 
 def batch_predict(file_obj, smiles_text: str, family_choice: str, neighbors: int):
@@ -385,11 +553,15 @@ Accepts SMILES, ChemDraw (.cdxml), SDF, MOL. Family auto-detected (6 chemical fa
             with gr.Row():
                 fam = gr.Dropdown(_FAMILY_OPTIONS, value="(auto-detect)", label="Family (optional)")
                 neighbors = gr.Number(value=5, label="Neighbors", precision=0, minimum=1, maximum=20)
+                threshold = gr.Slider(
+                    minimum=6.5, maximum=9.5, step=0.25, value=8.0,
+                    label="Bioactivity threshold T (log10 flux); model returns P(≥ T)"
+                )
                 go = gr.Button("Predict", variant="primary")
             out_md = gr.Markdown()
             with gr.Accordion("Raw JSON result", open=False):
                 out_json = gr.Code(language="json")
-            go.click(single_predict, inputs=[smiles_in, fam, neighbors],
+            go.click(single_predict, inputs=[smiles_in, fam, neighbors, threshold],
                      outputs=[out_md, out_json])
 
         with gr.Tab("Batch (file upload or multi-SMILES paste)"):
@@ -419,10 +591,41 @@ Accepts SMILES, ChemDraw (.cdxml), SDF, MOL. Family auto-detected (6 chemical fa
             go_b.click(batch_predict, inputs=[upfile, smiles_text, fam_b, neighbors_b],
                        outputs=[out_md_b, out_json_b])
 
+        if PROPOSE_AVAILABLE and BIN_AVAILABLE:
+            with gr.Tab("Propose better IAJDs"):
+                gr.Markdown(
+                    "Search for IAJDs predicted to clear a target bioactivity threshold. "
+                    "The proposer applies single-step structural mutations (head swap, "
+                    "linker resize, tail swap, tail extension) drawn from the training "
+                    "library, ranks candidates by `ŷ × P(≥T)`, and filters for novelty "
+                    "(Tanimoto < 0.85 vs training set)."
+                )
+                with gr.Row():
+                    seed_in = gr.Textbox(
+                        label="Seed SMILES (blank ⇒ top training IAJDs)",
+                        value="",
+                        lines=2,
+                    )
+                with gr.Row():
+                    p_threshold = gr.Slider(6.5, 9.5, value=8.0, step=0.25,
+                                              label="Threshold T")
+                    p_beam = gr.Slider(5, 30, value=10, step=1, label="Beam width")
+                    p_depth = gr.Slider(1, 3, value=2, step=1, label="Mutation depth")
+                    p_seeds = gr.Slider(1, 15, value=5, step=1, label="# top training seeds")
+                go_p = gr.Button("Propose", variant="primary")
+                out_p_md = gr.Markdown()
+                with gr.Accordion("Candidate CSV (top 50)", open=False):
+                    out_p_csv = gr.Code(language="csv")
+                go_p.click(propose_better,
+                            inputs=[seed_in, p_threshold, p_beam, p_depth, p_seeds],
+                            outputs=[out_p_md, out_p_csv])
+
         gr.Markdown(
             "---\n"
-            "_Training: 278 pKa compounds (6 families) + 273 bioactivity measurements (6 families)._ "
-            "_pKa v9.1 LOO MAE 0.065. Adaptive stacker (6-head, OOD-aware) LOO MAE 0.403. v11 M2 LOO MAE 0.475._"
+            "_Training: 286 pKa compounds + 273 bioactivity measurements (6 families)._\n\n"
+            "_pKa v9.1 LOO MAE 0.160. v14+stacker LOO MAE 0.428. v11 M2 LOO MAE 0.475. "
+            "Binary classifier (tunable T): ROC-AUC 0.82 at T=8.0._\n\n"
+            "_8 GA-Tris IAJDs (347, 348, 365, 366, 367, 369, 372, 373) reintegrated 2026-05-28._"
         )
     return demo
 

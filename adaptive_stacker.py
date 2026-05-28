@@ -45,7 +45,11 @@ from compute_cpp import compute_cpp_features, CPP_FEATURE_NAMES
 
 def compute_novelty_scores(smiles_list, train_fps):
     """Compute novelty = 1 - max_tanimoto for each query vs training set."""
-    fpgen = AllChem.GetMorganGenerator(radius=3, fpSize=2048)
+    try:
+        fpgen = AllChem.GetMorganGenerator(radius=3, fpSize=2048)
+        _fp = lambda m: fpgen.GetFingerprint(m)
+    except AttributeError:
+        _fp = lambda m: AllChem.GetMorganFingerprintAsBitVect(m, 3, nBits=2048)
     scores = []
     for smi in smiles_list:
         mol = Chem.MolFromSmiles(smi)
@@ -171,7 +175,11 @@ def build_adaptive_stacker():
                   reg_lambda=3.0, random_state=42, n_jobs=1)
 
     # Compute training fingerprints for novelty scoring
-    fpgen = AllChem.GetMorganGenerator(radius=3, fpSize=2048)
+    try:
+        fpgen = AllChem.GetMorganGenerator(radius=3, fpSize=2048)
+        _fp = lambda m: fpgen.GetFingerprint(m)
+    except AttributeError:
+        _fp = lambda m: AllChem.GetMorganFingerprintAsBitVect(m, 3, nBits=2048)
     train_fps = []
     for smi in smiles_all:
         mol = Chem.MolFromSmiles(smi)

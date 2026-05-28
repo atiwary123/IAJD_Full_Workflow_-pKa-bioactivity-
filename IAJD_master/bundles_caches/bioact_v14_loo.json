@@ -1,0 +1,91 @@
+{
+  "baseline_v09_style": {
+    "pooled_mae": 0.4562703483693572,
+    "pooled_r2": 0.5650464825169703,
+    "per_family": {
+      "Dialkoxybenzyl": {
+        "n": 10,
+        "mae": 0.3245275131902684
+      },
+      "PE-Gallic": {
+        "n": 11,
+        "mae": 0.7268004986501754
+      },
+      "GA-Tris": {
+        "n": 20,
+        "mae": 0.3424050880974333
+      },
+      "PE-Tris": {
+        "n": 41,
+        "mae": 0.5770333748934401
+      },
+      "G1-Janus-Dendrimer": {
+        "n": 21,
+        "mae": 0.6172021353698784
+      },
+      "sSS-Nonsym": {
+        "n": 144,
+        "mae": 0.40271514204742687
+      }
+    },
+    "config": "alpha=0.6 uniform, all blocks on"
+  },
+  "v14_final": {
+    "pooled_mae": 0.42803147425701404,
+    "pooled_r2": 0.5994281018814477,
+    "per_family": {
+      "Dialkoxybenzyl": {
+        "n": 10,
+        "mae": 0.23938803099964553
+      },
+      "PE-Gallic": {
+        "n": 11,
+        "mae": 0.7021583350249547
+      },
+      "GA-Tris": {
+        "n": 20,
+        "mae": 0.3025256851571635
+      },
+      "PE-Tris": {
+        "n": 41,
+        "mae": 0.489732194273798
+      },
+      "G1-Janus-Dendrimer": {
+        "n": 21,
+        "mae": 0.5641529426040405
+      },
+      "sSS-Nonsym": {
+        "n": 144,
+        "mae": 0.4002042130774838
+      }
+    },
+    "best_alpha": {
+      "Dialkoxybenzyl": 0.3,
+      "PE-Gallic": 1.0,
+      "GA-Tris": 0.9,
+      "PE-Tris": 0.9,
+      "G1-Janus-Dendrimer": 1.0,
+      "sSS-Nonsym": 0.5
+    },
+    "block_b_active": {
+      "Dialkoxybenzyl": true,
+      "PE-Gallic": true,
+      "GA-Tris": true,
+      "PE-Tris": true,
+      "G1-Janus-Dendrimer": true,
+      "sSS-Nonsym": true
+    },
+    "block_c_active": {
+      "Dialkoxybenzyl": true,
+      "PE-Gallic": true,
+      "GA-Tris": false,
+      "PE-Tris": true,
+      "G1-Janus-Dendrimer": false,
+      "sSS-Nonsym": true
+    }
+  },
+  "improvement": {
+    "pooled_mae_delta": -0.02823887411234316,
+    "pooled_mae_pct_change": -6.189066244007467
+  }
+}

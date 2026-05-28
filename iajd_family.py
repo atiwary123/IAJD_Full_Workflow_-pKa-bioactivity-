@@ -60,7 +60,12 @@ ALLOWED_FAMILIES = set(CHEMICAL_FAMILIES)
 
 # Count-Morgan-3 fingerprints (4096 bins) — sensitive to chain-length /
 # substitution-count differences that BIT fingerprints saturate on.
-_FPGEN = AllChem.GetMorganGenerator(radius=3, fpSize=4096)
+try:
+    _FPGEN = AllChem.GetMorganGenerator(radius=3, fpSize=4096)
+    _FPGEN_OK = True
+except AttributeError:
+    _FPGEN = None
+    _FPGEN_OK = False
 
 # Reference index of (canonical_smiles, family_chemical, count_fp)
 _REF_SMILES: List[str] = []
@@ -77,7 +82,10 @@ _INDEX_LOADED = False
 # ---------------------------------------------------------------------------
 
 def _count_fp(mol: Chem.Mol) -> Dict[int, int]:
-    fp = _FPGEN.GetCountFingerprint(mol)
+    if _FPGEN_OK:
+        fp = _FPGEN.GetCountFingerprint(mol)
+    else:
+        fp = AllChem.GetHashedMorganFingerprint(mol, radius=3, nBits=4096)
     return dict(fp.GetNonzeroElements())
 
 

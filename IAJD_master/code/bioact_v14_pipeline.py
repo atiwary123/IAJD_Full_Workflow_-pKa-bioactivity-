@@ -55,7 +55,8 @@ _default_out = WORK.parent / 'bundles_caches'
 OUT  = Path(os.environ.get('IAJD_OUT_DIR', str(_default_out)))
 OUT.mkdir(parents=True, exist_ok=True)
 
-DATASET_PATH = WORK / 'IAJD_Bioact_v13_clean.xlsx'
+_default_dataset = WORK.parent / 'datasets' / 'IAJD_Bioact_v13_clean.xlsx'
+DATASET_PATH = Path(os.environ.get('IAJD_BIOACT_XLSX', str(_default_dataset)))
 
 # Block B (LION) feature names — keep parity with the production module
 LION_TISSUES = ['liver_IV', 'lung_IT', 'lung_inh', 'lung_neb', 'muscle_IM', 'nasal']
@@ -87,7 +88,14 @@ BLOCK_D_NAMES = [
 A_LOOKUP_HEAD = {'HPRZ': 47, 'MPRZ': 35, 'DMA': 25, 'PIP': 30, 'DMBA': 55,
                  'unknown': 40, None: 40, '': 40}
 
-MFPGEN = AllChem.GetMorganGenerator(radius=2, fpSize=2048)
+try:
+    MFPGEN = AllChem.GetMorganGenerator(radius=2, fpSize=2048)
+    def _MFP(mol):
+        return MFPGEN.GetFingerprint(mol)
+except AttributeError:
+    MFPGEN = None
+    def _MFP(mol):
+        return AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048)
 
 
 # =====================================================================
@@ -120,7 +128,7 @@ def load_v13():
     df = df[valid_mask].reset_index(drop=True)
     mols = [m for m, v in zip(mols, valid_mask) if v]
     print(f'  after RDKit parse:      {len(df)} rows')
-    fps = [MFPGEN.GetFingerprint(m) for m in mols]
+    fps = [_MFP(m) for m in mols]
     return df, mols, fps
 
 
@@ -798,9 +806,9 @@ def main():
 
     # ---- 2. Look for caches ----
     print('\n[2/7] Locating external-model caches...')
-    lion_cache = WORK / 'lion_cache_v13.json'
-    admet_cache = WORK / 'admet_cache_v13.json'
-    lion_train_fps = WORK / 'lion_train_fps.pkl'
+    lion_cache = OUT / 'lion_cache_v13.json'
+    admet_cache = OUT / 'admet_cache_v13.json'
+    lion_train_fps = OUT / 'lion_train_fps.pkl'
     print(f'  LION cache:        {"FOUND" if lion_cache.exists() else "missing → proxy"} ({lion_cache.name})')
     print(f'  ADMET cache:       {"FOUND" if admet_cache.exists() else "missing → proxy"} ({admet_cache.name})')
     print(f'  LION train FPs:    {"FOUND" if lion_train_fps.exists() else "missing → OOD=1"} ({lion_train_fps.name})')
