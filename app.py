@@ -96,13 +96,33 @@ except Exception as exc:  # noqa: BLE001
 
 # Fragment-swap proposer — added 2026-05-28.
 try:
-    from iajd_grammar import build_library, decompose_row, Seed
+    from iajd_grammar import build_library, decompose_row, Seed, humanize_mutation_tag
     import propose_iajds as _propose
     _PROPOSE_LIB = None
     PROPOSE_AVAILABLE = True
 except Exception as exc:  # noqa: BLE001
     PROPOSE_AVAILABLE = False
     print(f"[proposer] not available: {exc}")
+
+
+def _mutation_story(trail, max_steps: int = 6) -> str:
+    """Humanize the FULL mutation trail (every round) into one readable chain,
+    so a multi-round candidate shows its complete derivation from the seed —
+    not just the most recent mutation. Single-step candidates render as the
+    lone description; multi-step ones are round-labelled, e.g.
+    'R1 Linker shortened: 5C → 3C  ▸  R2 Synthetic head added: DEHPRZ'.
+    Steps are joined by ' ▸ ' (distinct from the ' → ' inside each step)."""
+    if not isinstance(trail, (list, tuple)):
+        return ""
+    steps = [t for t in trail if t and t != "seed"]
+    if not steps:
+        return "Original seed (no mutation)"
+    labels = [humanize_mutation_tag(t) for t in steps]
+    if len(labels) > max_steps:
+        labels = labels[:max_steps] + [f"… (+{len(labels) - max_steps} more)"]
+    if len(labels) == 1:
+        return labels[0]
+    return "  ▸  ".join(f"R{i+1} {lab}" for i, lab in enumerate(labels))
 
 # v11 pKa-dominant independent baseline (M2 bundle). Optional — the Space
 # still works if the bundle file isn't shipped.
@@ -485,13 +505,15 @@ def propose_better(seed_smiles: str, threshold: float, beam: int, depth: int,
                 f"{len(seeds)} seed(s); ranked by {rank_desc}. "
                 f"{len(result_df)} candidates shown._",
                 ""]
-        body.append("| rank | Δ vs seed | Δ_SAR | ŷ ML | seed ŷ | P(≥T) | Q_phys | escape | Tanim | What changed (· why, per training SAR) | SMILES |")
+        body.append("| rank | Δ vs seed | Δ_SAR | ŷ ML | seed ŷ | P(≥T) | Q_phys | escape | Tanim | Mutations — full derivation (all rounds) · latest SAR why | SMILES |")
         body.append("|---|---|---|---|---|---|---|---|---|---|---|")
         for i, (_, r) in enumerate(result_df.head(20).iterrows()):
-            desc = r.get("mutation_description") or " → ".join((r.get("mutation_trail") or [])[-2:])
+            # Full derivation: every mutation across all rounds, not just the last.
+            desc = (_mutation_story(r.get("mutation_trail"))
+                    or r.get("mutation_description") or "—")
             sar_why = r.get("sar_reason")
             if isinstance(sar_why, str) and sar_why.strip():
-                desc = f"{desc} · _{sar_why}_"
+                desc = f"{desc} · _latest: {sar_why}_"
             def _fmt(v, d=2):
                 if v is None or v != v:
                     return "—"
@@ -516,7 +538,11 @@ def propose_better(seed_smiles: str, threshold: float, beam: int, depth: int,
             tan_mask = result_df["tanim_max_to_train"] < 0.85
             body.append(f"_Total scored: {len(result_df)}; "
                           f"novel (Tanim < 0.85): {int(tan_mask.sum())}_")
-        csv = result_df.head(50).to_csv(index=False)
+        csv_df = result_df.head(50).copy()
+        if "mutation_trail" in csv_df.columns:
+            # Readable full-derivation column alongside the raw trail.
+            csv_df.insert(0, "mutation_story", csv_df["mutation_trail"].apply(_mutation_story))
+        csv = csv_df.to_csv(index=False)
         return "\n".join(body), csv
 
     last_md, last_csv = "_Running…_", ""
