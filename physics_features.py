@@ -260,13 +260,25 @@ def compute_all_physics_features(mol_or_smiles, *,
     if v_tail_nm3 is not None and l_tail_nm is not None and a_head_nm2 is not None:
         out["cpp_geometric"] = cpp_geometric(v_tail_nm3, l_tail_nm, a_head_nm2)
     else:
-        # Cheap RDKit fallback: V_tail ≈ 0.027 × heavy_aliphatic, l_tail ≈ 0.127 × n_C
+        # Cheap RDKit fallback using Tanford constants:
+        #   V_per_CH2 = 0.027 nm³, l_per_CH2 = 0.127 nm
+        # For an n-chain IAJD: CPP = (n_chains·V_per_chain) / (a_head · l_per_chain)
+        # Excludes head/aromatic carbons; head area depends on head_group identity
+        # so we use a reasonable family-typical default.
+        # Count aliphatic non-aromatic carbons NOT in the head/linker region
+        # (approximation: count all aliphatic C, subtract a small constant for
+        # the head+linker region).
         n_aliphatic_c = sum(1 for a in mol.GetAtoms()
                               if a.GetAtomicNum() == 6 and not a.GetIsAromatic())
         n_chains = max(1, n_tail_chains)
-        out["cpp_geometric"] = (
-            0.027 * n_aliphatic_c / n_chains  # V_tail per chain
-        ) / (HEAD_AREA_REF_NM2 * (0.127 * n_aliphatic_c / n_chains + 0.3))
+        head_linker_carbons = 6 + n_chains   # piperazine ring (4C) + linker (~2) + dummy
+        n_tail_c = max(1, (n_aliphatic_c - head_linker_carbons))
+        n_C_per_chain = max(1.0, n_tail_c / n_chains)
+        V_per_chain = 0.027 * n_C_per_chain
+        l_per_chain = 0.127 * n_C_per_chain
+        # Default head area: HPRZ/H2EPRZ ≈ 0.65, DMA ≈ 0.30, piperazine ≈ 0.5
+        a_head_default = 0.65
+        out["cpp_geometric"] = (n_chains * V_per_chain) / (a_head_default * l_per_chain)
 
     # Lamellar d-spacing
     if linker_length is not None and chain_avg_carbons is not None:

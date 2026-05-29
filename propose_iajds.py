@@ -85,6 +85,181 @@ _BIOACT_LOOKUP = None      # canonical_smiles -> dict (training row)
 _DESC_CACHE: dict = {}     # canonical_smiles -> dict of feature columns
 _V91_BUNDLE_CACHE = None   # v9.1 pKa bundle, lazy-loaded
 _LIVE_PKA_CACHE: dict = {} # canonical SMILES -> (pKa, pKa_sd) from live v9.1
+_V15_BUNDLE_CACHE = None   # v15 hybrid bundle (physics-quality + sigma)
+_PHYSICS_CACHE: dict = {}  # canonical SMILES -> (Q_physics, sigma_combined) tuple
+_MONOTONE_AXES = None      # loaded from monotone_axes.json (lazy)
+_MONOTONE_CACHE: dict = {} # canonical SMILES -> (bonus, signals_dict) tuple
+
+
+# Family-median pKa from training data, used as a cheap pKa estimate for
+# inline physics-quality computation (avoids per-candidate live MolGpKa).
+_FAMILY_PKA_MEDIAN = {
+    "GA-Tris":            6.50,
+    "PE-Tris":            6.45,
+    "PE-Gallic":          6.40,
+    "sSS-Nonsym":         6.55,
+    "Dialkoxybenzyl":     6.50,
+    "G1-Janus-Dendrimer": 6.50,
+}
+
+
+def _load_monotone_axes():
+    """Lazy-load the monotone-axis analysis (analyze_monotone_axes.py output)."""
+    global _MONOTONE_AXES
+    if _MONOTONE_AXES is not None:
+        return _MONOTONE_AXES
+    path = ROOT / "monotone_axes.json"
+    if not path.exists():
+        _MONOTONE_AXES = {"axes": {}, "_missing": True}
+        return _MONOTONE_AXES
+    try:
+        import json as _json
+        _MONOTONE_AXES = _json.loads(path.read_text())
+    except Exception:
+        _MONOTONE_AXES = {"axes": {}, "_missing": True}
+    return _MONOTONE_AXES
+
+
+def _monotone_bonus(smiles: str, features: dict) -> tuple:
+    """For each monotone axis, check whether the candidate's value steps
+    *beyond* the training range in the favorable direction.
+
+    Returns (bonus_score ∈ [0, 0.6], signals_dict):
+       bonus_score scales with how many monotone axes the candidate exceeds,
+       weighted by their Spearman ρ. Capped at 0.6 so a single feature can't
+       dominate.
+       signals_dict is a {feature → "+0.12C beyond train_max" / etc.} for
+       transparency.
+    """
+    if smiles in _MONOTONE_CACHE:
+        return _MONOTONE_CACHE[smiles]
+    axes = _load_monotone_axes().get("axes", {})
+    bonus = 0.0
+    signals = {}
+    for feat, info in axes.items():
+        if not info.get("reliably_monotone"):
+            continue
+        if feat not in features:
+            continue
+        x = features.get(feat)
+        if x is None or not np.isfinite(x):
+            continue
+        train_min = info.get("train_min")
+        train_max = info.get("train_max")
+        rho = info.get("spearman_rho") or 0.0
+        direction = info.get("direction", "increasing")
+        train_range = (train_max - train_min) if (train_max is not None and train_min is not None) else 0
+        if train_range <= 0:
+            continue
+        # Compute how far past the boundary we are, in fractions of the training range
+        if direction == "increasing":
+            if x > train_max:
+                step = (x - train_max) / train_range
+                axis_score = abs(rho) * min(0.3, step)   # cap per-axis at 0.3·|ρ|
+                bonus += axis_score
+                signals[feat] = (f"+{step:.2f}·range beyond train_max "
+                                  f"(ρ={rho:+.2f}, +increasing helps)")
+        else:   # decreasing
+            if x < train_min:
+                step = (train_min - x) / train_range
+                axis_score = abs(rho) * min(0.3, step)
+                bonus += axis_score
+                signals[feat] = (f"−{step:.2f}·range below train_min "
+                                  f"(ρ={rho:+.2f}, −decreasing helps)")
+    bonus = min(bonus, 0.6)
+    _MONOTONE_CACHE[smiles] = (bonus, signals)
+    return bonus, signals
+
+
+def _load_v15_bundle():
+    """Lazy-load the v15 hybrid bundle (physics scaler/model + σ's + weights)."""
+    global _V15_BUNDLE_CACHE
+    if _V15_BUNDLE_CACHE is not None:
+        return _V15_BUNDLE_CACHE
+    import joblib
+    bundle_path = ROOT / "IAJD_master/bundles_caches/v15_hybrid_bundle.joblib"
+    if not bundle_path.exists():
+        _V15_BUNDLE_CACHE = {"_missing": True}
+        return _V15_BUNDLE_CACHE
+    try:
+        _V15_BUNDLE_CACHE = joblib.load(bundle_path)
+    except Exception:
+        _V15_BUNDLE_CACHE = {"_missing": True}
+    return _V15_BUNDLE_CACHE
+
+
+def _physics_quality_quick(smiles: str, seed: "Seed | None" = None,
+                            family: str = "GA-Tris") -> dict:
+    """Inline physics-quality computation — no live MolGpKa, no 3D conformer.
+
+    Uses family-median pKa as a cheap estimate so we can score thousands of
+    candidates per second. Returns a dict:
+        {"q_physics": float ∈ [0,1],
+         "cpp": float,
+         "endosomal_escape": float,
+         "hlb": float,
+         "logKp": float,
+         "physics_yhat": float (Ridge prediction from v15 bundle)}
+    """
+    if smiles in _PHYSICS_CACHE:
+        return _PHYSICS_CACHE[smiles]
+    from physics_features import compute_all_physics_features
+    pka = _FAMILY_PKA_MEDIAN.get(family, 6.5)
+    linker_n = (seed.linker_n if seed is not None else 4)
+    n_chains = 3 if ("Tris" in family or family == "PE-Gallic") else 2
+    try:
+        feats = compute_all_physics_features(
+            smiles, pka=pka, linker_length=linker_n,
+            n_tail_chains=n_chains, chain_avg_carbons=10.0,
+        )
+    except Exception:
+        feats = {}
+
+    # Mechanism-based quality (same formula as predict_v15.physics_quality)
+    cpp = feats.get("cpp_geometric", 1.0)
+    if cpp is None or not np.isfinite(cpp):
+        cpp = 1.0
+    cpp_score = float(np.exp(-((cpp - 1.0) ** 2) / (2 * 0.3 ** 2)))
+
+    p_e = feats.get("protonation_endosome", 0.5)
+    p_c = feats.get("protonation_cytosol", 0.1)
+    if not np.isfinite(p_e): p_e = 0.5
+    if not np.isfinite(p_c): p_c = 0.1
+    escape = max(0.0, p_e - p_c)
+
+    hlb = feats.get("hlb_griffin", 8.5)
+    if not np.isfinite(hlb): hlb = 8.5
+    hlb_score = float(np.exp(-((hlb - 8.5) ** 2) / (2 * 3.0 ** 2)))
+
+    logKp = feats.get("logKp_membrane", 5.0)
+    if not np.isfinite(logKp): logKp = 5.0
+    membrane_score = 1.0 / (1.0 + np.exp(-(logKp - 4.0)))
+
+    q = float(np.mean([cpp_score, escape, hlb_score, membrane_score]))
+
+    # Physics Ridge prediction (optional — only if v15 bundle is available)
+    physics_yhat = float("nan")
+    b = _load_v15_bundle()
+    if not b.get("_missing"):
+        try:
+            cols = b["physics_cols"]
+            X = np.array([[feats.get(c, np.nan) for c in cols]], dtype=float)
+            X[~np.isfinite(X)] = 0.0
+            Xs = b["physics_scaler"].transform(X)
+            physics_yhat = float(b["physics_model"].predict(Xs)[0])
+        except Exception:
+            pass
+
+    out = {
+        "q_physics": q,
+        "cpp": float(cpp),
+        "endosomal_escape": escape,
+        "hlb": float(hlb),
+        "logKp": float(logKp),
+        "physics_yhat": physics_yhat,
+    }
+    _PHYSICS_CACHE[smiles] = out
+    return out
 
 
 def _bioact_lookup():
@@ -280,13 +455,34 @@ def _pick_seeds(df: pd.DataFrame, top_k: int) -> List[dict]:
 
 def beam_search_streaming(threshold: float, beam: int, depth: int,
                           seeds: List[Seed], library: Library,
-                          bundle_v14: dict, bundle_bin: dict, train_fps):
+                          bundle_v14: dict, bundle_bin: dict, train_fps,
+                          exploration_weight: float = 0.0,
+                          kappa_ucb: float = 1.5):
     """Generator: yield (round_idx, cumulative_df) after each beam round.
 
     Wraps beam_search but emits the DataFrame-so-far after each scoring pass so
     a Gradio caller can stream partial results to the UI instead of waiting for
     the full depth-D loop to complete.
+
+    Scoring:
+        score = (1 - α) × ML_score + α × PHYSICS_UCB_score
+        ML_score      = P(≥T) × max(0, ŷ − ŷ_seed)
+        PHYSICS_UCB   = Q_physics × max(0, ŷ + κ·σ − ŷ_seed)
+
+        where Q_physics ∈ [0,1] is the mechanism-based quality score
+        (CPP near 1, escape differential, HLB optimal, membrane affinity),
+        σ comes from the v15 hybrid bundle's σ_combined,
+        and α = exploration_weight controls ML-confidence ↔ physics-
+        extrapolation balance. α=0 reverts to pure ML scoring (no physics
+        influence); α=1 means rank purely by physics-justified UCB.
     """
+    # Load v15 once for σ values
+    _v15 = _load_v15_bundle()
+    if _v15.get("_missing"):
+        sigma_combined = 0.4   # fallback
+    else:
+        sigma_combined = (_v15["sigma"]["ml"] ** 2
+                          + _v15["sigma"]["disagreement"] ** 2) ** 0.5
     explored = set()
     current = []
     seed_smis = []
@@ -301,11 +497,20 @@ def beam_search_streaming(threshold: float, beam: int, depth: int,
     seed_yhat, seed_p = _score_with_v14(seed_smis, bundle_v14, bundle_bin, threshold,
                                           extend_cache=False)
     for s, sm, yh, p in zip(seeds, seed_smis, seed_yhat, seed_p):
+        # Inline physics quality for the seed
+        seed_phys = _physics_quality_quick(sm, s, family=s.family if s else "GA-Tris")
         current.append({
             "smiles": sm, "seed": s, "yhat": float(yh), "p_above": float(p),
             "yhat_seed": float(yh),
             "delta_vs_seed": 0.0,
             "tanim_max_to_train": float("nan"),
+            "q_physics": seed_phys["q_physics"],
+            "cpp": seed_phys["cpp"],
+            "endosomal_escape": seed_phys["endosomal_escape"],
+            "physics_yhat": seed_phys["physics_yhat"],
+            "ucb_score": float(yh),
+            "score_ml": 0.0,
+            "score_phys": 0.0,
             "mutation_trail": ["seed"],
             "mutation_description": "Original seed (no mutation)",
             "mutation_tag": "seed",
@@ -349,17 +554,52 @@ def beam_search_streaming(threshold: float, beam: int, depth: int,
             r["yhat"] = float(yh)
             r["p_above"] = float(p)
             r["delta_vs_seed"] = float(yh) - r["yhat_seed"]
-            r["score"] = float(p) * max(0.0, r["delta_vs_seed"])
 
-        # Stream each *qualifying* candidate (Δ > 0 vs seed) one-at-a-time so the
-        # UI table grows row-by-row. Sub-zero candidates are still added to
-        # all_candidates for the final tally, but they don't trigger a yield —
-        # the user only sees the search "find" actual improvements live.
+            # Inline physics quality (no live MolGpKa; uses family-median pKa)
+            cand_family = r["seed"].family if r.get("seed") else "GA-Tris"
+            phys = _physics_quality_quick(r["smiles"], r.get("seed"), family=cand_family)
+            r["q_physics"] = phys["q_physics"]
+            r["cpp"] = phys["cpp"]
+            r["endosomal_escape"] = phys["endosomal_escape"]
+            r["physics_yhat"] = phys["physics_yhat"]
+
+            # Monotone-axis bonus: candidates that step BEYOND training range
+            # along reliably-monotone features get a small additive lift.
+            # (We need the underlying RDKit feature dict to evaluate this.)
+            cand_features_for_monotone = (
+                _features_for_query_smiles(r["smiles"]) if r["smiles"] not in _DESC_CACHE
+                else _DESC_CACHE[r["smiles"]]
+            )
+            mono_bonus, mono_signals = _monotone_bonus(r["smiles"], cand_features_for_monotone)
+            r["monotone_bonus"] = mono_bonus
+            r["monotone_signals"] = "; ".join(f"{k}: {v}" for k, v in mono_signals.items())[:200]
+
+            # UCB upper bound
+            ucb = float(yh) + kappa_ucb * sigma_combined
+            r["ucb_score"] = ucb
+
+            # Component scores
+            score_ml = float(p) * max(0.0, r["delta_vs_seed"])
+            # Physics-weighted UCB Δ, with monotone bonus added linearly
+            # so a candidate that BOTH has good mechanism AND steps past
+            # training range along a monotone axis scores highest.
+            score_phys = (
+                float(phys["q_physics"]) * max(0.0, ucb - r["yhat_seed"])
+                + mono_bonus * max(0.5, abs(r["delta_vs_seed"]))   # at least 0.5 weight
+            )
+            r["score_ml"] = score_ml
+            r["score_phys"] = score_phys
+            r["score"] = (1.0 - exploration_weight) * score_ml + exploration_weight * score_phys
+
+        # Stream each *qualifying* candidate one-at-a-time so the UI table grows
+        # row-by-row. "Qualifying" = score > 0; when α=0 this means Δ_ML > 0,
+        # when α>0 it also includes physics-justified extrapolations even
+        # where ML predicts no improvement.
         qualifying = sorted(
-            [r for r in next_pool if r["delta_vs_seed"] > 0],
+            [r for r in next_pool if r["score"] > 0],
             key=lambda r: -r["score"],
         )
-        sub_par = [r for r in next_pool if r["delta_vs_seed"] <= 0]
+        sub_par = [r for r in next_pool if r["score"] <= 0]
         # Add sub-par silently to the cumulative list (no yield), then add
         # qualifying ones one-by-one with a yield each.
         all_candidates.extend(sub_par)

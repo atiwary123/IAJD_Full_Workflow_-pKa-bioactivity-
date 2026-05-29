@@ -450,8 +450,16 @@ def single_predict(smiles: str, family_choice: str, neighbors: int,
 
 
 def propose_better(seed_smiles: str, threshold: float, beam: int, depth: int,
-                    top_seeds: int):
-    """Run the fragment-swap proposer; render top candidates as Markdown."""
+                    top_seeds: int, exploration_weight: float = 0.0,
+                    kappa_ucb: float = 1.5):
+    """Run the fragment-swap proposer; render top candidates as Markdown.
+
+    exploration_weight (α ∈ [0,1]):
+        0 → pure ML scoring (Δ vs seed × P(≥T))
+        1 → pure physics-justified UCB (Q_physics × upper bound)
+        in-between blends the two — useful when ML is bounded by training
+        distribution and you want extrapolation hypotheses surfaced
+    """
     if not PROPOSE_AVAILABLE:
         return "_Proposer module unavailable._", ""
     global _PROPOSE_LIB
@@ -518,28 +526,42 @@ def propose_better(seed_smiles: str, threshold: float, beam: int, depth: int,
             header = f"## Proposed IAJDs — DONE"
         else:
             header = f"## Proposed IAJDs — live (round {round_idx}/{depth})"
+        rank_desc = (f"α={exploration_weight:.2f} blend of "
+                      f"`P(≥T)·max(0,Δ_ML)` and "
+                      f"`Q_physics·max(0, UCB − seed_ŷ)`  "
+                      f"(κ={kappa_ucb:.2f})")
         body = [header,
-                f"_threshold T={threshold}, beam={beam}, depth={depth}, "
-                f"{len(seeds)} seed(s); ranked by Δ vs seed × P(≥T). "
-                f"{len(result_df)} candidates scored so far._",
+                f"_T={threshold}, beam={beam}, depth={depth}, "
+                f"{len(seeds)} seed(s); ranked by {rank_desc}. "
+                f"{len(result_df)} candidates scored._",
                 ""]
-        body.append("| rank | Δ vs seed | ŷ | seed ŷ | P(≥T) | Tanim | What changed | SMILES |")
-        body.append("|---|---|---|---|---|---|---|---|")
+        body.append("| rank | Δ vs seed | ŷ ML | seed ŷ | P(≥T) | Q_phys | CPP | escape | Tanim | What changed | SMILES |")
+        body.append("|---|---|---|---|---|---|---|---|---|---|---|")
         for i, (_, r) in enumerate(result_df.head(20).iterrows()):
             desc = r.get("mutation_description") or " → ".join((r.get("mutation_trail") or [])[-2:])
-            tanim = r.get("tanim_max_to_train")
-            tanim_s = f"{tanim:.2f}" if tanim == tanim else "—"
+            def _fmt(v, d=2):
+                if v is None or v != v:
+                    return "—"
+                return f"{v:.{d}f}"
             delta = r.get("delta_vs_seed", 0)
             delta_s = f"{'+' if delta >= 0 else ''}{delta:.2f}" if delta == delta else "—"
             seed_y = r.get("yhat_seed")
             seed_y_s = f"{seed_y:.2f}" if seed_y == seed_y else "—"
-            body.append(f"| {i+1} | **{delta_s}** | {r['yhat']:.2f} | {seed_y_s} "
-                          f"| {r['p_above']:.2%} | {tanim_s} | {desc} | `{r['smiles']}` |")
+            tanim = r.get("tanim_max_to_train")
+            tanim_s = f"{tanim:.2f}" if tanim == tanim else "—"
+            q_p = r.get("q_physics")
+            cpp = r.get("cpp")
+            esc = r.get("endosomal_escape")
+            body.append(
+                f"| {i+1} | **{delta_s}** | {r['yhat']:.2f} | {seed_y_s} | "
+                f"{r['p_above']:.0%} | {_fmt(q_p)} | {_fmt(cpp)} | "
+                f"{_fmt(esc)} | {tanim_s} | {desc} | `{r['smiles']}` |"
+            )
         if is_final:
             body.append("")
             tan_mask = result_df["tanim_max_to_train"] < 0.85
-            body.append(f"_Total scored: {len(result_df)}; novel (Tanim < 0.85): "
-                          f"{int(tan_mask.sum())}_")
+            body.append(f"_Total scored: {len(result_df)}; "
+                          f"novel (Tanim < 0.85): {int(tan_mask.sum())}_")
         csv = result_df.head(50).to_csv(index=False)
         return "\n".join(body), csv
 
@@ -547,7 +569,9 @@ def propose_better(seed_smiles: str, threshold: float, beam: int, depth: int,
     try:
         result_iter = _propose.beam_search_streaming(
             float(threshold), int(beam), int(depth), seeds, _PROPOSE_LIB,
-            bundle_v14, _BIN_BUNDLE, train_fps
+            bundle_v14, _BIN_BUNDLE, train_fps,
+            exploration_weight=float(exploration_weight),
+            kappa_ucb=float(kappa_ucb),
         )
         for round_idx, partial_df in result_iter:
             last_md, last_csv = _render(partial_df, round_idx, is_final=False)
@@ -678,11 +702,19 @@ Accepts SMILES, ChemDraw (.cdxml), SDF, MOL. Family auto-detected.
             with gr.Tab("Propose better IAJDs"):
                 gr.Markdown(
                     "Search for IAJDs predicted to clear a target bioactivity threshold. "
-                    "The proposer applies single-step structural mutations (head swap, "
-                    "linker resize, tail swap, tail extension) drawn from the training "
-                    "library and ranks candidates by `ŷ × P(≥T)`. Higher Tanimoto-to-"
-                    "training is *desirable* (the regressor scores those candidates more "
-                    "confidently); we only filter out exact duplicates of training rows."
+                    "Applies expanded-grammar structural mutations (head/linker/tail swaps, "
+                    "tail extension, cross-family jumps, synthetic head variants) and ranks "
+                    "by a blend of **ML score** (`P(≥T) · Δ vs seed`) and **physics UCB** "
+                    "(`Q_physics · (ŷ + κ·σ − seed_ŷ)`) — the `α` slider controls the "
+                    "balance.\n\n"
+                    "• **α = 0**: pure ML. Ranks candidates that look like training data and "
+                    "  beat the seed by ML's estimate.\n"
+                    "• **α = 1**: pure physics-justified extrapolation. Ranks by mechanism-based "
+                    "  quality (CPP near 1, endosomal escape Δ, HLB optimal, membrane affinity) "
+                    "  combined with the model's uncertainty σ — useful when the seed is at the "
+                    "  top of the training distribution and ML can't see anything above it.\n"
+                    "• **κ** = exploration aggressiveness (UCB constant). 0 = no uncertainty "
+                    "  boost, 2-3 = aggressive extrapolation."
                 )
                 with gr.Row():
                     seed_in = gr.Textbox(
@@ -696,12 +728,18 @@ Accepts SMILES, ChemDraw (.cdxml), SDF, MOL. Family auto-detected.
                     p_beam = gr.Slider(5, 30, value=10, step=1, label="Beam width")
                     p_depth = gr.Slider(1, 3, value=2, step=1, label="Mutation depth")
                     p_seeds = gr.Slider(1, 15, value=5, step=1, label="# top training seeds")
+                with gr.Row():
+                    p_alpha = gr.Slider(0.0, 1.0, value=0.0, step=0.05,
+                                          label="α (0 = pure ML, 1 = pure physics-extrapolation)")
+                    p_kappa = gr.Slider(0.0, 3.0, value=1.5, step=0.25,
+                                          label="κ UCB (exploration aggressiveness)")
                 go_p = gr.Button("Propose", variant="primary")
                 out_p_md = gr.Markdown()
                 with gr.Accordion("Candidate CSV (top 50)", open=False):
                     out_p_csv = gr.Code()
                 go_p.click(propose_better,
-                            inputs=[seed_in, p_threshold, p_beam, p_depth, p_seeds],
+                            inputs=[seed_in, p_threshold, p_beam, p_depth,
+                                    p_seeds, p_alpha, p_kappa],
                             outputs=[out_p_md, out_p_csv])
 
         gr.Markdown(
