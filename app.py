@@ -512,38 +512,56 @@ def propose_better(seed_smiles: str, threshold: float, beam: int, depth: int,
     import pickle as _pickle
     with open(HERE / "IAJD_master/bundles_caches/bioact_v14_bundle.pkl", "rb") as f:
         bundle_v14 = _pickle.load(f)
+
+    def _render(result_df, round_idx: int, is_final: bool):
+        if is_final:
+            header = f"## Proposed IAJDs — DONE"
+        else:
+            header = f"## Proposed IAJDs — live (round {round_idx}/{depth})"
+        body = [header,
+                f"_threshold T={threshold}, beam={beam}, depth={depth}, "
+                f"{len(seeds)} seed(s); ranked by Δ vs seed × P(≥T). "
+                f"{len(result_df)} candidates scored so far._",
+                ""]
+        body.append("| rank | Δ vs seed | ŷ | seed ŷ | P(≥T) | Tanim | What changed | SMILES |")
+        body.append("|---|---|---|---|---|---|---|---|")
+        for i, (_, r) in enumerate(result_df.head(20).iterrows()):
+            desc = r.get("mutation_description") or " → ".join((r.get("mutation_trail") or [])[-2:])
+            tanim = r.get("tanim_max_to_train")
+            tanim_s = f"{tanim:.2f}" if tanim == tanim else "—"
+            delta = r.get("delta_vs_seed", 0)
+            delta_s = f"{'+' if delta >= 0 else ''}{delta:.2f}" if delta == delta else "—"
+            seed_y = r.get("yhat_seed")
+            seed_y_s = f"{seed_y:.2f}" if seed_y == seed_y else "—"
+            body.append(f"| {i+1} | **{delta_s}** | {r['yhat']:.2f} | {seed_y_s} "
+                          f"| {r['p_above']:.2%} | {tanim_s} | {desc} | `{r['smiles']}` |")
+        if is_final:
+            body.append("")
+            tan_mask = result_df["tanim_max_to_train"] < 0.85
+            body.append(f"_Total scored: {len(result_df)}; novel (Tanim < 0.85): "
+                          f"{int(tan_mask.sum())}_")
+        csv = result_df.head(50).to_csv(index=False)
+        return "\n".join(body), csv
+
+    last_md, last_csv = "_Running…_", ""
     try:
-        result = _propose.beam_search(
+        result_iter = _propose.beam_search_streaming(
             float(threshold), int(beam), int(depth), seeds, _PROPOSE_LIB,
             bundle_v14, _BIN_BUNDLE, train_fps
         )
+        for round_idx, partial_df in result_iter:
+            last_md, last_csv = _render(partial_df, round_idx, is_final=False)
+            yield last_md, last_csv
+        # Final render with DONE header on the last DataFrame we got
+        if last_csv:
+            # Reparse from CSV-side: just re-render the last partial as final
+            import io as _io
+            last_df = pd.read_csv(_io.StringIO(last_csv))
+            md_final, csv_final = _render(last_df, depth, is_final=True)
+            yield md_final, csv_final
     except Exception as exc:
-        return f"### Proposer failed\n\n```\n{type(exc).__name__}: {exc}\n```", ""
-
-    # Render top 20
-    md = ["## Proposed IAJDs",
-          f"_threshold T={threshold}, beam={beam}, depth={depth}, "
-          f"{len(seeds)} seed(s); ranked by **improvement over seed** "
-          f"(Δŷ) × P(≥T) — so a candidate only ranks above the seed if the model "
-          f"thinks it actually beats the seed_",
-          ""]
-    md.append("| rank | Δ vs seed | ŷ (log10 flux) | seed ŷ | P(≥T) | Tanim | What changed | SMILES |")
-    md.append("|---|---|---|---|---|---|---|---|")
-    for i, (_, r) in enumerate(result.head(20).iterrows()):
-        desc = r.get("mutation_description") or " → ".join((r.get("mutation_trail") or [])[-2:])
-        tanim = r.get("tanim_max_to_train")
-        tanim_s = f"{tanim:.2f}" if tanim == tanim else "—"
-        delta = r.get("delta_vs_seed", 0)
-        delta_s = f"{'+' if delta >= 0 else ''}{delta:.2f}" if delta == delta else "—"
-        seed_y = r.get("yhat_seed")
-        seed_y_s = f"{seed_y:.2f}" if seed_y == seed_y else "—"
-        md.append(f"| {i+1} | **{delta_s}** | {r['yhat']:.2f} | {seed_y_s} "
-                  f"| {r['p_above']:.2%} | {tanim_s} | {desc} | `{r['smiles']}` |")
-    md.append("")
-    md.append(f"_Total scored: {len(result)}; novel (Tanim < 0.85): "
-              f"{int((result['tanim_max_to_train'] < 0.85).sum())}_")
-    csv = result.head(50).to_csv(index=False)
-    return "\n".join(md), csv
+        yield f"### Proposer failed\n\n```\n{type(exc).__name__}: {exc}\n```", last_csv
+        return
 
 
 def batch_predict(file_obj, smiles_text: str, family_choice: str, neighbors: int):

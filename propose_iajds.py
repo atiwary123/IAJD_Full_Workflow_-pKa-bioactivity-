@@ -278,6 +278,88 @@ def _pick_seeds(df: pd.DataFrame, top_k: int) -> List[dict]:
     return [r.to_dict() for _, r in have.iterrows()]
 
 
+def beam_search_streaming(threshold: float, beam: int, depth: int,
+                          seeds: List[Seed], library: Library,
+                          bundle_v14: dict, bundle_bin: dict, train_fps):
+    """Generator: yield (round_idx, cumulative_df) after each beam round.
+
+    Wraps beam_search but emits the DataFrame-so-far after each scoring pass so
+    a Gradio caller can stream partial results to the UI instead of waiting for
+    the full depth-D loop to complete.
+    """
+    explored = set()
+    current = []
+    seed_smis = []
+    seed_kept = []
+    for s in seeds:
+        sm = s.original_smiles or s.assemble()
+        if sm is None:
+            continue
+        seed_smis.append(sm)
+        seed_kept.append(s)
+    seeds = seed_kept
+    seed_yhat, seed_p = _score_with_v14(seed_smis, bundle_v14, bundle_bin, threshold,
+                                          extend_cache=False)
+    for s, sm, yh, p in zip(seeds, seed_smis, seed_yhat, seed_p):
+        current.append({
+            "smiles": sm, "seed": s, "yhat": float(yh), "p_above": float(p),
+            "yhat_seed": float(yh),
+            "delta_vs_seed": 0.0,
+            "tanim_max_to_train": float("nan"),
+            "mutation_trail": ["seed"],
+            "mutation_description": "Original seed (no mutation)",
+            "mutation_tag": "seed",
+            "parent_smiles": None,
+            "score": 0.0,
+        })
+        explored.add(sm)
+    all_candidates = list(current)
+    yield 0, pd.DataFrame(all_candidates)
+
+    for d in range(depth):
+        current.sort(key=lambda r: -r["score"])
+        current = current[:beam]
+        next_pool = []
+        for parent in current:
+            for cand_smi, tag, cand_seed in propose_single_mutations(parent["seed"], library):
+                if cand_smi in explored:
+                    continue
+                if not _passes_filters(cand_smi):
+                    continue
+                m = Chem.MolFromSmiles(cand_smi)
+                cand_fp = _fp(m)
+                tanim = _tanimoto_max(cand_fp, train_fps)
+                if tanim >= NOVELTY_TANIMOTO_MAX:
+                    continue
+                explored.add(cand_smi)
+                next_pool.append({
+                    "smiles": cand_smi, "seed": cand_seed,
+                    "parent_smiles": parent["smiles"],
+                    "mutation_tag": tag,
+                    "mutation_description": humanize_mutation_tag(tag),
+                    "mutation_trail": parent["mutation_trail"] + [tag],
+                    "tanim_max_to_train": float(tanim),
+                    "yhat_seed": parent["yhat_seed"],
+                })
+        if not next_pool:
+            break
+        smis = [r["smiles"] for r in next_pool]
+        yhats, ps = _score_with_v14(smis, bundle_v14, bundle_bin, threshold)
+        for r, yh, p in zip(next_pool, yhats, ps):
+            r["yhat"] = float(yh)
+            r["p_above"] = float(p)
+            r["delta_vs_seed"] = float(yh) - r["yhat_seed"]
+            r["score"] = float(p) * max(0.0, r["delta_vs_seed"])
+        all_candidates.extend(next_pool)
+        current = next_pool
+        df_partial = pd.DataFrame(all_candidates)
+        df_partial["_tiebreak_yhat"] = df_partial["yhat"]
+        df_partial = df_partial.sort_values(
+            ["score", "_tiebreak_yhat"], ascending=[False, False]
+        ).reset_index(drop=True).drop(columns=["_tiebreak_yhat"])
+        yield d + 1, df_partial
+
+
 def beam_search(threshold: float, beam: int, depth: int,
                 seeds: List[Seed], library: Library,
                 bundle_v14: dict, bundle_bin: dict,
