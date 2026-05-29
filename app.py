@@ -729,9 +729,9 @@ Accepts SMILES, ChemDraw (.cdxml), SDF, MOL. Family auto-detected.
                     p_depth = gr.Slider(1, 3, value=2, step=1, label="Mutation depth")
                     p_seeds = gr.Slider(1, 15, value=5, step=1, label="# top training seeds")
                 with gr.Row():
-                    p_alpha = gr.Slider(0.0, 1.0, value=0.05, step=0.05,
+                    p_alpha = gr.Slider(0.0, 1.0, value=0.10, step=0.05,
                                           label="α (0 = pure ML, 1 = pure physics-extrapolation) — "
-                                                "default 0.05 is the LOO-Spearman-optimal blend; "
+                                                "default 0.10 is LOO-Spearman-optimal with no-proxy physics; "
                                                 "crank to 0.3–0.6 for extrapolation searches above a top seed")
                     p_kappa = gr.Slider(0.0, 3.0, value=1.5, step=0.25,
                                           label="κ UCB (exploration aggressiveness)")

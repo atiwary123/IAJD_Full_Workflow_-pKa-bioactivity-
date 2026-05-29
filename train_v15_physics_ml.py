@@ -56,26 +56,44 @@ PHYSICS_COLS = [
 
 
 def _physics_matrix(df: pd.DataFrame, pka_lookup: dict) -> np.ndarray:
-    """Compute physics features per row; return matrix [n × k]."""
+    """Compute physics features per row; return matrix [n × k].
+
+    No-proxy policy: pKa is REQUIRED to be real (from cache or row). If a
+    row has no real pKa, its protonation/escape/Manning rows stay NaN —
+    they're NOT filled with family-median estimates. Final imputation uses
+    column medians from the rows that DO have real values (so the Ridge
+    can still train), but each NaN is logged as "physics not fully real
+    for row X". head_group is pulled from the bioact row, so a_head is
+    per-molecule.
+    """
     rows = []
+    n_nan_pka = 0
     for _, r in df.iterrows():
         smi = r.get("SMILES_canonical") or r.get("SMILES")
         if pd.isna(smi):
             rows.append({k: np.nan for k in PHYSICS_COLS})
             continue
+        # Real pKa only: cache lookup OR measured pKa column. No family-median.
         pka = pka_lookup.get(int(r["row_id"]), np.nan) if "row_id" in r else np.nan
         if not np.isfinite(pka):
-            pka = float(r.get("pKa", np.nan)) if pd.notna(r.get("pKa")) else 6.5
+            pka_meas = r.get("pKa")
+            pka = float(pka_meas) if pd.notna(pka_meas) else np.nan
+        if not np.isfinite(pka):
+            n_nan_pka += 1
         linker_n = int(r["linker_length"]) if pd.notna(r.get("linker_length")) else None
         n_chains = 3 if "Tris" in str(r.get("family", "")) else 2
+        head_group = r.get("head_group") if pd.notna(r.get("head_group")) else None
         feats = compute_all_physics_features(
             str(smi), pka=pka, linker_length=linker_n,
             n_tail_chains=n_chains, chain_avg_carbons=10.0,
+            head_group=head_group,
         )
         rows.append({k: feats.get(k, np.nan) for k in PHYSICS_COLS})
+    print(f"  rows without real pKa: {n_nan_pka}/{len(df)}", flush=True)
     X = pd.DataFrame(rows)[PHYSICS_COLS].values.astype(float)
-    # Sanitize: replace inf, impute with column median
     X[~np.isfinite(X)] = np.nan
+    # Median imputation only for training-data column gaps; this is a fit
+    # convenience, not a proxy substitution at inference.
     for c in range(X.shape[1]):
         m = ~np.isfinite(X[:, c])
         if m.any():

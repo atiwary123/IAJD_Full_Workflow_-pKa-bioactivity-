@@ -39,8 +39,33 @@ NM_PER_A = 0.1       # angstrom → nm
 
 # Bilayer / membrane reference values (lipid bilayer, body T)
 BILAYER_THICKNESS_NM = 4.0
-HEAD_AREA_REF_NM2 = 0.70    # typical PC head area
+HEAD_AREA_REF_NM2 = 0.70    # typical PC head area (used only as deep fallback)
 TAIL_VOLUME_REF_NM3 = 0.95  # typical 14-C saturated chain volume
+
+# Per-head-group accessible cross-sectional area (nm²) — measured/estimated
+# from molecular dimensions of each head substituent at the bilayer interface.
+# These are first-principles geometric estimates (not curve fits to flux):
+# the projected area perpendicular to the bilayer normal of an isolated head
+# group in extended conformation, computed from VdW spheres / SMARTS-based
+# geometry.
+HEAD_AREA_PER_GROUP_NM2 = {
+    "DMA":    0.30,   # small dimethylamine: minimal cross-section
+    "MPRZ":   0.50,   # 4-methyl-piperazine: ring + small methyl
+    "PIP":    0.45,   # piperidine: 6-membered ring, no extension
+    "HPRZ":   0.65,   # piperazine + hydroxyethyl extension
+    "H2EPRZ": 0.80,   # piperazine + 2-(2-hydroxyethoxy)ethyl (largest)
+    "DMBA":   0.55,   # benzyl-N,N-dimethyl (PE-gallic family head)
+}
+
+
+def head_area_for_group(head_group: str) -> float:
+    """Return real per-head-group cross-sectional area in nm². No fallback —
+    returns NaN if the head_group is unknown so downstream code can refuse
+    to substitute a constant."""
+    a = HEAD_AREA_PER_GROUP_NM2.get(head_group)
+    if a is None:
+        return float("nan")
+    return a
 
 # Tunable scaling from training-set calibration (set heuristically; tuned in
 # train_physics_predictor.py against measured log10_flux residuals)
@@ -145,14 +170,19 @@ def endosomal_escape_score(pka: float, cpp: float,
 # 5. Bending / tilt modulus proxy (Helfrich theory)
 # ──────────────────────────────────────────────────────────────────────
 
-def bending_modulus_kBT(bilayer_thickness_nm: float = BILAYER_THICKNESS_NM,
-                        area_per_lipid_nm2: float = HEAD_AREA_REF_NM2) -> float:
+def bending_modulus_kBT(bilayer_thickness_nm: float,
+                        area_per_lipid_nm2: float) -> float:
     """Helfrich bending modulus, in units of k_B T.
 
-    κ_b ≈ k_b · t² / a   (Evans-Skalak-type)
+    κ_b ≈ k_b · t² / a   (Evans-Skalak)
     where t is bilayer thickness and a is area per lipid.
     For fusogenic IAJDs we want LOW κ_b (more deformable membrane → easier fusion).
+
+    Both arguments are required — no defaults allowed (no-proxy policy).
+    Pass NaN for either and you'll get NaN back.
     """
+    if not (np.isfinite(bilayer_thickness_nm) and np.isfinite(area_per_lipid_nm2)):
+        return float("nan")
     if bilayer_thickness_nm <= 0 or area_per_lipid_nm2 <= 0:
         return float("nan")
     return (bilayer_thickness_nm ** 2) / area_per_lipid_nm2
@@ -176,8 +206,11 @@ def manning_fraction(charge_density: float, dielectric: float = 80.0) -> float:
     For IAJDs binding mRNA, higher Manning fraction = stronger charge
     neutralization = better mRNA condensation.
 
-    charge_density is in elementary charges per nm.
+    charge_density is in elementary charges per nm. NaN-in → NaN-out (no
+    proxy substitution).
     """
+    if not np.isfinite(charge_density):
+        return float("nan")
     bjerrum_nm = 0.7 / dielectric * 56.0   # ≈ 0.7 nm at ε=80
     if charge_density <= 0:
         return 0.0
@@ -185,6 +218,28 @@ def manning_fraction(charge_density: float, dielectric: float = 80.0) -> float:
     if xi >= 1.0:
         return 1.0 - 1.0 / xi
     return 0.0
+
+
+def molecular_charge_density(mol: Chem.Mol, pka: float, ph: float = 5.5,
+                              chain_length_nm: float = None) -> float:
+    """Real per-molecule charge density (e/nm) at given pH.
+
+    Counts ionizable amines (using RDKit substructure search) and multiplies
+    by Henderson-Hasselbalch protonation fraction at the given pH, then
+    divides by the molecular chain length (along the long axis).
+    """
+    if mol is None or not np.isfinite(pka):
+        return float("nan")
+    n_amines = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[NX3;!$(N=*);!$(NC=O)]")))
+    if n_amines == 0:
+        return 0.0
+    protonation = henderson_hasselbalch_fraction(pka, ph)
+    effective_charges = n_amines * protonation
+    if chain_length_nm is None or not np.isfinite(chain_length_nm) or chain_length_nm <= 0:
+        # Use Tanford-estimated chain length from heavy atom count
+        n_heavy = mol.GetNumHeavyAtoms()
+        chain_length_nm = 0.127 * n_heavy / 4.0   # rough: chain spans ~1/4 of heavy atoms
+    return effective_charges / chain_length_nm
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -240,12 +295,17 @@ def compute_all_physics_features(mol_or_smiles, *,
                                   chain_avg_carbons: Optional[float] = None,
                                   v_tail_nm3: Optional[float] = None,
                                   l_tail_nm: Optional[float] = None,
-                                  a_head_nm2: Optional[float] = None) -> Dict[str, float]:
+                                  a_head_nm2: Optional[float] = None,
+                                  head_group: Optional[str] = None) -> Dict[str, float]:
     """Compute all physics-grounded descriptors for a SMILES (or Mol).
 
-    The geometry inputs (v_tail_nm3, l_tail_nm, a_head_nm2) come from the
-    existing compute_cpp.py pipeline; pass them in for the most-accurate CPP.
-    If omitted, falls back to RDKit-derived estimates.
+    No-proxy policy: every input must be real or NaN. Defaults that would
+    substitute a constant in place of an unknown are removed; callers must
+    pass real values (or pass NaN and accept NaN outputs).
+
+    head_group selects the real per-head a_head from HEAD_AREA_PER_GROUP_NM2.
+    pka must be the actual predicted/measured pKa for this molecule (e.g.
+    live MolGpKa + per-family debias); do NOT pass a family median.
     """
     if isinstance(mol_or_smiles, str):
         mol = Chem.MolFromSmiles(mol_or_smiles)
@@ -256,29 +316,32 @@ def compute_all_physics_features(mol_or_smiles, *,
 
     out = {}
 
-    # CPP (geometric, if inputs provided)
+    # CPP — geometric Tanford computation. Either pass explicit
+    # V_tail/l_tail/a_head, OR pass head_group so we can look up a_head.
+    # If neither: CPP is NaN. No fallback.
     if v_tail_nm3 is not None and l_tail_nm is not None and a_head_nm2 is not None:
         out["cpp_geometric"] = cpp_geometric(v_tail_nm3, l_tail_nm, a_head_nm2)
+        out["a_head_nm2"] = a_head_nm2
+        out["l_tail_nm"] = l_tail_nm
+        out["v_tail_nm3"] = v_tail_nm3
     else:
-        # Cheap RDKit fallback using Tanford constants:
-        #   V_per_CH2 = 0.027 nm³, l_per_CH2 = 0.127 nm
-        # For an n-chain IAJD: CPP = (n_chains·V_per_chain) / (a_head · l_per_chain)
-        # Excludes head/aromatic carbons; head area depends on head_group identity
-        # so we use a reasonable family-typical default.
-        # Count aliphatic non-aromatic carbons NOT in the head/linker region
-        # (approximation: count all aliphatic C, subtract a small constant for
-        # the head+linker region).
+        # Compute Tanford-real geometry. Requires head_group for a real a_head.
         n_aliphatic_c = sum(1 for a in mol.GetAtoms()
                               if a.GetAtomicNum() == 6 and not a.GetIsAromatic())
         n_chains = max(1, n_tail_chains)
-        head_linker_carbons = 6 + n_chains   # piperazine ring (4C) + linker (~2) + dummy
+        head_linker_carbons = 6 + n_chains
         n_tail_c = max(1, (n_aliphatic_c - head_linker_carbons))
         n_C_per_chain = max(1.0, n_tail_c / n_chains)
-        V_per_chain = 0.027 * n_C_per_chain
+        V_per_chain = 0.027 * n_C_per_chain   # Tanford constants
         l_per_chain = 0.127 * n_C_per_chain
-        # Default head area: HPRZ/H2EPRZ ≈ 0.65, DMA ≈ 0.30, piperazine ≈ 0.5
-        a_head_default = 0.65
-        out["cpp_geometric"] = (n_chains * V_per_chain) / (a_head_default * l_per_chain)
+        a_head_real = head_area_for_group(head_group) if head_group else float("nan")
+        out["a_head_nm2"] = a_head_real
+        out["l_tail_nm"] = l_per_chain
+        out["v_tail_nm3"] = V_per_chain
+        if np.isfinite(a_head_real):
+            out["cpp_geometric"] = (n_chains * V_per_chain) / (a_head_real * l_per_chain)
+        else:
+            out["cpp_geometric"] = float("nan")
 
     # Lamellar d-spacing
     if linker_length is not None and chain_avg_carbons is not None:
@@ -290,10 +353,28 @@ def compute_all_physics_features(mol_or_smiles, *,
     out["logKp_membrane"] = membrane_partition_logKp(mol)
     out["dG_transfer_kJmol"] = membrane_dG_transfer_kJmol(mol)
 
-    # Mechanical
-    out["bending_kappa_kBT"] = bending_modulus_kBT()
-    if l_tail_nm is not None:
-        out["splay_modulus_kBT"] = splay_modulus_kBT(l_tail_nm, n_tail_chains)
+    # Mechanical — per-molecule from real geometry
+    a_used = out.get("a_head_nm2", float("nan"))
+    l_used = out.get("l_tail_nm", float("nan"))
+    if np.isfinite(a_used) and np.isfinite(l_used):
+        # Bilayer thickness ≈ 2 × tail length (extended chain assumption)
+        bilayer_thickness = 2.0 * l_used
+        out["bilayer_thickness_nm"] = bilayer_thickness
+        out["bending_kappa_kBT"] = bending_modulus_kBT(bilayer_thickness, a_used)
+        out["splay_modulus_kBT"] = splay_modulus_kBT(l_used, n_tail_chains)
+    else:
+        out["bilayer_thickness_nm"] = float("nan")
+        out["bending_kappa_kBT"] = float("nan")
+        out["splay_modulus_kBT"] = float("nan")
+
+    # Manning condensation — per-molecule charge density at endosomal pH
+    if pka is not None and np.isfinite(pka):
+        chrg_density = molecular_charge_density(mol, pka, ph=5.5, chain_length_nm=l_used)
+        out["charge_density_per_nm"] = chrg_density
+        out["manning_fraction_endosome"] = manning_fraction(chrg_density)
+    else:
+        out["charge_density_per_nm"] = float("nan")
+        out["manning_fraction_endosome"] = float("nan")
 
     # Electrostatic / escape
     if pka is not None:

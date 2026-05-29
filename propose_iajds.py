@@ -91,16 +91,52 @@ _MONOTONE_AXES = None      # loaded from monotone_axes.json (lazy)
 _MONOTONE_CACHE: dict = {} # canonical SMILES -> (bonus, signals_dict) tuple
 
 
-# Family-median pKa from training data, used as a cheap pKa estimate for
-# inline physics-quality computation (avoids per-candidate live MolGpKa).
-_FAMILY_PKA_MEDIAN = {
-    "GA-Tris":            6.50,
-    "PE-Tris":            6.45,
-    "PE-Gallic":          6.40,
-    "sSS-Nonsym":         6.55,
-    "Dialkoxybenzyl":     6.50,
-    "G1-Janus-Dendrimer": 6.50,
-}
+# No-proxy policy: pKa MUST come from live MolGpKa + per-family debias.
+# _live_molgpka_pka() is a faster path than full v9.1 (skips conformer
+# regeneration etc.) and caches by canonical SMILES.
+_MOLGPKA_PKA_CACHE: dict = {}   # canonical SMILES -> debiased pKa (live)
+
+
+def _live_molgpka_pka(smiles: str, family: str) -> float:
+    """Live MolGpKa GCN + per-family debias. Real per-molecule pKa, cached
+    by canonical SMILES. NO family-median fallback — returns NaN if MolGpKa
+    can't run on this structure."""
+    if smiles in _MOLGPKA_PKA_CACHE:
+        return _MOLGPKA_PKA_CACHE[smiles]
+    try:
+        # Reuse the v52 _try_live_molgpka entry point (already patched to use
+        # the local molgpka_src/ install).
+        import sys as _sys, os as _os
+        proj_root = str((ROOT).resolve())
+        molgpka_src = _os.path.join(proj_root, "molgpka_src")
+        if molgpka_src not in _sys.path:
+            _sys.path.insert(0, molgpka_src)
+        from predict_pka import predict as molgpka_predict   # type: ignore
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            _MOLGPKA_PKA_CACHE[smiles] = float("nan")
+            return float("nan")
+        base_dict, _ = molgpka_predict(mol)
+        if not base_dict:
+            _MOLGPKA_PKA_CACHE[smiles] = float("nan")
+            return float("nan")
+        raw_max_base = float(max(base_dict.values()))
+        # Apply per-family debias if available
+        import joblib as _joblib
+        debias = _joblib.load(ROOT / "IAJD_master/bundles_caches/molgpka_debias_models.joblib")
+        if family in debias:
+            d = debias[family]
+            pka = d["slope"] * raw_max_base + d["intercept"]
+        else:
+            tot_n = sum(d_["n"] for d_ in debias.values())
+            slope = sum(d_["slope"] * d_["n"] for d_ in debias.values()) / tot_n
+            intercept = sum(d_["intercept"] * d_["n"] for d_ in debias.values()) / tot_n
+            pka = slope * raw_max_base + intercept
+        _MOLGPKA_PKA_CACHE[smiles] = float(pka)
+        return float(pka)
+    except Exception:
+        _MOLGPKA_PKA_CACHE[smiles] = float("nan")
+        return float("nan")
 
 
 def _load_monotone_axes():
@@ -204,13 +240,18 @@ def _physics_quality_quick(smiles: str, seed: "Seed | None" = None,
     if smiles in _PHYSICS_CACHE:
         return _PHYSICS_CACHE[smiles]
     from physics_features import compute_all_physics_features
-    pka = _FAMILY_PKA_MEDIAN.get(family, 6.5)
+    # Real per-molecule pKa via live MolGpKa GCN + per-family debias.
+    # NO family-median fallback — if MolGpKa returns NaN, downstream
+    # protonation/escape/Manning will also be NaN (honest unknown).
+    pka = _live_molgpka_pka(smiles, family)
+    head_group = (seed.head if seed is not None else None)
     linker_n = (seed.linker_n if seed is not None else 4)
     n_chains = 3 if ("Tris" in family or family == "PE-Gallic") else 2
     try:
         feats = compute_all_physics_features(
             smiles, pka=pka, linker_length=linker_n,
             n_tail_chains=n_chains, chain_avg_carbons=10.0,
+            head_group=head_group,
         )
     except Exception:
         feats = {}
