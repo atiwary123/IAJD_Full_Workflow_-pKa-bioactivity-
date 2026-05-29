@@ -9,7 +9,7 @@ Fits, on the full 335-compound v14 training set:
                             (n_est=300, depth=3, lr=0.03 — chosen by 5-fold CV in
                             weight_eval_v2_results.json: DALM features, MAE=0.3856)
 
-Saves -> IAJD_master/bundles_caches/bioact_stacker_bundle.pkl with keys:
+Saves -> IAJD_master/bundles_caches/bioact_stacker_bundle.pkl with keys:w
     {direct_head, lion_head, admet_head, stacker, block_lion, block_admet,
      train_metrics: {loo_cv_mae, baseline_mae}, version}
 """

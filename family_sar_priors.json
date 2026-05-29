@@ -1,0 +1,923 @@
+{
+  "version": "family_sar_v2",
+  "generated_from": "IAJD_Bioact_v13_clean.xlsx",
+  "feature_space": "family_sar.sar_features (fast 2D) + structural linker_length",
+  "n_train_total": 247,
+  "gate": {
+    "min_abs_rho": 0.25,
+    "max_p": 0.1,
+    "min_n": 12,
+    "collinear_r": 0.7
+  },
+  "categorical": {
+    "min_level_n": 2,
+    "shrink_k": 3.0
+  },
+  "families": {
+    "sSS-Nonsym": {
+      "n": 144,
+      "flux_mean": 7.658546667510886,
+      "flux_std": 0.530839419819687,
+      "flux_min": 6.313867220369153,
+      "flux_max": 8.770852011642145,
+      "continuous": {
+        "MolLogP": {
+          "rho": -0.07260527507802085,
+          "p": 0.38714199322552845,
+          "n": 144,
+          "direction": "decreasing",
+          "train_min": 6.441100000000008,
+          "train_max": 15.168799999999965,
+          "train_mean": 10.47059930555555,
+          "train_std": 1.9417020264125173,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "TPSA": {
+          "rho": 0.08453118753596957,
+          "p": 0.3137724615307851,
+          "n": 144,
+          "direction": "increasing",
+          "train_min": 50.8,
+          "train_max": 124.07000000000001,
+          "train_mean": 61.89659722222224,
+          "train_std": 11.314079856728817,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "ExactMolWt": {
+          "rho": -0.011909920073945502,
+          "p": 0.8873339882489906,
+          "n": 144,
+          "direction": "decreasing",
+          "train_min": 532.4240082719999,
+          "train_max": 842.747574236,
+          "train_mean": 676.8927094476111,
+          "train_std": 70.06154474674464,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "FractionCSP3": {
+          "rho": -0.03948304603503586,
+          "p": 0.6384618326136714,
+          "n": 144,
+          "direction": "decreasing",
+          "train_min": 0.78125,
+          "train_max": 0.8679245283018868,
+          "train_mean": 0.8295191774258893,
+          "train_std": 0.020362083613016585,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "RotatableBonds": {
+          "rho": 0.019351211383990746,
+          "p": 0.8179268471252623,
+          "n": 144,
+          "direction": "increasing",
+          "train_min": 14.0,
+          "train_max": 43.0,
+          "train_mean": 31.493055555555557,
+          "train_std": 5.600094899713974,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "NumHAcceptors": {
+          "rho": 0.12018884557422824,
+          "p": 0.15131470910445172,
+          "n": 144,
+          "direction": "increasing",
+          "train_min": 4.0,
+          "train_max": 11.0,
+          "train_mean": 6.506944444444445,
+          "train_std": 0.6769675826985302,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "NumHDonors": {
+          "rho": 0.0515350701401066,
+          "p": 0.5395861891909955,
+          "n": 144,
+          "direction": "increasing",
+          "train_min": 0.0,
+          "train_max": 1.0,
+          "train_mean": 0.5277777777777778,
+          "train_std": 0.49922779876698414,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "NumAromaticRings": {
+          "rho": 0.2640792519762446,
+          "p": 0.0013823804174547289,
+          "n": 144,
+          "direction": "increasing",
+          "train_min": 0.0,
+          "train_max": 1.0,
+          "train_mean": 0.9097222222222222,
+          "train_std": 0.28657930947171323,
+          "actionable": true,
+          "selected_for_prior": true,
+          "source": "descriptor"
+        },
+        "NumEsters": {
+          "rho": 0.15826693599182065,
+          "p": 0.058144098782526785,
+          "n": 144,
+          "direction": "increasing",
+          "train_min": 0.0,
+          "train_max": 3.0,
+          "train_mean": 0.9930555555555556,
+          "train_std": 0.22036988406420038,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "LogP_per_HA": {
+          "rho": -0.11811659977086654,
+          "p": 0.15854356944124837,
+          "n": 144,
+          "direction": "decreasing",
+          "train_min": 0.1432833333333335,
+          "train_max": 0.26153103448275805,
+          "train_mean": 0.21559463272995005,
+          "train_std": 0.022031440636281086,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "HeavyAtoms": {
+          "rho": -0.02182949424554866,
+          "p": 0.7950937723731485,
+          "n": 144,
+          "direction": "decreasing",
+          "train_min": 38.0,
+          "train_max": 60.0,
+          "train_mean": 48.236111111111114,
+          "train_std": 4.979103711054039,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "linker_length": {
+          "rho": 0.09032998229753156,
+          "p": 0.3067504869369382,
+          "n": 130,
+          "direction": "increasing",
+          "train_min": 3.0,
+          "train_max": 4.0,
+          "train_mean": 3.9923076923076923,
+          "train_std": 0.0873678207046196,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "structural"
+        }
+      },
+      "head_group": {
+        "_family_mean": 7.658546667510886,
+        "HPRZ": {
+          "mean_raw": 7.738863263673053,
+          "mean_shrunk": 7.735371237752959,
+          "delta_vs_family": 0.07682457024207334,
+          "n": 66
+        },
+        "MPRZ": {
+          "mean_raw": 7.689785119604714,
+          "mean_shrunk": 7.6883651899640855,
+          "delta_vs_family": 0.029818522453199492,
+          "n": 63
+        }
+      },
+      "linkage": {
+        "_family_mean": 7.658546667510886,
+        "amide_benzyl": {
+          "mean_raw": 7.097564076530311,
+          "mean_shrunk": 7.378055372020599,
+          "delta_vs_family": -0.28049129549028695,
+          "n": 3
+        },
+        "ester_benzyl": {
+          "mean_raw": 7.727206747789702,
+          "mean_shrunk": 7.725622284398652,
+          "delta_vs_family": 0.06707561688776575,
+          "n": 127
+        }
+      }
+    },
+    "GA-Tris": {
+      "n": 20,
+      "flux_mean": 8.344118211802103,
+      "flux_std": 0.7027492261109858,
+      "flux_min": 6.711807229041191,
+      "flux_max": 9.39291668232173,
+      "continuous": {
+        "MolLogP": {
+          "rho": -0.01882532255376917,
+          "p": 0.9372115667263435,
+          "n": 20,
+          "direction": "decreasing",
+          "train_min": 8.125300000000008,
+          "train_max": 14.656499999999971,
+          "train_mean": 9.449955000000003,
+          "train_std": 1.3539978687113872,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "TPSA": {
+          "rho": 0.3703361610489193,
+          "p": 0.10798703090266132,
+          "n": 20,
+          "direction": "increasing",
+          "train_min": 60.47000000000001,
+          "train_max": 89.93000000000002,
+          "train_mean": 82.50900000000003,
+          "train_std": 8.492465425304953,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "ExactMolWt": {
+          "rho": 0.183943346659712,
+          "p": 0.4375653235395035,
+          "n": 20,
+          "direction": "increasing",
+          "train_min": 660.544123404,
+          "train_max": 828.731924172,
+          "train_mean": 721.9336968161999,
+          "train_std": 42.33224653819738,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "FractionCSP3": {
+          "rho": 0.13009653041237562,
+          "p": 0.5845990069186715,
+          "n": 20,
+          "direction": "increasing",
+          "train_min": 0.8205128205128205,
+          "train_max": 0.8653846153846154,
+          "train_mean": 0.8361436424450991,
+          "train_std": 0.01020974167694185,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "RotatableBonds": {
+          "rho": 0.17431396927837142,
+          "p": 0.4623293461150241,
+          "n": 20,
+          "direction": "increasing",
+          "train_min": 27.0,
+          "train_max": 42.0,
+          "train_mean": 31.35,
+          "train_std": 3.4245437652335533,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "NumHAcceptors": {
+          "rho": 0.41831038948312793,
+          "p": 0.06643127409355278,
+          "n": 20,
+          "direction": "increasing",
+          "train_min": 7.0,
+          "train_max": 9.0,
+          "train_mean": 8.25,
+          "train_std": 0.698212002188447,
+          "actionable": true,
+          "selected_for_prior": true,
+          "source": "descriptor"
+        },
+        "NumHDonors": {
+          "rho": 0.26876237574386425,
+          "p": 0.25188310727413465,
+          "n": 20,
+          "direction": "increasing",
+          "train_min": 0.0,
+          "train_max": 2.0,
+          "train_mean": 0.95,
+          "train_std": 0.3840572873934304,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "AlkoxyEthers": {
+          "rho": 0.3008967382970352,
+          "p": 0.19735323444140543,
+          "n": 20,
+          "direction": "increasing",
+          "train_min": 3.0,
+          "train_max": 4.0,
+          "train_mean": 3.4,
+          "train_std": 0.48989794855663565,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "NumEsters": {
+          "rho": 0.13925006900339948,
+          "p": 0.5582037583475348,
+          "n": 20,
+          "direction": "increasing",
+          "train_min": 0.0,
+          "train_max": 1.0,
+          "train_mean": 0.95,
+          "train_std": 0.21794494717703372,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "LogP_per_HA": {
+          "rho": -0.16942790298392257,
+          "p": 0.47516226020719826,
+          "n": 20,
+          "direction": "decreasing",
+          "train_min": 0.16283800000000018,
+          "train_max": 0.24841525423728764,
+          "train_mean": 0.18405902751973038,
+          "train_std": 0.017464028287735835,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "HeavyAtoms": {
+          "rho": 0.17431396927837142,
+          "p": 0.4623293461150241,
+          "n": 20,
+          "direction": "increasing",
+          "train_min": 47.0,
+          "train_max": 59.0,
+          "train_mean": 51.2,
+          "train_std": 2.9933259094191524,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "linker_length": {
+          "rho": -0.48077058029500197,
+          "p": 0.03718693749634374,
+          "n": 19,
+          "direction": "decreasing",
+          "train_min": 2.0,
+          "train_max": 5.0,
+          "train_mean": 3.5789473684210527,
+          "train_std": 1.0420520985907018,
+          "actionable": true,
+          "selected_for_prior": true,
+          "source": "structural"
+        }
+      },
+      "head_group": {
+        "_family_mean": 8.344118211802103,
+        "H2EPRZ": {
+          "mean_raw": 8.574931919305756,
+          "mean_shrunk": 8.511982726350213,
+          "delta_vs_family": 0.16786451454811058,
+          "n": 8
+        },
+        "HPRZ": {
+          "mean_raw": 8.529295704530607,
+          "mean_shrunk": 8.483001331348481,
+          "delta_vs_family": 0.138883119546378,
+          "n": 9
+        },
+        "MPRZ": {
+          "mean_raw": 7.403720155889685,
+          "mean_shrunk": 7.967958989437136,
+          "delta_vs_family": -0.3761592223649668,
+          "n": 2
+        }
+      },
+      "linkage": {
+        "_family_mean": 8.344118211802103,
+        "ester": {
+          "mean_raw": 8.444136985996956,
+          "mean_shrunk": 8.429848589683406,
+          "delta_vs_family": 0.085730377881303,
+          "n": 18
+        }
+      }
+    },
+    "PE-Tris": {
+      "n": 41,
+      "flux_mean": 7.257001813440769,
+      "flux_std": 1.2802674377514216,
+      "flux_min": 5.698970004336019,
+      "flux_max": 8.936010795715209,
+      "continuous": {
+        "MolLogP": {
+          "rho": -0.4284661833520231,
+          "p": 0.005191940411812884,
+          "n": 41,
+          "direction": "decreasing",
+          "train_min": 5.696800000000008,
+          "train_max": 18.03729999999998,
+          "train_mean": 9.948690243902437,
+          "train_std": 3.4207800170824454,
+          "actionable": true,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "TPSA": {
+          "rho": 0.47976098147642054,
+          "p": 0.0015031331372306336,
+          "n": 41,
+          "direction": "increasing",
+          "train_min": 60.470000000000006,
+          "train_max": 89.93,
+          "train_mean": 78.46731707317073,
+          "train_std": 10.51945723917264,
+          "actionable": true,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "ExactMolWt": {
+          "rho": -0.28963754057017704,
+          "p": 0.0662357691015475,
+          "n": 41,
+          "direction": "decreasing",
+          "train_min": 586.4920878319999,
+          "train_max": 1006.961589752,
+          "train_mean": 742.4700136440977,
+          "train_std": 109.53772560823494,
+          "actionable": true,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "FractionCSP3": {
+          "rho": -0.3173527590508453,
+          "p": 0.043196472151977916,
+          "n": 41,
+          "direction": "decreasing",
+          "train_min": 0.9696969696969697,
+          "train_max": 0.9841269841269841,
+          "train_mean": 0.9766385674768063,
+          "train_std": 0.003746129315693363,
+          "actionable": true,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "RotatableBonds": {
+          "rho": -0.3869317873840128,
+          "p": 0.012449176967255223,
+          "n": 41,
+          "direction": "decreasing",
+          "train_min": 29.0,
+          "train_max": 59.0,
+          "train_mean": 39.46341463414634,
+          "train_std": 8.293687170183055,
+          "actionable": true,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "NumHAcceptors": {
+          "rho": 0.4780827015292633,
+          "p": 0.0015701626238134618,
+          "n": 41,
+          "direction": "increasing",
+          "train_min": 7.0,
+          "train_max": 9.0,
+          "train_mean": 8.048780487804878,
+          "train_std": 0.6967247247358878,
+          "actionable": true,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "NumHDonors": {
+          "rho": 0.5201363499315625,
+          "p": 0.0004908488183353757,
+          "n": 41,
+          "direction": "increasing",
+          "train_min": 0.0,
+          "train_max": 1.0,
+          "train_mean": 0.7560975609756098,
+          "train_std": 0.4294345576014392,
+          "actionable": true,
+          "selected_for_prior": true,
+          "source": "descriptor"
+        },
+        "AlkoxyEthers": {
+          "rho": 0.2500467160663195,
+          "p": 0.11485780587591264,
+          "n": 41,
+          "direction": "increasing",
+          "train_min": 3.0,
+          "train_max": 4.0,
+          "train_mean": 3.292682926829268,
+          "train_std": 0.45499410015067393,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "LogP_per_HA": {
+          "rho": -0.4941940339846303,
+          "p": 0.001023393722449758,
+          "n": 41,
+          "direction": "decreasing",
+          "train_min": 0.1389463414634148,
+          "train_max": 0.26141014492753595,
+          "train_mean": 0.18620639748255718,
+          "train_std": 0.0356618580073501,
+          "actionable": true,
+          "selected_for_prior": true,
+          "source": "descriptor"
+        },
+        "HeavyAtoms": {
+          "rho": -0.2971238603030933,
+          "p": 0.059222492291126874,
+          "n": 41,
+          "direction": "decreasing",
+          "train_min": 41.0,
+          "train_max": 71.0,
+          "train_mean": 52.1219512195122,
+          "train_std": 7.834243537349251,
+          "actionable": true,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "linker_length": {
+          "rho": -0.4044070589698362,
+          "p": 0.014432035414908562,
+          "n": 36,
+          "direction": "decreasing",
+          "train_min": 2.0,
+          "train_max": 5.0,
+          "train_mean": 3.7222222222222223,
+          "train_std": 0.8370288429621869,
+          "actionable": true,
+          "selected_for_prior": true,
+          "source": "structural"
+        }
+      },
+      "head_group": {
+        "_family_mean": 7.257001813440769,
+        "H2EPRZ": {
+          "mean_raw": 7.813235814660508,
+          "mean_shrunk": 7.694042814399134,
+          "delta_vs_family": 0.4370410009583656,
+          "n": 11
+        },
+        "HPRZ": {
+          "mean_raw": 7.852171182272372,
+          "mean_shrunk": 7.758197071404224,
+          "delta_vs_family": 0.5011952579634551,
+          "n": 16
+        },
+        "MPRZ": {
+          "mean_raw": 6.227487637004234,
+          "mean_shrunk": 6.484866181113368,
+          "delta_vs_family": -0.7721356323274007,
+          "n": 9
+        }
+      },
+      "linkage": {
+        "_family_mean": 7.257001813440769,
+        "ester": {
+          "mean_raw": 7.422167200283768,
+          "mean_shrunk": 7.409127827638268,
+          "delta_vs_family": 0.15212601419749916,
+          "n": 35
+        }
+      }
+    },
+    "PE-Gallic": {
+      "n": 11,
+      "flux_mean": 6.588497460740883,
+      "flux_std": 0.944848798365773,
+      "flux_min": 5.0,
+      "flux_max": 7.746011079775507,
+      "continuous": {
+        "MolLogP": {
+          "rho": 0.1138955118945513,
+          "p": 0.7388017086822057,
+          "n": 11,
+          "direction": "increasing",
+          "train_min": 14.906299999999975,
+          "train_max": 28.956400000000087,
+          "train_mean": 22.10648181818184,
+          "train_std": 3.9238424845177007,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "TPSA": {
+          "rho": -0.02889427981985324,
+          "p": 0.9327935481749381,
+          "n": 11,
+          "direction": "decreasing",
+          "train_min": 243.69999999999993,
+          "train_max": 461.1200000000001,
+          "train_mean": 327.1972727272727,
+          "train_std": 95.84646302488258,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "ExactMolWt": {
+          "rho": -0.086560589039859,
+          "p": 0.8002206347159757,
+          "n": 11,
+          "direction": "decreasing",
+          "train_min": 1580.0370586599997,
+          "train_max": 2950.9226424839994,
+          "train_mean": 2112.5795402618173,
+          "train_std": 485.8387749449549,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "FractionCSP3": {
+          "rho": -0.3963563813930385,
+          "p": 0.22750454202685502,
+          "n": 11,
+          "direction": "decreasing",
+          "train_min": 0.6847826086956522,
+          "train_max": 0.78,
+          "train_mean": 0.7306703017722714,
+          "train_std": 0.02736751904216675,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "RotatableBonds": {
+          "rho": -0.28967430861917287,
+          "p": 0.3875694836354499,
+          "n": 11,
+          "direction": "decreasing",
+          "train_min": 74.0,
+          "train_max": 137.0,
+          "train_mean": 103.36363636363636,
+          "train_std": 23.5961195857313,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "NumHAcceptors": {
+          "rho": -0.02889427981985324,
+          "p": 0.9327935481749381,
+          "n": 11,
+          "direction": "decreasing",
+          "train_min": 23.0,
+          "train_max": 41.0,
+          "train_mean": 30.0,
+          "train_std": 7.3731700349060425,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "NumHDonors": {
+          "rho": -0.521428913552089,
+          "p": 0.09998117336820864,
+          "n": 11,
+          "direction": "decreasing",
+          "train_min": 0.0,
+          "train_max": 7.0,
+          "train_mean": 1.6363636363636365,
+          "train_std": 2.1007672742347894,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "NumAromaticRings": {
+          "rho": 0.16080605044147395,
+          "p": 0.6366875353667603,
+          "n": 11,
+          "direction": "increasing",
+          "train_min": 3.0,
+          "train_max": 6.0,
+          "train_mean": 4.363636363636363,
+          "train_std": 1.0679400113155209,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "AlkoxyEthers": {
+          "rho": -0.30578831486257535,
+          "p": 0.3604603681379276,
+          "n": 11,
+          "direction": "decreasing",
+          "train_min": 13.0,
+          "train_max": 22.0,
+          "train_mean": 16.363636363636363,
+          "train_std": 4.269824933024502,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "NumEsters": {
+          "rho": 0.35636278444485653,
+          "p": 0.2820555535475074,
+          "n": 11,
+          "direction": "increasing",
+          "train_min": 2.0,
+          "train_max": 6.0,
+          "train_mean": 4.7272727272727275,
+          "train_std": 1.2128785512842122,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "LogP_per_HA": {
+          "rho": 0.3416865356836539,
+          "p": 0.30374123543992276,
+          "n": 11,
+          "direction": "increasing",
+          "train_min": 0.12125975609756098,
+          "train_max": 0.18158201438848956,
+          "train_mean": 0.15018746763190163,
+          "train_std": 0.021538789770444593,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "HeavyAtoms": {
+          "rho": -0.086560589039859,
+          "p": 0.8002206347159757,
+          "n": 11,
+          "direction": "decreasing",
+          "train_min": 112.0,
+          "train_max": 210.0,
+          "train_mean": 149.9090909090909,
+          "train_std": 34.49493914252177,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        }
+      },
+      "head_group": {
+        "_family_mean": 6.588497460740883,
+        "DMBA": {
+          "mean_raw": 6.588497460740883,
+          "mean_shrunk": 6.588497460740884,
+          "delta_vs_family": 8.881784197001252e-16,
+          "n": 11
+        }
+      },
+      "linkage": {
+        "_family_mean": 6.588497460740883,
+        "ester": {
+          "mean_raw": 6.588497460740883,
+          "mean_shrunk": 6.588497460740884,
+          "delta_vs_family": 8.881784197001252e-16,
+          "n": 11
+        }
+      }
+    },
+    "Dialkoxybenzyl": {
+      "n": 10,
+      "flux_mean": 7.466229980247097,
+      "flux_std": 0.2773587431190716,
+      "flux_min": 6.734799829588847,
+      "flux_max": 7.773786444981194,
+      "continuous": {
+        "MolLogP": {
+          "rho": -0.1515151515151515,
+          "p": 0.6760651759978539,
+          "n": 10,
+          "direction": "decreasing",
+          "train_min": 6.310300000000007,
+          "train_max": 13.20109999999998,
+          "train_mean": 10.475619999999994,
+          "train_std": 2.622209745539046,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "TPSA": {
+          "rho": -0.4938291646584311,
+          "p": 0.14687842280201585,
+          "n": 10,
+          "direction": "decreasing",
+          "train_min": 51.24000000000001,
+          "train_max": 71.47000000000001,
+          "train_mean": 57.30900000000001,
+          "train_std": 9.270550630895666,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "ExactMolWt": {
+          "rho": -0.3100318272768329,
+          "p": 0.38331979780098846,
+          "n": 10,
+          "direction": "decreasing",
+          "train_min": 532.424008272,
+          "train_max": 772.6693239159998,
+          "train_mean": 666.1664632467999,
+          "train_std": 80.32124449606914,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "FractionCSP3": {
+          "rho": -0.3100318272768329,
+          "p": 0.38331979780098846,
+          "n": 10,
+          "direction": "decreasing",
+          "train_min": 0.78125,
+          "train_max": 0.8541666666666666,
+          "train_mean": 0.8261895289530041,
+          "train_std": 0.027395985800434574,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "RotatableBonds": {
+          "rho": -0.3100318272768329,
+          "p": 0.38331979780098846,
+          "n": 10,
+          "direction": "decreasing",
+          "train_min": 20.0,
+          "train_max": 39.0,
+          "train_mean": 30.9,
+          "train_std": 6.609841147864297,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "NumHAcceptors": {
+          "rho": -0.4938291646584311,
+          "p": 0.14687842280201585,
+          "n": 10,
+          "direction": "decreasing",
+          "train_min": 6.0,
+          "train_max": 7.0,
+          "train_mean": 6.3,
+          "train_std": 0.45825756949558405,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "NumHDonors": {
+          "rho": -0.4938291646584311,
+          "p": 0.14687842280201585,
+          "n": 10,
+          "direction": "decreasing",
+          "train_min": 0.0,
+          "train_max": 1.0,
+          "train_mean": 0.3,
+          "train_std": 0.45825756949558405,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "LogP_per_HA": {
+          "rho": -0.0303030303030303,
+          "p": 0.9337729580941466,
+          "n": 10,
+          "direction": "decreasing",
+          "train_min": 0.15775750000000016,
+          "train_max": 0.24907735849056567,
+          "train_mean": 0.21694365278470565,
+          "train_std": 0.03328199876029399,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        },
+        "HeavyAtoms": {
+          "rho": -0.3100318272768329,
+          "p": 0.38331979780098846,
+          "n": 10,
+          "direction": "decreasing",
+          "train_min": 38.0,
+          "train_max": 55.0,
+          "train_mean": 47.5,
+          "train_std": 5.748912940721924,
+          "actionable": false,
+          "selected_for_prior": false,
+          "source": "descriptor"
+        }
+      },
+      "head_group": {
+        "_family_mean": 7.466229980247097,
+        "MPRZ": {
+          "mean_raw": 7.463463749543285,
+          "mean_shrunk": 7.46421817609887,
+          "delta_vs_family": -0.002011804148226659,
+          "n": 8
+        }
+      },
+      "linkage": {
+        "_family_mean": 7.466229980247097,
+        "ester_benzoate": {
+          "mean_raw": 7.388400991543716,
+          "mean_shrunk": 7.421756272416594,
+          "delta_vs_family": -0.04447370783050264,
+          "n": 4
+        },
+        "ester_benzyl": {
+          "mean_raw": 7.519630165217899,
+          "mean_shrunk": 7.499605095853848,
+          "delta_vs_family": 0.033375115606751216,
+          "n": 5
+        }
+      }
+    }
+  }
+}

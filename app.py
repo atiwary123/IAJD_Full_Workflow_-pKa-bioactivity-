@@ -229,100 +229,51 @@ def _render_result_markdown(r: dict, idx: int = 0) -> str:
     md.append(f"**Family:** `{fam}` (confidence {det.get('confidence', 0)*100:.0f}%)")
     md.append("")
 
-    # ── pKa ──
+    # ── pKa (v9.2) ──
     v92 = r.get("pka_v92") or {}
     if v92 and "pKa_pred" in v92 and v92["pKa_pred"] is not None:
-        md.append(f"## pKa = {v92['pKa_pred']:.3f}")
-        comp = v92.get("components") or {}
-        w = v92.get("weights") or {}
-        if isinstance(w, dict) and "per_family" in w:
-            fam_w = w["per_family"].get(v92.get("family_assigned"), [None, None, None])
-            w_a, w_x, w_m = fam_w
-        else:
-            w_a = w.get("analog"); w_x = w.get("xgb_pure"); w_m = w.get("molgpka_debiased")
-        md.append(
-            f"_v9.2 three-head blend (analog K=5 + XGB-30 + live-MolGpKa-debias) "
-            f"per-family weights | LOO MAE 0.1250 on 278 cpds | max Tanimoto "
-            f"{v92.get('max_tanimoto_to_training', '—')}_"
-        )
-        md.append(
-            f"_components: analog={comp.get('analog')} "
-            f"xgb={comp.get('xgb_pure')} molgpka={comp.get('molgpka_debiased')} "
-            f"(weights {round(w_a or 0, 2)}, {round(w_x or 0, 2)}, {round(w_m or 0, 2)})_"
-        )
+        md.append(f"### pKa = {v92['pKa_pred']:.3f}")
     else:
-        md.append(f"## pKa = {pka.get('point', '—')}")
-        md.append(f"_v9.1 analog-delta XGBoost | tier `{pka.get('tier', '—')}` "
-                  f"| max Tanimoto {pka.get('max_tanimoto_to_training', '—')}_")
+        md.append(f"### pKa = {pka.get('point', '—')}")
     if pka.get("ci_90"):
-        md.append(f"_90% CI: [{pka['ci_90'][0]:.3f}, {pka['ci_90'][1]:.3f}]_")
+        md.append(f"90% CI: [{pka['ci_90'][0]:.3f}, {pka['ci_90'][1]:.3f}]")
     md.append("")
 
-    # ── Three-model bioactivity comparison ──
+    # ── Bioactivity (v14 + adaptive stacker only) ──
     is_lookup = bio.get("source") == "training_set_exact_match"
+    bio_point = bio.get("point")
 
     if is_lookup:
         iajd_id = bio.get("iajd_id_if_measured", "")
-        md.append(f"## Bioactivity: MEASURED VALUE (training set exact match)")
-        md.append(f"_This compound ({iajd_id}) is in the training set (Tanimoto=1.0). "
-                  f"The value below is the **stored experimental measurement**, not a model prediction._")
-        md.append("")
-        md.append(f"## log10 flux total = {_log_with_sci(bio.get('point'))}")
-        md.append("")
+        md.append(f"### log₁₀ flux = {_log_with_sci(bio_point)}")
+        md.append(f"Measured value from training set (IAJD {iajd_id}, Tanimoto = 1.000).")
     else:
-        md.append("## Bioactivity Predictions (log10 flux total)")
-    md.append("")
-    md.append("| Model | Prediction | Description |")
-    md.append("|---|---|---|")
-
-    # Model 1: v14 + stacker
-    bio_point = _log_with_sci(bio.get('point'))
-    stk_mode = stk.get("mode", "static") if stk.get("applied") else "off"
-    novelty = stk.get("components", {}).get("novelty")
-    nov_str = f" novelty={novelty:.2f}" if novelty is not None else ""
-    if is_lookup:
-        md.append(f"| **v14 + adaptive stacker** | **{bio_point}** | "
-                  f"LOOKUP (exact match in training set, not a prediction) |")
-    else:
-        md.append(f"| **v14 + adaptive stacker** | **{bio_point}** | "
-                  f"6-head ensemble (direct + analog + LION + ADMET + AGILE + CPP) with OOD-aware dynamic weighting; "
-                  f"physics heads (CPP/AGILE) dominate as queries drift from training;{nov_str} "
-                  f"LOO MAE 0.403 on 335 compounds |")
-
-    # Model 2: v11 M2 pKa-dominant
-    if v11.get("point") is not None:
-        v11_point = _log_with_sci(v11.get('point'))
-        md.append(f"| **v11 pKa-dominant** | **{v11_point}** | "
-                  f"pKa + family + pKa x family interaction + 8 tail descriptors; "
-                  f"LOO MAE {v11.get('loo_mae', 0):.3f} on {v11.get('n_train_rows', '?')} compounds |")
-
-    # Model 3: pKa-flux curve (if available in result)
-    pka_curve = r.get("bioactivity_pka_curve") or {}
-    if pka_curve.get("point") is not None:
-        pc_point = _log_with_sci(pka_curve.get('point'))
-        md.append(f"| **pKa-flux curve** | **{pc_point}** | "
-                  f"Per-family fitted pKa-to-flux quadratic + structural residual corrector; "
-                  f"flux step uses no similarity, but pKa input carries indirect similarity from v9.1; LOO MAE ~0.50 |")
-
+        md.append(f"### log₁₀ flux = {_log_with_sci(bio_point)}")
+        if bio.get("ci_90"):
+            md.append(f"90% CI: {_ci_with_sci(bio['ci_90'])}")
+        if bio.get("max_tanimoto") is not None:
+            md.append(f"Max Tanimoto to training: {bio['max_tanimoto']:.3f}")
     md.append("")
 
-    # Confidence info
-    if bio.get("ci_90"):
-        md.append(f"_v14+stacker 90% CI: {_ci_with_sci(bio['ci_90'])}_")
-    if bio.get("max_tanimoto") is not None:
-        md.append(f"_max Tanimoto to bioact training: {bio['max_tanimoto']:.3f}_")
-    md.append("")
-
-    # Binary head: P(≥ threshold)
-    bin = r.get("binary_above_threshold") or {}
-    if bin and "p_above" in bin:
-        T = bin["threshold"]
-        p = bin["p_above"]
-        flux10 = 10 ** T
-        verdict = "✅ likely **above**" if p >= 0.5 else "⚠️ likely **below**"
-        md.append(f"## Will log10 flux ≥ {T} (= {flux10:.0e})?  {verdict}")
-        md.append(f"**P(log10 flux ≥ {T}) = {p:.2%}**  "
-                  f"(continuous-threshold head; tunable T at inference)")
+    # ── Binary threshold verdict — derived from the single v14+stacker
+    #    prediction (or measured value if lookup), Gaussian assumption with
+    #    σ = v14+stacker LOO RMSE. NO separate model, NO calibrator that can
+    #    disagree with the point estimate.
+    bin_info = r.get("binary_above_threshold") or {}
+    T = bin_info.get("threshold")
+    if T is not None and bio_point is not None:
+        import math
+        if is_lookup:
+            p = 1.0 if bio_point >= T else 0.0
+            verdict_source = "from measured value"
+        else:
+            sigma_v14 = 0.43   # v14+stacker LOO RMSE
+            z = (float(bio_point) - float(T)) / sigma_v14
+            p = 0.5 * (1.0 + math.erf(z / math.sqrt(2)))
+            verdict_source = f"Gaussian on v14+stacker (σ = {sigma_v14})"
+        verdict = "above" if p >= 0.5 else "below"
+        md.append(f"### P(log₁₀ flux ≥ {T:.2f}) = {p:.1%} — likely {verdict}")
+        md.append(f"_{verdict_source}_")
         md.append("")
 
     # Organ delivery
@@ -451,7 +402,7 @@ def single_predict(smiles: str, family_choice: str, neighbors: int,
 
 def propose_better(seed_smiles: str, threshold: float, beam: int, depth: int,
                     top_seeds: int, exploration_weight: float = 0.0,
-                    kappa_ucb: float = 1.5):
+                    kappa_ucb: float = 1.5, sar_weight: float = 0.4):
     """Run the fragment-swap proposer; render top candidates as Markdown.
 
     exploration_weight (α ∈ [0,1]):
@@ -526,35 +477,38 @@ def propose_better(seed_smiles: str, threshold: float, beam: int, depth: int,
             header = f"## Proposed IAJDs — DONE"
         else:
             header = f"## Proposed IAJDs — live (round {round_idx}/{depth})"
-        rank_desc = (f"α={exploration_weight:.2f} blend of "
-                      f"`P(≥T)·max(0,Δ_ML)` and "
-                      f"`Q_physics·max(0, UCB − seed_ŷ)`  "
-                      f"(κ={kappa_ucb:.2f})")
+        rank_desc = (f"α={exploration_weight:.2f}·[`P(≥T)·Δ_ML` ⊕ `Q_phys·UCB`] "
+                      f"(κ={kappa_ucb:.2f})  +  β={sar_weight:.2f}·`Δ_SAR` "
+                      f"(family informed-mutation prior)")
         body = [header,
                 f"_T={threshold}, beam={beam}, depth={depth}, "
                 f"{len(seeds)} seed(s); ranked by {rank_desc}. "
-                f"{len(result_df)} candidates scored._",
+                f"{len(result_df)} candidates shown._",
                 ""]
-        body.append("| rank | Δ vs seed | ŷ ML | seed ŷ | P(≥T) | Q_phys | CPP | escape | Tanim | What changed | SMILES |")
+        body.append("| rank | Δ vs seed | Δ_SAR | ŷ ML | seed ŷ | P(≥T) | Q_phys | escape | Tanim | What changed (· why, per training SAR) | SMILES |")
         body.append("|---|---|---|---|---|---|---|---|---|---|---|")
         for i, (_, r) in enumerate(result_df.head(20).iterrows()):
             desc = r.get("mutation_description") or " → ".join((r.get("mutation_trail") or [])[-2:])
+            sar_why = r.get("sar_reason")
+            if isinstance(sar_why, str) and sar_why.strip():
+                desc = f"{desc} · _{sar_why}_"
             def _fmt(v, d=2):
                 if v is None or v != v:
                     return "—"
                 return f"{v:.{d}f}"
             delta = r.get("delta_vs_seed", 0)
             delta_s = f"{'+' if delta >= 0 else ''}{delta:.2f}" if delta == delta else "—"
+            sar = r.get("sar_prior")
+            sar_s = f"{'+' if sar >= 0 else ''}{sar:.2f}" if (sar is not None and sar == sar) else "—"
             seed_y = r.get("yhat_seed")
             seed_y_s = f"{seed_y:.2f}" if seed_y == seed_y else "—"
             tanim = r.get("tanim_max_to_train")
             tanim_s = f"{tanim:.2f}" if tanim == tanim else "—"
             q_p = r.get("q_physics")
-            cpp = r.get("cpp")
             esc = r.get("endosomal_escape")
             body.append(
-                f"| {i+1} | **{delta_s}** | {r['yhat']:.2f} | {seed_y_s} | "
-                f"{r['p_above']:.0%} | {_fmt(q_p)} | {_fmt(cpp)} | "
+                f"| {i+1} | **{delta_s}** | {sar_s} | {r['yhat']:.2f} | {seed_y_s} | "
+                f"{r['p_above']:.0%} | {_fmt(q_p)} | "
                 f"{_fmt(esc)} | {tanim_s} | {desc} | `{r['smiles']}` |"
             )
         if is_final:
@@ -572,16 +526,18 @@ def propose_better(seed_smiles: str, threshold: float, beam: int, depth: int,
             bundle_v14, _BIN_BUNDLE, train_fps,
             exploration_weight=float(exploration_weight),
             kappa_ucb=float(kappa_ucb),
+            sar_weight=float(sar_weight),
         )
+        last_partial_df = None
         for round_idx, partial_df in result_iter:
+            last_partial_df = partial_df
             last_md, last_csv = _render(partial_df, round_idx, is_final=False)
             yield last_md, last_csv
-        # Final render with DONE header on the last DataFrame we got
-        if last_csv:
-            # Reparse from CSV-side: just re-render the last partial as final
-            import io as _io
-            last_df = pd.read_csv(_io.StringIO(last_csv))
-            md_final, csv_final = _render(last_df, depth, is_final=True)
+        # Final render with DONE header on the last DataFrame we got. Re-render
+        # the in-memory DataFrame directly (no CSV round-trip, which would
+        # stringify mutation_trail lists and coerce empty sar_reason to NaN).
+        if last_partial_df is not None and len(last_partial_df):
+            md_final, csv_final = _render(last_partial_df, depth, is_final=True)
             yield md_final, csv_final
     except Exception as exc:
         yield f"### Proposer failed\n\n```\n{type(exc).__name__}: {exc}\n```", last_csv
@@ -621,34 +577,28 @@ def batch_predict(file_obj, smiles_text: str, family_choice: str, neighbors: int
 
 
 def build_ui() -> gr.Blocks:
-    intro = f"""
+    intro = """
 # IAJD Tandem Predictor
 
-Predicts **pKa** and **bioactivity (log10 total flux)** for ionizable amphiphilic Janus dendrimers.
+Predicts **pKa** and **bioactivity (log₁₀ total flux)** for ionizable amphiphilic Janus dendrimers from molecular input.
 
-**pKa model:** v9.2 three-head blend (per-query):
-- Analog @ K=5 Tanimoto neighbors (sim≥0.6 floor, sim⁴ weighting)
-- Pure XGB on 30 base RDKit/structural features (orthogonal to MolGpKa)
-- Live MolGpKa GCN → per-family linear debias (no proxies — runs at every query)
-- Per-family optimal weights; **LOO MAE 0.1250** on 278 compounds
-
-Three independent bioactivity models run in parallel on every query:
-
-| Model | What it does | LOO MAE |
+| Property | Model | LOO MAE |
 |---|---|---|
-| **v14 + adaptive stacker** | 6-head ensemble (direct + analog + LION + ADMET + AGILE + CPP) with OOD-aware dynamic weighting | 0.431 |
-| **v11 M2 pKa-dominant** | Predicted pKa + family one-hot + pKa × family interactions + 8 tail descriptors | 0.475 |
-| **Binary classifier (tunable T)** | P(log10 flux ≥ T) for any T ∈ [6.5, 9.5] via per-threshold sigmoid calibrators on the v14 regressor's LOO outputs | ROC-AUC 0.81 at T=8.0 |
+| pKa | v9.2 three-head blend (analog + XGB + live MolGpKa) | 0.125 |
+| log₁₀ flux | v14 + adaptive stacker | 0.43 |
 
-Accepts SMILES, ChemDraw (.cdxml), SDF, MOL. Family auto-detected.
+**Input formats:** SMILES, ChemDraw (.cdxml), SDF, MOL. Family auto-detected from six chemical families.
 
-**Status:** {"loaded" if BUNDLE_OK else f"failed — {BUNDLE_ERR}"} | v11 {"loaded" if V11_AVAILABLE else "unavailable"} | v9.2 {"loaded" if PKA_V92_AVAILABLE else "unavailable"} | binary {"loaded" if BIN_AVAILABLE else "unavailable"} | proposer {"loaded" if PROPOSE_AVAILABLE else "unavailable"}
+**Tabs:**
+- *Single SMILES* — predict one molecule
+- *Batch* — file upload or multi-line SMILES paste
+- *Propose better IAJDs* — beam search over single-step structural mutations of a seed
 """
 
     with gr.Blocks(title="IAJD Tandem Predictor") as demo:
         gr.Markdown(intro)
         if not BUNDLE_OK:
-            gr.Markdown(f"⚠️ **Bundle load failed at startup.** Predictions will not work until this is resolved.")
+            gr.Markdown(f"**Bundle load failed at startup.** {BUNDLE_ERR}")
 
         with gr.Tab("Single SMILES"):
             with gr.Row():
@@ -714,7 +664,17 @@ Accepts SMILES, ChemDraw (.cdxml), SDF, MOL. Family auto-detected.
                     "  combined with the model's uncertainty σ — useful when the seed is at the "
                     "  top of the training distribution and ML can't see anything above it.\n"
                     "• **κ** = exploration aggressiveness (UCB constant). 0 = no uncertainty "
-                    "  boost, 2-3 = aggressive extrapolation."
+                    "  boost, 2-3 = aggressive extrapolation.\n"
+                    "• **β (SAR prior)** = informed-mutation steering. Each mutation gets a "
+                    "  signed `Δ_SAR` prior — the training set's expected change in "
+                    "  log₁₀-flux for moving along that family's *significant, de-correlated* "
+                    "  structure-activity axes (e.g. GA-Tris: shorter linker ↑, more H-bond "
+                    "  acceptors ↑, HPRZ/H2EPRZ heads ≫ MPRZ; PE-Tris: less lipophilic ↑, "
+                    "  more H-bond donors ↑). Favourable moves are surfaced even when the "
+                    "  (conservative) ML regressor won't extrapolate to them; strongly-adverse "
+                    "  moves are pruned before scoring. Families with no statistically-supported "
+                    "  axis (PE-Gallic, Dialkoxybenzyl) get **no** steering — an honest neutral, "
+                    "  not a guess. Priors are computed by `analyze_family_sar.py`."
                 )
                 with gr.Row():
                     seed_in = gr.Textbox(
@@ -735,22 +695,23 @@ Accepts SMILES, ChemDraw (.cdxml), SDF, MOL. Family auto-detected.
                                                 "crank to 0.3–0.6 for extrapolation searches above a top seed")
                     p_kappa = gr.Slider(0.0, 3.0, value=1.5, step=0.25,
                                           label="κ UCB (exploration aggressiveness)")
+                    p_sar = gr.Slider(0.0, 1.0, value=0.4, step=0.05,
+                                       label="β SAR prior (informed-mutation steering; "
+                                             "0 = off, 0.4 = default, higher = steer harder "
+                                             "toward the family's data-supported directions)")
                 go_p = gr.Button("Propose", variant="primary")
                 out_p_md = gr.Markdown()
                 with gr.Accordion("Candidate CSV (top 50)", open=False):
                     out_p_csv = gr.Code()
                 go_p.click(propose_better,
                             inputs=[seed_in, p_threshold, p_beam, p_depth,
-                                    p_seeds, p_alpha, p_kappa],
+                                    p_seeds, p_alpha, p_kappa, p_sar],
                             outputs=[out_p_md, out_p_csv])
 
         gr.Markdown(
             "---\n"
-            "_Training: 278 pKa compounds + 273 bioactivity measurements (6 families)._\n\n"
-            "_pKa v9.2 three-head blend LOO MAE 0.125. v14+stacker LOO MAE 0.431. "
-            "v11 M2 LOO MAE 0.475. Binary classifier (tunable T): ROC-AUC 0.81 at T=8.0._\n\n"
-            "_8 GA-Tris IAJDs (347, 348, 365, 366, 367, 369, 372, 373) reintegrated 2026-05-28 "
-            "with bioactivity measurements only — no measured pKa, so they're absent from the pKa table._"
+            "Training set: 278 pKa measurements, 273 bioactivity measurements, "
+            "across six chemical families."
         )
     return demo
 

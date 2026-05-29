@@ -7,12 +7,18 @@ Pipeline:
      OR with a user-supplied SMILES
   3. For depth=D rounds:
        - Apply all single-mutation operators (iajd_grammar.propose_single_mutations)
-       - Score each candidate with the bioact regressor + binary head
+       - Steer by the per-family informed-mutation prior (family_sar): each move
+         gets a signed Δ_SAR = the training set's expected Δlog10_flux for moving
+         along that family's significant, de-correlated structure-activity axes
+         (and observed head/linkage mean-flux gaps). Strongly-adverse moves are
+         pruned before scoring; the redundant no-signal tail-variant explosion
+         is capped. Families with no statistically-supported axis get no steering.
+       - Score each candidate with the bioact regressor + binary head + physics
        - Filter for Tanimoto novelty (< 0.85 to existing training set) and
          a rough synthesizability gate (RDKit sanitization passes, no exotic atoms,
          MolWt ≤ 1500, RotatableBonds ≤ 50)
-       - Keep top-N by combined criterion: predicted log10_flux × P(≥T)
-  4. Return ranked candidate list with mutation provenance
+       - Rank by  (1−α)·[P(≥T)·max(0,Δ_ML)] + α·[Q_physics·UCB] + β·Δ_SAR
+  4. Return ranked candidate list with mutation provenance + Δ_SAR reasons
 
 Outputs:
   - proposed_iajds.csv  (ranked candidates with scores + mutation trail)
@@ -44,6 +50,24 @@ from iajd_grammar import (
     propose_single_mutations, FAMILY_ASSEMBLERS,
     humanize_mutation_tag,
 )
+from family_sar import (
+    sar_features, sar_prior_for_candidate, family_has_prior,
+)
+
+# Informed-mutation (SAR-prior) tuning. The prior is in log10_flux_total units.
+#   PRUNE_ADVERSE   : per-mutation prior at/below which a move is dropped BEFORE
+#                     ML scoring — but only in families that actually have a
+#                     data-supported prior (flat/low-data families never prune).
+#   TAIL_NOSIG_CAP  : max no-signal tail-type variants kept per parent, so the
+#                     dozens of redundant tail swaps in flat families don't drown
+#                     the few informed moves (and don't waste ML featurization).
+#   SAR_SHOW        : a candidate the ML thinks is ≤ seed is still surfaced if its
+#                     SAR prior is ≥ this (a data-supported direction the
+#                     conservative ML regressor won't extrapolate to).
+PRUNE_ADVERSE = -0.40
+TAIL_NOSIG_CAP = 8
+SAR_SHOW = 0.15
+_TAIL_TAG_PREFIXES = ("tail", "all_tails", "multi_tail")
 
 BIOACT_XLSX = ROOT / "IAJD_master/datasets/IAJD_Bioact_v13_clean.xlsx"
 BIN_BUNDLE  = ROOT / "IAJD_master/bundles_caches/bioact_binary_bundle.pkl"
@@ -494,11 +518,31 @@ def _pick_seeds(df: pd.DataFrame, top_k: int) -> List[dict]:
     return [r.to_dict() for _, r in have.iterrows()]
 
 
+def _sar_prior_for_mutation(parent_seed, parent_feats, cand_seed, cand_smi, tag):
+    """Per-mutation informed prior (parent→candidate), in log10_flux units.
+
+    Returns (step_prior, reason). Cross-family jumps return a neutral 0.0 —
+    there is no principled within-family SAR comparison across architectures,
+    so we don't fabricate one."""
+    if tag.startswith("family:"):
+        return 0.0, ""
+    cand_feats = sar_features(cand_smi)
+    step, reason, _sig = sar_prior_for_candidate(
+        parent_seed.family, parent_feats, cand_feats,
+        mutation_tag=tag,
+        seed_linker=parent_seed.linker_n, cand_linker=cand_seed.linker_n,
+        head_old=parent_seed.head, head_new=cand_seed.head,
+        linkage_old=parent_seed.linkage, linkage_new=cand_seed.linkage,
+    )
+    return step, reason
+
+
 def beam_search_streaming(threshold: float, beam: int, depth: int,
                           seeds: List[Seed], library: Library,
                           bundle_v14: dict, bundle_bin: dict, train_fps,
                           exploration_weight: float = 0.0,
-                          kappa_ucb: float = 1.5):
+                          kappa_ucb: float = 1.5,
+                          sar_weight: float = 0.4):
     """Generator: yield (round_idx, cumulative_df) after each beam round.
 
     Wraps beam_search but emits the DataFrame-so-far after each scoring pass so
@@ -506,16 +550,26 @@ def beam_search_streaming(threshold: float, beam: int, depth: int,
     the full depth-D loop to complete.
 
     Scoring:
-        score = (1 - α) × ML_score + α × PHYSICS_UCB_score
+        score = (1 - α)·ML_score + α·PHYSICS_UCB_score + β·SAR_prior
         ML_score      = P(≥T) × max(0, ŷ − ŷ_seed)
         PHYSICS_UCB   = Q_physics × max(0, ŷ + κ·σ − ŷ_seed)
+        SAR_prior     = Σ over the mutation trail of the per-mutation
+                        family-SAR prior (family_sar.sar_prior_for_candidate):
+                        the training set's expected Δlog10_flux for moving the
+                        candidate along the family's significant, de-correlated
+                        structure-activity axes (and observed head/linkage
+                        mean-flux gaps). Signed: favourable moves lift the
+                        score, proven-adverse moves sink it.
 
-        where Q_physics ∈ [0,1] is the mechanism-based quality score
-        (CPP near 1, escape differential, HLB optimal, membrane affinity),
-        σ comes from the v15 hybrid bundle's σ_combined,
-        and α = exploration_weight controls ML-confidence ↔ physics-
-        extrapolation balance. α=0 reverts to pure ML scoring (no physics
-        influence); α=1 means rank purely by physics-justified UCB.
+        Q_physics ∈ [0,1] is the mechanism-based quality score, σ comes from
+        the v15 hybrid bundle, α = exploration_weight balances ML ↔ physics,
+        and β = sar_weight scales the data-grounded informed-mutation prior.
+
+    Informed mutations also shape GENERATION: before the expensive ML scoring,
+    moves that are strongly adverse per the family SAR are pruned (only in
+    families that actually have a data-supported prior), and the redundant
+    no-signal tail-variant explosion is capped — so the few informed moves
+    aren't drowned out (and we don't waste featurization on noise).
     """
     # Load v15 once for σ values
     _v15 = _load_v15_bundle()
@@ -552,6 +606,9 @@ def beam_search_streaming(threshold: float, beam: int, depth: int,
             "ucb_score": float(yh),
             "score_ml": 0.0,
             "score_phys": 0.0,
+            "sar_prior": 0.0,
+            "sar_step": 0.0,
+            "sar_reason": "",
             "mutation_trail": ["seed"],
             "mutation_description": "Original seed (no mutation)",
             "mutation_tag": "seed",
@@ -559,15 +616,24 @@ def beam_search_streaming(threshold: float, beam: int, depth: int,
             "score": 0.0,
         })
         explored.add(sm)
-    all_candidates = list(current)
-    yield 0, pd.DataFrame(all_candidates)
+    # `shown` is what the UI table renders: seeds + qualifying candidates only.
+    # Sub-par candidates still seed the next beam round (via `current`) but are
+    # never rendered — matching the user's "don't show me worse-than-seed rows".
+    shown = list(current)
+    yield 0, pd.DataFrame(shown)
 
     for d in range(depth):
         current.sort(key=lambda r: -r["score"])
         current = current[:beam]
         next_pool = []
         for parent in current:
-            for cand_smi, tag, cand_seed in propose_single_mutations(parent["seed"], library):
+            parent_seed = parent["seed"]
+            parent_feats = sar_features(parent["smiles"])
+            parent_cum = parent.get("sar_prior", 0.0)
+            fam_has_prior = family_has_prior(parent_seed.family)
+            local = []          # this parent's accepted candidates
+            tail_nosig = 0      # count of no-signal tail-variant moves kept
+            for cand_smi, tag, cand_seed in propose_single_mutations(parent_seed, library):
                 if cand_smi in explored:
                     continue
                 if not _passes_filters(cand_smi):
@@ -577,8 +643,21 @@ def beam_search_streaming(threshold: float, beam: int, depth: int,
                 tanim = _tanimoto_max(cand_fp, train_fps)
                 if tanim >= NOVELTY_TANIMOTO_MAX:
                     continue
+                # ── informed-mutation gate (cheap, pre-ML) ──
+                step, reason = _sar_prior_for_mutation(
+                    parent_seed, parent_feats, cand_seed, cand_smi, tag)
+                # Drop strongly-adverse moves, but only where we actually have a
+                # data-supported prior (flat/low-data families never prune).
+                if fam_has_prior and step <= PRUNE_ADVERSE:
+                    continue
+                # Cap the redundant no-signal tail-variant explosion per parent.
+                is_tail = tag.startswith(_TAIL_TAG_PREFIXES)
+                if is_tail and abs(step) < 1e-6:
+                    if tail_nosig >= TAIL_NOSIG_CAP:
+                        continue
+                    tail_nosig += 1
                 explored.add(cand_smi)
-                next_pool.append({
+                local.append({
                     "smiles": cand_smi, "seed": cand_seed,
                     "parent_smiles": parent["smiles"],
                     "mutation_tag": tag,
@@ -586,7 +665,11 @@ def beam_search_streaming(threshold: float, beam: int, depth: int,
                     "mutation_trail": parent["mutation_trail"] + [tag],
                     "tanim_max_to_train": float(tanim),
                     "yhat_seed": parent["yhat_seed"],
+                    "sar_step": float(step),
+                    "sar_prior": float(parent_cum + step),
+                    "sar_reason": reason,
                 })
+            next_pool.extend(local)
         if not next_pool:
             break
         smis = [r["smiles"] for r in next_pool]
@@ -630,29 +713,27 @@ def beam_search_streaming(threshold: float, beam: int, depth: int,
             )
             r["score_ml"] = score_ml
             r["score_phys"] = score_phys
-            r["score"] = (1.0 - exploration_weight) * score_ml + exploration_weight * score_phys
+            # Signed SAR term: favourable informed moves lift the rank, proven-
+            # adverse ones sink it. β = sar_weight.
+            r["score"] = ((1.0 - exploration_weight) * score_ml
+                          + exploration_weight * score_phys
+                          + sar_weight * r["sar_prior"])
 
         # Stream each *qualifying* candidate one-at-a-time so the UI table grows
-        # row-by-row. "Qualifying" requires BOTH:
-        #   (a) delta_vs_seed > 0   — ML thinks it actually beats the seed
-        #   (b) score > 0           — total (ML + physics) ranking is positive
-        # Physics + monotone still influence the RANKING within qualifying
-        # candidates, but a candidate the ML predictor thinks is worse than
-        # the seed never appears in the live table — matches the user's
-        # expectation that "candidates under the seed shouldn't show up."
-        qualifying = sorted(
-            [r for r in next_pool
-             if r["delta_vs_seed"] > 0 and r["score"] > 0],
-            key=lambda r: -r["score"],
-        )
-        sub_par = [r for r in next_pool
-                   if not (r["delta_vs_seed"] > 0 and r["score"] > 0)]
-        # Add sub-par silently to the cumulative list (no yield), then add
-        # qualifying ones one-by-one with a yield each.
-        all_candidates.extend(sub_par)
+        # row-by-row. A candidate qualifies for display if EITHER:
+        #   (a) delta_vs_seed > 0  — the ML model thinks it beats the seed, OR
+        #   (b) sar_prior ≥ SAR_SHOW — the training set supports this direction
+        #       even though the (conservative) ML regressor won't extrapolate to
+        #       it. This is the "informed mutation" the user asked to surface.
+        # Everything else (ML thinks it's worse AND no data-supported direction)
+        # never appears in the table — it only seeds the next beam round.
+        def _qualifies(r):
+            return (r["delta_vs_seed"] > 0) or (r["sar_prior"] >= SAR_SHOW)
+        qualifying = sorted([r for r in next_pool if _qualifies(r)],
+                            key=lambda r: -r["score"])
         for cand in qualifying:
-            all_candidates.append(cand)
-            df_partial = pd.DataFrame(all_candidates)
+            shown.append(cand)
+            df_partial = pd.DataFrame(shown)
             df_partial["_tiebreak_yhat"] = df_partial["yhat"]
             df_partial = df_partial.sort_values(
                 ["score", "_tiebreak_yhat"], ascending=[False, False]
@@ -660,7 +741,7 @@ def beam_search_streaming(threshold: float, beam: int, depth: int,
             yield d + 1, df_partial
 
         # End-of-round summary yield (covers rounds where nothing qualified)
-        df_partial = pd.DataFrame(all_candidates)
+        df_partial = pd.DataFrame(shown)
         df_partial["_tiebreak_yhat"] = df_partial["yhat"]
         df_partial = df_partial.sort_values(
             ["score", "_tiebreak_yhat"], ascending=[False, False]
@@ -672,8 +753,13 @@ def beam_search_streaming(threshold: float, beam: int, depth: int,
 def beam_search(threshold: float, beam: int, depth: int,
                 seeds: List[Seed], library: Library,
                 bundle_v14: dict, bundle_bin: dict,
-                train_fps) -> pd.DataFrame:
-    """Run depth-D beam search of width `beam`, keeping the best by combined score."""
+                train_fps, sar_weight: float = 0.4) -> pd.DataFrame:
+    """Run depth-D beam search of width `beam`, keeping the best by combined score.
+
+    Combined score = P(≥T)·max(0, Δ vs seed) + β·SAR_prior, where SAR_prior is
+    the accumulated family informed-mutation prior (see family_sar). Strongly-
+    adverse moves are pruned pre-scoring and the no-signal tail-variant explosion
+    is capped — mirroring beam_search_streaming so the CLI and UI agree."""
     explored = set()
     current = []
     # Score the seeds first. Prefer the ORIGINAL training SMILES (cached) for
@@ -699,6 +785,7 @@ def beam_search(threshold: float, beam: int, depth: int,
             "smiles": sm, "seed": s, "yhat": float(yh), "p_above": float(p),
             "yhat_seed": float(yh),
             "delta_vs_seed": 0.0,
+            "sar_prior": 0.0, "sar_step": 0.0, "sar_reason": "",
             "mutation_trail": ["seed"],
             "mutation_description": "Original seed (no mutation)",
             # score = improvement over seed × confidence that result clears T
@@ -717,7 +804,12 @@ def beam_search(threshold: float, beam: int, depth: int,
 
         next_pool = []
         for parent in current:
-            for cand_smi, tag, cand_seed in propose_single_mutations(parent["seed"], library):
+            parent_seed = parent["seed"]
+            parent_feats = sar_features(parent["smiles"])
+            parent_cum = parent.get("sar_prior", 0.0)
+            fam_has_prior = family_has_prior(parent_seed.family)
+            tail_nosig = 0
+            for cand_smi, tag, cand_seed in propose_single_mutations(parent_seed, library):
                 if cand_smi in explored:
                     continue
                 if not _passes_filters(cand_smi):
@@ -728,6 +820,14 @@ def beam_search(threshold: float, beam: int, depth: int,
                 if tanim >= NOVELTY_TANIMOTO_MAX:
                     # identical to a training compound — skip
                     continue
+                step, reason = _sar_prior_for_mutation(
+                    parent_seed, parent_feats, cand_seed, cand_smi, tag)
+                if fam_has_prior and step <= PRUNE_ADVERSE:
+                    continue
+                if tag.startswith(_TAIL_TAG_PREFIXES) and abs(step) < 1e-6:
+                    if tail_nosig >= TAIL_NOSIG_CAP:
+                        continue
+                    tail_nosig += 1
                 explored.add(cand_smi)
                 next_pool.append({
                     "smiles": cand_smi,
@@ -738,6 +838,9 @@ def beam_search(threshold: float, beam: int, depth: int,
                     "mutation_trail": parent["mutation_trail"] + [tag],
                     "tanim_max_to_train": float(tanim),
                     "yhat_seed": parent["yhat_seed"],
+                    "sar_step": float(step),
+                    "sar_prior": float(parent_cum + step),
+                    "sar_reason": reason,
                 })
 
         # Score this round's pool in a single batch (faster)
@@ -750,10 +853,11 @@ def beam_search(threshold: float, beam: int, depth: int,
             r["yhat"] = float(yh)
             r["p_above"] = float(p)
             r["delta_vs_seed"] = float(yh) - r["yhat_seed"]
-            # Rank by improvement over seed × P(≥T): rewards candidates
-            # predicted to actually push *past* the seed, not just clear T.
-            # max(0, delta) so we don't reward worse-than-seed candidates.
-            r["score"] = float(p) * max(0.0, r["delta_vs_seed"])
+            # Rank by improvement over seed × P(≥T), plus the signed family SAR
+            # prior (β): rewards candidates predicted to push past the seed AND
+            # candidates moving along data-supported directions.
+            r["score"] = (float(p) * max(0.0, r["delta_vs_seed"])
+                          + sar_weight * r["sar_prior"])
         all_candidates.extend(next_pool)
         current = next_pool
 
@@ -831,7 +935,8 @@ def main():
                          seeds_list, library, bundle_v14, bundle_bin, train_fps)
 
     # Trim columns for CSV
-    out_cols = ["smiles", "yhat", "yhat_seed", "delta_vs_seed", "p_above",
+    out_cols = ["smiles", "yhat", "yhat_seed", "delta_vs_seed",
+                "sar_prior", "sar_step", "sar_reason", "p_above",
                 "score", "tanim_max_to_train",
                 "mutation_description", "mutation_tag",
                 "mutation_trail", "parent_smiles"]
