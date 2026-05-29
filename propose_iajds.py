@@ -350,14 +350,36 @@ def beam_search_streaming(threshold: float, beam: int, depth: int,
             r["p_above"] = float(p)
             r["delta_vs_seed"] = float(yh) - r["yhat_seed"]
             r["score"] = float(p) * max(0.0, r["delta_vs_seed"])
-        all_candidates.extend(next_pool)
-        current = next_pool
+
+        # Stream each *qualifying* candidate (Δ > 0 vs seed) one-at-a-time so the
+        # UI table grows row-by-row. Sub-zero candidates are still added to
+        # all_candidates for the final tally, but they don't trigger a yield —
+        # the user only sees the search "find" actual improvements live.
+        qualifying = sorted(
+            [r for r in next_pool if r["delta_vs_seed"] > 0],
+            key=lambda r: -r["score"],
+        )
+        sub_par = [r for r in next_pool if r["delta_vs_seed"] <= 0]
+        # Add sub-par silently to the cumulative list (no yield), then add
+        # qualifying ones one-by-one with a yield each.
+        all_candidates.extend(sub_par)
+        for cand in qualifying:
+            all_candidates.append(cand)
+            df_partial = pd.DataFrame(all_candidates)
+            df_partial["_tiebreak_yhat"] = df_partial["yhat"]
+            df_partial = df_partial.sort_values(
+                ["score", "_tiebreak_yhat"], ascending=[False, False]
+            ).reset_index(drop=True).drop(columns=["_tiebreak_yhat"])
+            yield d + 1, df_partial
+
+        # End-of-round summary yield (covers rounds where nothing qualified)
         df_partial = pd.DataFrame(all_candidates)
         df_partial["_tiebreak_yhat"] = df_partial["yhat"]
         df_partial = df_partial.sort_values(
             ["score", "_tiebreak_yhat"], ascending=[False, False]
         ).reset_index(drop=True).drop(columns=["_tiebreak_yhat"])
         yield d + 1, df_partial
+        current = next_pool
 
 
 def beam_search(threshold: float, beam: int, depth: int,
