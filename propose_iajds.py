@@ -633,14 +633,20 @@ def beam_search_streaming(threshold: float, beam: int, depth: int,
             r["score"] = (1.0 - exploration_weight) * score_ml + exploration_weight * score_phys
 
         # Stream each *qualifying* candidate one-at-a-time so the UI table grows
-        # row-by-row. "Qualifying" = score > 0; when α=0 this means Δ_ML > 0,
-        # when α>0 it also includes physics-justified extrapolations even
-        # where ML predicts no improvement.
+        # row-by-row. "Qualifying" requires BOTH:
+        #   (a) delta_vs_seed > 0   — ML thinks it actually beats the seed
+        #   (b) score > 0           — total (ML + physics) ranking is positive
+        # Physics + monotone still influence the RANKING within qualifying
+        # candidates, but a candidate the ML predictor thinks is worse than
+        # the seed never appears in the live table — matches the user's
+        # expectation that "candidates under the seed shouldn't show up."
         qualifying = sorted(
-            [r for r in next_pool if r["score"] > 0],
+            [r for r in next_pool
+             if r["delta_vs_seed"] > 0 and r["score"] > 0],
             key=lambda r: -r["score"],
         )
-        sub_par = [r for r in next_pool if r["score"] <= 0]
+        sub_par = [r for r in next_pool
+                   if not (r["delta_vs_seed"] > 0 and r["score"] > 0)]
         # Add sub-par silently to the cumulative list (no yield), then add
         # qualifying ones one-by-one with a yield each.
         all_candidates.extend(sub_par)
