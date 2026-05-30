@@ -227,7 +227,13 @@ def _agile_predict_single(smiles, sb):
 _CPP_CACHE = {}
 
 def _cpp_predict_single(smiles, sb):
-    """Compute CPP features and predict via CPP head."""
+    """Compute CPP features and predict via CPP head.
+
+    No-proxy (audit 2026-05-29): missing CPP features pass NaN through to
+    XGBoost's default branch; we do NOT zero-fill or median-impute. If too
+    many features are NaN the regressor will route through its learned
+    default path honestly.
+    """
     if smiles in _CPP_CACHE:
         return _CPP_CACHE[smiles]
     import numpy as np
@@ -236,9 +242,9 @@ def _cpp_predict_single(smiles, sb):
         feats = compute_cpp_features(smiles, pka=None)
         if feats is None:
             return None
-        x = np.array([[feats.get(k, 0) for k in CPP_FEATURE_NAMES]])
-        # Impute NaN with 0
-        x = np.nan_to_num(x, nan=0.0)
+        # NaN passthrough: missing features → NaN, not 0.
+        x = np.array([[feats.get(k, float("nan")) for k in CPP_FEATURE_NAMES]],
+                      dtype=float)
         val = float(sb["cpp_head"].predict(x)[0])
         _CPP_CACHE[smiles] = val
         return val

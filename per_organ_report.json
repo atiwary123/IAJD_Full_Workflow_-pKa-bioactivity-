@@ -1,0 +1,39 @@
+{
+  "log10_flux_lung": {
+    "loo_mae": 0.6442892600545299,
+    "n_train": 51,
+    "per_family_rmse": {
+      "G1-Janus-Dendrimer": 1.3166465505971572,
+      "GA-Tris": 0.6307158234662777,
+      "PE-Gallic": 0.24752117079215163,
+      "PE-Tris": 0.6961174990428972,
+      "sSS-Nonsym": 1.114988698327496
+    }
+  },
+  "log10_flux_liver": {
+    "loo_mae": 0.4910886990294098,
+    "n_train": 41,
+    "per_family_rmse": {
+      "GA-Tris": 0.4718346028517338,
+      "PE-Tris": 0.55695938291415
+    }
+  },
+  "log10_flux_spleen": {
+    "loo_mae": 0.48759626482529683,
+    "n_train": 45,
+    "per_family_rmse": {
+      "Dialkoxybenzyl": 0.8559658979347413,
+      "GA-Tris": 0.5966831243584751,
+      "PE-Tris": 0.6146058942379776
+    }
+  },
+  "log10_flux_LN": {
+    "loo_mae": 0.5534294959482681,
+    "n_train": 40,
+    "per_family_rmse": {
+      "Dialkoxybenzyl": 0.7795453090555157,
+      "GA-Tris": 0.6818617353223021,
+      "PE-Tris": 0.6436023580978657
+    }
+  }
+}

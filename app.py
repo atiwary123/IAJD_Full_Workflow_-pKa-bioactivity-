@@ -37,6 +37,20 @@ try:
 except Exception:
     pass
 
+# IMPORTANT: load XGBoost bundles BEFORE torch/gradio/chemprop. Once torch
+# (or gradio→torch) initializes its OpenMP runtime, deserializing the
+# xgboost pickle in the same process can crash. Loading the XGBoost bundle
+# first warms the cache and ordering the OpenMP init xgboost→torch is safe.
+try:
+    from predict_binary import load_binary_bundle, predict_p_above
+    _BIN_BUNDLE = load_binary_bundle()
+    BIN_AVAILABLE = True
+except Exception as exc:  # noqa: BLE001
+    BIN_AVAILABLE = False
+    _BIN_BUNDLE = None
+    predict_p_above = None
+    print(f"[binary head] not available: {exc}")
+
 # Install chemprop 1.6.1 at startup if not present (HF Spaces can't fit it
 # in a Docker image alongside torch, so we install at runtime).
 try:
@@ -67,16 +81,66 @@ from iajd_predict import (
 )
 from iajd_family import CHEMICAL_FAMILIES, BIOACT_ONLY_SUBARCHS
 
-# Binary (tunable-threshold) classifier head — added 2026-05-28.
-try:
-    from predict_binary import load_binary_bundle, predict_p_above
-    _BIN_BUNDLE = load_binary_bundle()
-    BIN_AVAILABLE = True
-except Exception as exc:  # noqa: BLE001
-    BIN_AVAILABLE = False
-    _BIN_BUNDLE = None
-    predict_p_above = None
-    print(f"[binary head] not available: {exc}")
+# Deep-ensemble (T2 #5) + Per-organ (T3 #9) — lazy loaded on first use.
+# Eager-loading both XGBoost bundles at import time triggers a native
+# thread-init crash when the pka-curve XGB is built right after at module init.
+ENS_AVAILABLE = True
+_ENS_BUNDLE = None
+_predict_ensemble = None
+_predict_with_p_above_ensemble = None
+_p_above_gaussian = None
+_assemble_X_binary = None
+PER_ORGAN_AVAILABLE = True
+_PER_ORGAN_BUNDLE = None
+_predict_per_organ = None
+
+
+def _lazy_load_ensemble():
+    """Load deep-ensemble bundle on first use. Returns True on success."""
+    global _ENS_BUNDLE, _predict_ensemble, _predict_with_p_above_ensemble
+    global _p_above_gaussian, _assemble_X_binary, ENS_AVAILABLE
+    if _ENS_BUNDLE is not None:
+        return True
+    if not ENS_AVAILABLE:
+        return False
+    try:
+        from predict_ensemble import (
+            load_ensemble_bundle, predict_ensemble as _pe,
+            predict_with_p_above as _pwpa, p_above_gaussian as _pag,
+        )
+        from predict_binary import _assemble_X as _aX
+        _ENS_BUNDLE = load_ensemble_bundle()
+        _predict_ensemble = _pe
+        _predict_with_p_above_ensemble = _pwpa
+        _p_above_gaussian = _pag
+        _assemble_X_binary = _aX
+        print(f"[ensemble] lazy-loaded — M={_ENS_BUNDLE['metrics']['M']}, "
+              f"calibration={_ENS_BUNDLE['sigma_calibration']:.3f}, "
+              f"global σ={_ENS_BUNDLE['global_sigma']:.3f}")
+        return True
+    except Exception as exc:  # noqa: BLE001
+        ENS_AVAILABLE = False
+        print(f"[ensemble] lazy load failed: {exc}")
+        return False
+
+
+def _lazy_load_per_organ():
+    """Load per-organ bundle on first use. Returns True on success."""
+    global _PER_ORGAN_BUNDLE, _predict_per_organ, PER_ORGAN_AVAILABLE
+    if _PER_ORGAN_BUNDLE is not None:
+        return True
+    if not PER_ORGAN_AVAILABLE:
+        return False
+    try:
+        from predict_per_organ import load_per_organ_bundle, predict_per_organ as _ppo
+        _PER_ORGAN_BUNDLE = load_per_organ_bundle()
+        _predict_per_organ = _ppo
+        print(f"[per-organ] lazy-loaded — {len(_PER_ORGAN_BUNDLE['organ_models'])} organ models")
+        return True
+    except Exception as exc:  # noqa: BLE001
+        PER_ORGAN_AVAILABLE = False
+        print(f"[per-organ] lazy load failed: {exc}")
+        return False
 
 # pKa v9.2 three-head blend (analog @ K=5 + pure XGB + debiased MolGpKa)
 # with per-family optimal weights. Live MolGpKa GCN runs at inference for
@@ -177,16 +241,13 @@ try:
     for _, _r in _vd.iterrows():
         _s = _r.get("SMILES_canonical") or _r.get("SMILES")
         _feat_r.append(_extract_sf(str(_s)) if _pd_curve.notna(_s) else {k: _np.nan for k in _SF_NAMES})
+    # No-proxy: train XGBoost on the raw NaN-bearing matrix so the model
+    # learns real default-branch behavior; do NOT median-fill at training.
     _Xs = _pd_curve.DataFrame(_feat_r)[_SF_NAMES].values
-    for _col in range(_Xs.shape[1]):
-        _m = ~_np.isfinite(_Xs[:, _col])
-        if _m.any():
-            _Xs[_m, _col] = _np.nanmedian(_Xs[:, _col])
     _PKA_CURVES = _fit_curves(_pkas, _fluxes, _fams)
     _cp = _np.array([_pred_curve(p, f, _PKA_CURVES) for p, f in zip(_pkas, _fams)])
     _res = _fluxes - _cp
     _Xf = _np.column_stack([_pkas, _Xs])
-    _PKA_CURVE_MEDIANS = _np.nanmedian(_Xf, axis=0)
     _PKA_CURVE_XGB = _xgb_mod.XGBRegressor(**_RES_HP)
     _PKA_CURVE_XGB.fit(_Xf, _res, verbose=False)
     _PKA_CURVE_READY = True
@@ -194,12 +255,18 @@ except Exception:
     pass
 
 def _predict_pka_curve(pred_pka, family, smiles):
+    """pKa-flux curve + XGBoost structural residual.
+
+    No-proxy (audit 2026-05-29): missing structural features pass NaN through
+    to XGBoost's default branch (which was learned on the same-shape NaN-aware
+    training matrix). We do not median-fill or zero-fill at inference.
+    """
     curve_val = _pred_curve(pred_pka, family, _PKA_CURVES)
     feats = _extract_sf(smiles)
-    x = _np.array([[pred_pka] + [feats.get(f, 0) for f in _SF_NAMES]])
-    for col in range(x.shape[1]):
-        if not _np.isfinite(x[0, col]):
-            x[0, col] = _PKA_CURVE_MEDIANS[col]
+    x = _np.array(
+        [[pred_pka] + [feats.get(f, float("nan")) for f in _SF_NAMES]],
+        dtype=float,
+    )
     resid = float(_PKA_CURVE_XGB.predict(x)[0])
     return curve_val + resid
 
@@ -275,29 +342,61 @@ def _render_result_markdown(r: dict, idx: int = 0) -> str:
             md.append(f"Max Tanimoto to training: {bio['max_tanimoto']:.3f}")
     md.append("")
 
-    # ── Binary threshold verdict — derived from the single v14+stacker
-    #    prediction (or measured value if lookup), Gaussian assumption with
-    #    σ = v14+stacker LOO RMSE. NO separate model, NO calibrator that can
-    #    disagree with the point estimate.
+    # ── Binary threshold verdict — derived from the deep ensemble's per-candidate
+    #    σ (T2 #5). Falls back to lookup match or v14+stacker σ=0.43 if ensemble
+    #    not loaded.
+    ens = r.get("ensemble") or {}
+    ens_bin = r.get("binary_above_threshold_ensemble") or {}
     bin_info = r.get("binary_above_threshold") or {}
-    T = bin_info.get("threshold")
+    T = (ens_bin.get("threshold") if ens_bin else None) or bin_info.get("threshold")
     if T is not None and bio_point is not None:
         import math
-        if is_lookup:
+        if ens_bin and ens_bin.get("p_above") is not None:
+            p = float(ens_bin["p_above"])
+            verdict_source = ens_bin.get("source", "ensemble Gaussian")
+            if not is_lookup:
+                verdict_source = (
+                    f"deep ensemble (M={ens.get('M','?')}), σ_eff = {ens.get('sigma_eff','?')} "
+                    f"(per-candidate σ_q={ens.get('sigma_query','?')}, "
+                    f"per-family σ={ens.get('sigma_family','?')})"
+                )
+            verdict = "above" if p >= 0.5 else "below"
+            md.append(f"### P(log₁₀ flux ≥ {T:.2f}) = {p:.1%} — likely {verdict}")
+            md.append(f"_{verdict_source}_")
+        elif is_lookup:
             p = 1.0 if bio_point >= T else 0.0
-            verdict_source = "from measured value"
+            verdict = "above" if p >= 0.5 else "below"
+            md.append(f"### P(log₁₀ flux ≥ {T:.2f}) = {p:.1%} — likely {verdict}")
+            md.append(f"_from measured value_")
         else:
-            sigma_v14 = 0.43   # v14+stacker LOO RMSE
-            z = (float(bio_point) - float(T)) / sigma_v14
-            p = 0.5 * (1.0 + math.erf(z / math.sqrt(2)))
-            verdict_source = f"Gaussian on v14+stacker (σ = {sigma_v14})"
-        verdict = "above" if p >= 0.5 else "below"
-        md.append(f"### P(log₁₀ flux ≥ {T:.2f}) = {p:.1%} — likely {verdict}")
-        md.append(f"_{verdict_source}_")
+            # No proxy: ensemble bundle not loaded → no honest σ available, so
+            # refuse to fabricate a Gaussian P(≥T). Report point estimate only.
+            md.append(f"### P(log₁₀ flux ≥ {T:.2f}) = (unavailable)")
+            md.append("_Ensemble uncertainty model not loaded; cannot compute P(≥T) "
+                      "without a real σ. Point estimate above is the v14+stacker ŷ._")
+        if ens.get("ood_warning"):
+            md.append(f"_⚠ OOD: {ens['ood_warning']}_")
         md.append("")
 
-    # Organ delivery
-    if organ.get("target_organ"):
+    # ── Per-organ ML predictions (T3 #9): one XGB per organ, real ML signal.
+    per_organ_ml = r.get("per_organ_ml") or {}
+    if per_organ_ml and not per_organ_ml.get("error"):
+        md.append("### Per-organ ML predictions")
+        md.append("| organ | log₁₀ flux | σ_family | LOO MAE | n_train |")
+        md.append("|---|---|---|---|---|")
+        organ_order = ["lung", "liver", "spleen", "LN"]
+        for organ in organ_order:
+            info = per_organ_ml.get(organ)
+            if info is None:
+                continue
+            md.append(
+                f"| {organ} | {info['yhat']:.2f} | {info['sigma_family']:.2f} | "
+                f"{info['loo_mae']:.3f} | {info['n_train']} |"
+            )
+        md.append("_Separate XGBoost regressor per organ on the same 92-feature stack._")
+        md.append("")
+    elif organ.get("target_organ"):
+        # Fall back to the legacy similarity-weighted lookup table if ML not loaded.
         md.append(f"### Per-organ flux (similarity-weighted, not ML)")
         md.append("| organ | partition | log10 flux |")
         md.append("|---|---|---|")
@@ -403,8 +502,105 @@ def _attach_binary(r: dict, threshold: float) -> dict:
     return r
 
 
+def _attach_ensemble_and_per_organ(
+    r: dict,
+    threshold: float,
+    sample_prep: dict | None = None,
+) -> dict:
+    """T2 #5 + T3 #9: attach per-candidate ensemble σ and per-organ predictions.
+
+    Block E (pH_sample, T_hours, inj_route) is threaded into the 92-feature
+    stack via `sample_prep` so the model sees the actual experimental
+    conditions instead of NaN.
+
+    Adds three keys to `r`:
+      - "ensemble":   M-model mean, per-candidate σ, per-family σ
+      - "per_organ":  lung/liver/spleen/LN predictions (each with σ_family)
+      - "binary_above_threshold_ensemble": Gaussian P(≥T) using ensemble σ
+    """
+    if not _lazy_load_ensemble():
+        return r
+    smi = r.get("canonical_smiles") or r.get("smiles")
+    if not smi:
+        return r
+    fam = (r.get("family_resolution") or {}).get("family_assigned") or "GA-Tris"
+    try:
+        X = _assemble_X_binary([smi], family_hint=fam, sample_prep=sample_prep)
+    except Exception as exc:  # noqa: BLE001
+        r["ensemble"] = {"error": f"X assembly failed: {exc}"}
+        return r
+
+    # Max-Tanimoto to training (for OOD flag) — reuse what attach_binary already
+    # computed if available; otherwise compute now.
+    max_tan = (r.get("bioactivity") or {}).get("max_tanimoto")
+    try:
+        ens = _predict_ensemble(X, family=fam)
+    except Exception as exc:  # noqa: BLE001
+        r["ensemble"] = {"error": f"ensemble inference failed: {exc}"}
+        return r
+    r["ensemble"] = {
+        "yhat_mean": round(ens["yhat_mean"], 3),
+        "sigma_query": round(ens["sigma_query"], 3),
+        "sigma_family": round(ens["sigma_family"], 3),
+        "sigma_eff": round(ens["sigma_eff"], 3),
+        "calibration": round(ens["calibration"], 3),
+        "M": ens["M"],
+        "family": fam,
+        "max_tanimoto_to_training": (
+            round(float(max_tan), 3) if max_tan is not None and max_tan == max_tan else None
+        ),
+        "ood_warning": (
+            f"max Tanimoto to training = {max_tan:.2f} (< 0.50): outside the model's "
+            "training neighborhood; reported σ likely underestimates true uncertainty."
+        ) if (max_tan is not None and max_tan == max_tan and float(max_tan) < 0.5) else None,
+    }
+
+    # Gaussian P(≥T) using ensemble's per-candidate σ_eff (replaces the
+    # hardcoded σ=0.43 binary head).
+    bio = r.get("bioactivity") or {}
+    is_lookup = bio.get("source") == "training_set_exact_match"
+    bio_point = bio.get("point")
+    if is_lookup and bio_point is not None:
+        p_ens = 1.0 if float(bio_point) >= float(threshold) else 0.0
+        r["binary_above_threshold_ensemble"] = {
+            "threshold": float(threshold),
+            "p_above": p_ens,
+            "sigma_used": 0.0,
+            "source": "from measured value",
+        }
+    else:
+        p_ens = _p_above_gaussian(ens["yhat_mean"], ens["sigma_eff"], float(threshold))
+        r["binary_above_threshold_ensemble"] = {
+            "threshold": float(threshold),
+            "p_above": round(float(p_ens), 4) if p_ens == p_ens else None,
+            "sigma_used": round(ens["sigma_eff"], 3),
+            "source": "deep ensemble (M={}) + per-family σ + calibration ×{:.2f}".format(
+                ens["M"], ens["calibration"]),
+        }
+
+    # Per-organ predictions (lazy load)
+    if _lazy_load_per_organ():
+        try:
+            organ_preds = _predict_per_organ(X, family=fam)
+            r["per_organ_ml"] = {
+                organ: {
+                    "yhat": round(info["yhat"], 3),
+                    "sigma_family": round(info["sigma_family"], 3),
+                    "loo_mae": round(info["loo_mae"], 3),
+                    "n_train": info["n_train"],
+                }
+                for organ, info in organ_preds.items()
+            }
+        except Exception as exc:  # noqa: BLE001
+            r["per_organ_ml"] = {"error": str(exc)}
+    return r
+
+
 def single_predict(smiles: str, family_choice: str, neighbors: int,
-                    threshold: float = 8.0):
+                    threshold: float = 8.0,
+                    pH_sample: float | None = None,
+                    T_hours: float | None = None,
+                    inj_route: str | None = None):
     if not smiles or not smiles.strip():
         return "_Enter a SMILES._", ""
     family = None if (not family_choice or family_choice == "(auto-detect)") else family_choice
@@ -415,6 +611,14 @@ def single_predict(smiles: str, family_choice: str, neighbors: int,
     _attach_v11(r)
     _attach_pka_v92(r)
     _attach_binary(r, float(threshold))
+    # Build sample-prep dict from UI inputs. Untouched → NaN → XGBoost default branch.
+    sample_prep = {
+        "pH_sample": float(pH_sample) if pH_sample not in (None, "", float("nan")) else None,
+        "T_hours": float(T_hours) if T_hours not in (None, "", float("nan")) else None,
+        "inj_route": inj_route if inj_route and inj_route != "(unspecified)" else None,
+    }
+    r["sample_prep_inputs"] = sample_prep
+    _attach_ensemble_and_per_organ(r, float(threshold), sample_prep=sample_prep)
     md = _render_result_markdown(r, 0)
     raw = json.dumps(r, indent=2, default=str)
     return md, raw
@@ -422,14 +626,27 @@ def single_predict(smiles: str, family_choice: str, neighbors: int,
 
 def propose_better(seed_smiles: str, threshold: float, beam: int, depth: int,
                     top_seeds: int, exploration_weight: float = 0.0,
-                    kappa_ucb: float = 1.5, sar_weight: float = 0.4):
+                    kappa_ucb: float = 1.5, sar_weight: float = 0.4,
+                    rank_by: str = "score (default)"):
     """Run the fragment-swap proposer; render top candidates as Markdown.
 
     exploration_weight (α ∈ [0,1]):
-        0 → pure ML scoring (Δ vs seed × P(≥T))
-        1 → pure physics-justified UCB (Q_physics × upper bound)
+        0 → pure ML scoring: P(≥T) × max(0, ŷ_ML − ŷ_seed_ML)
+        1 → pure physics scoring: Q_physics × max(0, ŷ_physics − ŷ_seed_physics)
+             + monotone-axis bonus. ŷ_physics is the v15 Ridge prediction on
+             real CPP / endosomal-escape / HLB / logKp / Manning features
+             (NO ML term — pure physics at α=1, audited 2026-05-29).
         in-between blends the two — useful when ML is bounded by training
         distribution and you want extrapolation hypotheses surfaced
+
+    rank_by (T3 #8 active-learning surface):
+        "score (default)"          — combined ML + physics + SAR score
+        "expected_improvement (…)" — EI under N(ŷ, σ²) vs T; picks
+                                      candidates likely above T AND with σ
+                                      large enough that a real measurement
+                                      is informative
+        "sigma_ensemble (…)"        — pure exploration; picks the candidates
+                                      the ensemble disagrees most about
     """
     if not PROPOSE_AVAILABLE:
         return "_Proposer module unavailable._", ""
@@ -492,6 +709,16 @@ def propose_better(seed_smiles: str, threshold: float, beam: int, depth: int,
     with open(HERE / "IAJD_master/bundles_caches/bioact_v14_bundle.pkl", "rb") as f:
         bundle_v14 = _pickle.load(f)
 
+    # Resolve the rank-by selection to a DataFrame column for sorting
+    if rank_by.startswith("expected_improvement"):
+        sort_col, sort_label = "expected_improvement", "EI (active learning)"
+    elif rank_by.startswith("sigma_ensemble"):
+        sort_col, sort_label = "sigma_ensemble", "σ_ensemble (pure exploration)"
+    elif rank_by.startswith("chemberta_novelty"):
+        sort_col, sort_label = "chemberta_novelty", "ChemBERTa structural novelty"
+    else:
+        sort_col, sort_label = "score", "blended score"
+
     def _render(result_df, round_idx: int, is_final: bool):
         if is_final:
             header = f"## Proposed IAJDs — DONE"
@@ -500,14 +727,23 @@ def propose_better(seed_smiles: str, threshold: float, beam: int, depth: int,
         rank_desc = (f"α={exploration_weight:.2f}·[`P(≥T)·Δ_ML` ⊕ `Q_phys·UCB`] "
                       f"(κ={kappa_ucb:.2f})  +  β={sar_weight:.2f}·`Δ_SAR` "
                       f"(family informed-mutation prior)")
+        # Re-sort the displayed top-20 by the user-selected rank-by criterion.
+        # The DataFrame upstream is sorted by `score`; we honor that as default.
+        if sort_col in result_df.columns and sort_col != "score":
+            view_df = result_df.sort_values(sort_col, ascending=False, na_position="last")
+        else:
+            view_df = result_df
         body = [header,
                 f"_T={threshold}, beam={beam}, depth={depth}, "
-                f"{len(seeds)} seed(s); ranked by {rank_desc}. "
-                f"{len(result_df)} candidates shown._",
+                f"{len(seeds)} seed(s); composite score = {rank_desc}. "
+                f"Top-20 sorted by **{sort_label}**. "
+                f"{len(result_df)} candidates scored._",
                 ""]
-        body.append("| rank | Δ vs seed | Δ_SAR | ŷ ML | seed ŷ | P(≥T) | Q_phys | escape | Tanim | Mutations — full derivation (all rounds) · latest SAR why | SMILES |")
-        body.append("|---|---|---|---|---|---|---|---|---|---|---|")
-        for i, (_, r) in enumerate(result_df.head(20).iterrows()):
+        body.append(
+            "| rank | Δ vs seed | Δ_SAR | ŷ ML | σ_ens | EI | ChemB_nov | seed ŷ | P(≥T) | Q_phys | escape | Tanim | Mutations — full derivation (all rounds) · latest SAR why | SMILES |"
+        )
+        body.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+        for i, (_, r) in enumerate(view_df.head(20).iterrows()):
             # Full derivation: every mutation across all rounds, not just the last.
             desc = (_mutation_story(r.get("mutation_trail"))
                     or r.get("mutation_description") or "—")
@@ -528,8 +764,12 @@ def propose_better(seed_smiles: str, threshold: float, beam: int, depth: int,
             tanim_s = f"{tanim:.2f}" if tanim == tanim else "—"
             q_p = r.get("q_physics")
             esc = r.get("endosomal_escape")
+            sig = r.get("sigma_ensemble")
+            ei = r.get("expected_improvement")
+            nov = r.get("chemberta_novelty")
             body.append(
-                f"| {i+1} | **{delta_s}** | {sar_s} | {r['yhat']:.2f} | {seed_y_s} | "
+                f"| {i+1} | **{delta_s}** | {sar_s} | {r['yhat']:.2f} | "
+                f"{_fmt(sig)} | {_fmt(ei)} | {_fmt(nov)} | {seed_y_s} | "
                 f"{r['p_above']:.0%} | {_fmt(q_p)} | "
                 f"{_fmt(esc)} | {tanim_s} | {desc} | `{r['smiles']}` |"
             )
@@ -608,10 +848,14 @@ def build_ui() -> gr.Blocks:
 
 Predicts **pKa** and **bioactivity (log₁₀ total flux)** for ionizable amphiphilic Janus dendrimers from molecular input.
 
-| Property | Model | LOO MAE |
+| Property | Model | LOO MAE (95% bootstrap CI) |
 |---|---|---|
-| pKa | v9.2 three-head blend (analog + XGB + live MolGpKa) | 0.125 |
-| log₁₀ flux | v14 + adaptive stacker | 0.43 |
+| pKa | v9.2 three-head blend (analog + XGB + **hardened-subprocess** live MolGpKa) | 0.125 [0.110, 0.141] (n=278) |
+| log₁₀ flux (direct) | v14, 92 features inc. sample-prep | 0.443 [0.405, 0.486] (n=247) |
+| log₁₀ flux (stacker) | v14 + adaptive stacker (5-fold CV) | 0.386 |
+| Per-candidate σ | Deep ensemble (M=7 bootstrap-XGBs), calibrated ×2.61 | per query |
+| Per-organ flux | One XGBoost regressor per organ | lung 0.642, liver 0.493, spleen 0.477, LN 0.564 |
+| Structural novelty | ChemBERTa-77M-MTR cosine distance (proposer table column) | per query |
 
 **Input formats:** SMILES, ChemDraw (.cdxml), SDF, MOL. Family auto-detected from six chemical families.
 
@@ -641,11 +885,32 @@ Predicts **pKa** and **bioactivity (log₁₀ total flux)** for ionizable amphip
                     label="Bioactivity threshold T (log10 flux); model returns P(≥ T)"
                 )
                 go = gr.Button("Predict", variant="primary")
+            with gr.Accordion(
+                "Sample-prep conditions (Block E, optional — leave blank to use NaN)",
+                open=False,
+            ):
+                gr.Markdown(
+                    "_The bioactivity model was retrained with sample-prep covariates "
+                    "(pH at preparation, ageing time, injection route). Leaving these "
+                    "blank routes XGBoost through its default NaN branch, equivalent to "
+                    "the pre-Block-E model. Set them to the actual experimental "
+                    "conditions for an honest, condition-specific prediction._"
+                )
+                with gr.Row():
+                    pH_in = gr.Number(label="pH at sample prep (4–9)", value=None, minimum=4.0, maximum=9.0)
+                    T_in = gr.Number(label="Ageing time T (hours, 0–24)", value=None, minimum=0.0, maximum=24.0)
+                    route_in = gr.Dropdown(
+                        ["(unspecified)", "intravenous", "retro-orbital"],
+                        value="(unspecified)", label="Injection route",
+                    )
             out_md = gr.Markdown()
             with gr.Accordion("Raw JSON result", open=False):
                 out_json = gr.Code(language="json")
-            go.click(single_predict, inputs=[smiles_in, fam, neighbors, threshold],
-                     outputs=[out_md, out_json])
+            go.click(
+                single_predict,
+                inputs=[smiles_in, fam, neighbors, threshold, pH_in, T_in, route_in],
+                outputs=[out_md, out_json],
+            )
 
         with gr.Tab("Batch (file upload or multi-SMILES paste)"):
             gr.Markdown(
@@ -683,12 +948,14 @@ Predicts **pKa** and **bioactivity (log₁₀ total flux)** for ionizable amphip
                     "by a blend of **ML score** (`P(≥T) · Δ vs seed`) and **physics UCB** "
                     "(`Q_physics · (ŷ + κ·σ − seed_ŷ)`) — the `α` slider controls the "
                     "balance.\n\n"
-                    "• **α = 0**: pure ML. Ranks candidates that look like training data and "
-                    "  beat the seed by ML's estimate.\n"
-                    "• **α = 1**: pure physics-justified extrapolation. Ranks by mechanism-based "
-                    "  quality (CPP near 1, endosomal escape Δ, HLB optimal, membrane affinity) "
-                    "  combined with the model's uncertainty σ — useful when the seed is at the "
-                    "  top of the training distribution and ML can't see anything above it.\n"
+                    "• **α = 0**: pure ML. Score = P(≥T) × max(0, ŷ_ML − seed_ŷ_ML).\n"
+                    "• **α = 1**: PURE physics. Score = Q_physics × max(0, ŷ_physics − seed_ŷ_physics) "
+                    "  + monotone-axis bonus. ŷ_physics is the v15 Ridge prediction on real CPP, "
+                    "  endosomal escape, HLB-Griffin, log-Kp_membrane, Manning condensation — all "
+                    "  per-molecule live (3D ETKDG head area, live MolGpKa pKa, real RDKit "
+                    "  descriptors). **No ML term appears in the α=1 score** (audited 2026-05-29). "
+                    "  Useful when the seed is at the top of the training distribution and ML "
+                    "  can't see anything above it.\n"
                     "• **κ** = exploration aggressiveness (UCB constant). 0 = no uncertainty "
                     "  boost, 2-3 = aggressive extrapolation.\n"
                     "• **β (SAR prior)** = informed-mutation steering. Each mutation gets a "
@@ -725,13 +992,26 @@ Predicts **pKa** and **bioactivity (log₁₀ total flux)** for ionizable amphip
                                        label="β SAR prior (informed-mutation steering; "
                                              "0 = off, 0.4 = default, higher = steer harder "
                                              "toward the family's data-supported directions)")
+                with gr.Row():
+                    p_rank_by = gr.Radio(
+                        choices=[
+                            "score (default)",
+                            "expected_improvement (active learning)",
+                            "sigma_ensemble (pure exploration)",
+                            "chemberta_novelty (structural diversity)",
+                        ],
+                        value="score (default)",
+                        label="Rank top-20 by — EI: likely above T AND informative; "
+                              "σ: most uncertain; chemberta_novelty: most structurally "
+                              "different from training in a pretrained semantic space",
+                    )
                 go_p = gr.Button("Propose", variant="primary")
                 out_p_md = gr.Markdown()
                 with gr.Accordion("Candidate CSV (top 50)", open=False):
                     out_p_csv = gr.Code()
                 go_p.click(propose_better,
                             inputs=[seed_in, p_threshold, p_beam, p_depth,
-                                    p_seeds, p_alpha, p_kappa, p_sar],
+                                    p_seeds, p_alpha, p_kappa, p_sar, p_rank_by],
                             outputs=[out_p_md, out_p_csv])
 
         gr.Markdown(

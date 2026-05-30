@@ -264,31 +264,55 @@ def predict_pka_v71(
     return out
 
 
-def _try_live_molgpka(mol, canon_smiles):
+def _try_live_molgpka(mol, canon_smiles, timeout_s: float = 60.0):
     """Compute MolGpKa pKa for a novel molecule via the local Xundrug/MolGpKa
     install (molgpka_src/ + molgpka_models/) and add to the v52 cache.
 
-    No proxy fallback — if MolGpKa can't run, the cache entry stays unset and
-    the downstream debias step uses the family-pooled median, which is the
-    standard handling for "no MolGpKa available" already implemented in
-    iajd_pka_v91.load_v91_bundle.
+    Hardened (T5 #14): runs MolGpKa in a SUBPROCESS with a hard timeout
+    rather than in-process. This isolates MolGpKa's torch threadpool from the
+    parent (which may also have chemprop's torch initialized), preventing the
+    occasional deadlock that previously blocked predict() calls indefinitely.
+
+    No proxy fallback — if MolGpKa can't run within `timeout_s`, the cache
+    entry stays unset and the downstream debias step uses the family-pooled
+    median (standard handling already implemented in v9.1 load_v91_bundle).
     """
-    # Resolve project root from this file: …/IAJD_master/code/iajd_pka_v71.py
+    import subprocess
     proj_root = os.path.abspath(os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "..", ".."
     ))
-    molgpka_src = os.path.join(proj_root, "molgpka_src")
-    if not os.path.isdir(molgpka_src):
+    runner = os.path.join(proj_root, "molgpka_runner.py")
+    if not os.path.isfile(runner):
         return
-    if molgpka_src not in sys.path:
-        sys.path.insert(0, molgpka_src)
+    # Use the same Python that's running us (matches venv that has torch +
+    # molgpka_src deps installed)
+    py = sys.executable
+    # Clean env: drop DYLD_/LD_/PYTHON* so parent's torch state can't leak
+    clean_env = {k: v for k, v in os.environ.items()
+                  if not k.startswith(("DYLD_", "LD_LIBRARY_PATH", "PYTHON"))}
+    clean_env["PATH"] = os.environ.get("PATH", "/usr/bin:/bin")
+    clean_env["OMP_NUM_THREADS"] = "1"
+    clean_env["MKL_NUM_THREADS"] = "1"
     try:
-        from predict_pka import predict as molgpka_predict  # type: ignore
-        base_dict, _ = molgpka_predict(mol)
-        if base_dict:
-            _MOLGPKA_CACHE[canon_smiles] = float(max(base_dict.values()))
+        proc = subprocess.run(
+            [py, runner, canon_smiles],
+            capture_output=True, text=True,
+            timeout=timeout_s,
+            env=clean_env, start_new_session=True,
+        )
+        if proc.returncode != 0:
+            return
+        result = json.loads(proc.stdout.strip())
+        if "error" in result:
+            return
+        max_base = result.get("max_base_pka")
+        if max_base is not None and float(max_base) == float(max_base):
+            _MOLGPKA_CACHE[canon_smiles] = float(max_base)
+    except subprocess.TimeoutExpired:
+        # No proxy fallback — leave the cache entry unset.
+        return
     except Exception:
-        pass
+        return
 
 
 # -----------------------------------------------------------------------------

@@ -122,10 +122,59 @@ def _live_pka_for_smiles(smi: str, family_hint: str = "GA-Tris") -> Tuple[float,
     return pair
 
 
-def _assemble_X(smiles_list: List[str], family_hint: str = "GA-Tris"):
+def _extend_caches_live(canon_smis: List[str]) -> None:
+    """No-proxy: run live LION + ADMET subprocesses for any canonical SMILES
+    not already cached. Populates the JSON caches in place so the subsequent
+    assemble_X call hits real values instead of RDKit proxies.
+
+    No-op when extend_caches module can't be imported (cache then stays as-is
+    and Block B/C may fall back to RDKit proxies, but we log it honestly).
+    """
+    import json
+    sys.path.insert(0, str(ROOT / "IAJD_master/code"))
+    try:
+        from extend_caches import predict_lion_for_smiles, predict_admet_for_smiles
+    except Exception as exc:
+        print(f"  [WARN] live cache extension unavailable: {exc}")
+        return
+    OUT = ROOT / "IAJD_master/bundles_caches"
+    lion_path = OUT / "lion_cache_v13.json"
+    admet_path = OUT / "admet_cache_v13.json"
+    if not lion_path.exists() or not admet_path.exists():
+        return
+    lion_cache = json.load(open(lion_path))
+    admet_cache = json.load(open(admet_path))
+    to_lion = sorted({c for c in canon_smis if c not in lion_cache})
+    to_admet = sorted({c for c in canon_smis if c not in admet_cache})
+    if to_admet:
+        try:
+            predict_admet_for_smiles(to_admet, cache_path=str(admet_path), verbose=False)
+        except Exception as exc:
+            print(f"  [WARN] live ADMET extension failed: {exc}")
+    if to_lion:
+        try:
+            predict_lion_for_smiles(to_lion, cache_path=str(lion_path), verbose=False)
+        except Exception as exc:
+            print(f"  [WARN] live LION extension failed: {exc}")
+
+
+def _assemble_X(smiles_list: List[str], family_hint: str = "GA-Tris",
+                 sample_prep: dict | None = None):
+    """Build the 92-feature stack for one or more SMILES.
+
+    `sample_prep` (optional): dict of {pH_sample, T_hours, inj_route} to
+    populate Block E at inference. Missing keys → NaN (XGBoost's default
+    branch handles it). When None, all Block E entries are NaN — equivalent
+    to the model running without sample-prep context.
+
+    No-proxy: before assembling the feature stack, run live LION + ADMET
+    subprocesses to populate Block B/C with REAL values (not RDKit proxies)
+    for any SMILES not already in the per-cache JSON.
+    """
     from bioact_v14_pipeline import assemble_X
     OUT = ROOT / "IAJD_master/bundles_caches"
     lookup = _bioact_lookup()
+    sp = sample_prep or {}
     mols, fps_q, rows, canons = [], [], [], []
     for s in smiles_list:
         m = Chem.MolFromSmiles(s)
@@ -133,6 +182,11 @@ def _assemble_X(smiles_list: List[str], family_hint: str = "GA-Tris"):
         fps_q.append(_fp(m) if m else None)
         canon = Chem.MolToSmiles(m) if m else s
         canons.append(canon)
+    # No-proxy: live LION + ADMET extension for any new SMILES, BEFORE the
+    # per-row row-dict construction (so when assemble_X reads caches, the
+    # entries are present).
+    _extend_caches_live(canons)
+    for canon in canons:
         if canon in lookup:
             row = dict(lookup[canon])
         else:
@@ -147,6 +201,13 @@ def _assemble_X(smiles_list: List[str], family_hint: str = "GA-Tris"):
         if not row.get("family") or pd.isna(row.get("family")):
             row["family"] = family_hint
         row["log10_flux_total"] = np.nan
+        # Block E sample-prep (per-query override if provided)
+        if "pH_sample" in sp and sp["pH_sample"] is not None:
+            row["pH_sample"] = sp["pH_sample"]
+        if "T_hours" in sp and sp["T_hours"] is not None:
+            row["T_hours"] = sp["T_hours"]
+        if "inj_route" in sp and sp["inj_route"] is not None:
+            row["inj_route"] = sp["inj_route"]
         rows.append(row)
     df_q = pd.DataFrame(rows)
     X, _modes = assemble_X(

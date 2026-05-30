@@ -250,81 +250,144 @@ def _load_v15_bundle():
 
 def _physics_quality_quick(smiles: str, seed: "Seed | None" = None,
                             family: str = "GA-Tris") -> dict:
-    """Inline physics-quality computation — no live MolGpKa, no 3D conformer.
+    """Inline physics-quality computation. NO PROXIES.
 
-    Uses family-median pKa as a cheap estimate so we can score thousands of
-    candidates per second. Returns a dict:
-        {"q_physics": float ∈ [0,1],
-         "cpp": float,
-         "endosomal_escape": float,
-         "hlb": float,
-         "logKp": float,
-         "physics_yhat": float (Ridge prediction from v15 bundle)}
+    All inputs are real per-molecule computations:
+      • pKa            — live MolGpKa GCN (subprocess) + per-family debias
+      • a_head         — 3D ETKDGv3+MMFF94 VdW projection (head_area_3d)
+      • CPP_geometric  — Tanford a_head × l_tail / v_tail
+      • protonation    — Henderson–Hasselbalch at endo/cyto pH using live pKa
+      • HLB Griffin    — real MW(head)/MW(total) ratio
+      • logKp membrane — real MolLogP + size correction
+      • chain_avg_carbons — REAL count from SMILES tail atoms (not 10.0)
+
+    When ANY input is NaN (e.g. live MolGpKa failed for this SMILES, or 3D
+    embedder couldn't converge on the head conformer), the corresponding
+    output is NaN. q_physics is the mean of finite components; NaN if no
+    component finite. Caller (proposer scoring) refuses to rank candidates
+    by NaN, falling back to non-physics scoring honestly.
+
+    Returns:
+        {"q_physics": float ∈ [0,1] or NaN,
+         "cpp": float or NaN,
+         "endosomal_escape": float or NaN,
+         "hlb": float or NaN,
+         "logKp": float or NaN,
+         "physics_yhat": float or NaN  (v15 Ridge prediction; NaN if bundle missing
+                                         or any feature NaN — no zero-fill proxy)}
     """
     if smiles in _PHYSICS_CACHE:
         return _PHYSICS_CACHE[smiles]
     from physics_features import compute_all_physics_features
     # Real per-molecule pKa via live MolGpKa GCN + per-family debias.
-    # NO family-median fallback — if MolGpKa returns NaN, downstream
-    # protonation/escape/Manning will also be NaN (honest unknown).
+    # NaN if MolGpKa fails — downstream protonation/escape/Manning will
+    # propagate NaN honestly.
     pka = _live_molgpka_pka(smiles, family)
     head_group = (seed.head if seed is not None else None)
     linker_n = (seed.linker_n if seed is not None else 4)
     n_chains = 3 if ("Tris" in family or family == "PE-Gallic") else 2
+    # No proxy: compute actual mean tail carbon count from the SMILES.
+    chain_avg = _avg_tail_carbons_from_smiles(smiles, n_chains)
     try:
         feats = compute_all_physics_features(
             smiles, pka=pka, linker_length=linker_n,
-            n_tail_chains=n_chains, chain_avg_carbons=10.0,
+            n_tail_chains=n_chains, chain_avg_carbons=chain_avg,
             head_group=head_group,
         )
     except Exception:
         feats = {}
 
-    # Mechanism-based quality (same formula as predict_v15.physics_quality)
-    cpp = feats.get("cpp_geometric", 1.0)
-    if cpp is None or not np.isfinite(cpp):
-        cpp = 1.0
-    cpp_score = float(np.exp(-((cpp - 1.0) ** 2) / (2 * 0.3 ** 2)))
+    # No-proxy component scoring: NaN inputs → NaN scores → q_physics excludes them.
+    cpp = feats.get("cpp_geometric", float("nan"))
+    cpp_score = float(np.exp(-((cpp - 1.0) ** 2) / (2 * 0.3 ** 2))) if np.isfinite(cpp) else float("nan")
 
-    p_e = feats.get("protonation_endosome", 0.5)
-    p_c = feats.get("protonation_cytosol", 0.1)
-    if not np.isfinite(p_e): p_e = 0.5
-    if not np.isfinite(p_c): p_c = 0.1
-    escape = max(0.0, p_e - p_c)
+    p_e = feats.get("protonation_endosome", float("nan"))
+    p_c = feats.get("protonation_cytosol", float("nan"))
+    if np.isfinite(p_e) and np.isfinite(p_c):
+        escape = float(max(0.0, p_e - p_c))
+    else:
+        escape = float("nan")
 
-    hlb = feats.get("hlb_griffin", 8.5)
-    if not np.isfinite(hlb): hlb = 8.5
-    hlb_score = float(np.exp(-((hlb - 8.5) ** 2) / (2 * 3.0 ** 2)))
+    hlb = feats.get("hlb_griffin", float("nan"))
+    hlb_score = float(np.exp(-((hlb - 8.5) ** 2) / (2 * 3.0 ** 2))) if np.isfinite(hlb) else float("nan")
 
-    logKp = feats.get("logKp_membrane", 5.0)
-    if not np.isfinite(logKp): logKp = 5.0
-    membrane_score = 1.0 / (1.0 + np.exp(-(logKp - 4.0)))
+    logKp = feats.get("logKp_membrane", float("nan"))
+    membrane_score = float(1.0 / (1.0 + np.exp(-(logKp - 4.0)))) if np.isfinite(logKp) else float("nan")
 
-    q = float(np.mean([cpp_score, escape, hlb_score, membrane_score]))
+    # Average over FINITE components only; NaN if none finite.
+    component_scores = [cpp_score, escape, hlb_score, membrane_score]
+    finite_components = [c for c in component_scores if c == c]   # NaN excluded
+    q = float(np.mean(finite_components)) if finite_components else float("nan")
 
-    # Physics Ridge prediction (optional — only if v15 bundle is available)
+    # Physics Ridge prediction — NaN if any feature NaN (no zero-fill proxy).
     physics_yhat = float("nan")
     b = _load_v15_bundle()
     if not b.get("_missing"):
         try:
             cols = b["physics_cols"]
             X = np.array([[feats.get(c, np.nan) for c in cols]], dtype=float)
-            X[~np.isfinite(X)] = 0.0
-            Xs = b["physics_scaler"].transform(X)
-            physics_yhat = float(b["physics_model"].predict(Xs)[0])
+            if np.isfinite(X).all():
+                Xs = b["physics_scaler"].transform(X)
+                physics_yhat = float(b["physics_model"].predict(Xs)[0])
         except Exception:
             pass
 
     out = {
         "q_physics": q,
-        "cpp": float(cpp),
+        "cpp": float(cpp) if np.isfinite(cpp) else float("nan"),
         "endosomal_escape": escape,
-        "hlb": float(hlb),
-        "logKp": float(logKp),
+        "hlb": float(hlb) if np.isfinite(hlb) else float("nan"),
+        "logKp": float(logKp) if np.isfinite(logKp) else float("nan"),
         "physics_yhat": physics_yhat,
     }
     _PHYSICS_CACHE[smiles] = out
     return out
+
+
+def _avg_tail_carbons_from_smiles(smiles: str, n_chains: int) -> float:
+    """Compute REAL average number of carbons per alkoxy tail (no proxy).
+
+    Counts CH₂/CH₃ runs attached via –O– ether linkages, divides by the
+    family-expected number of tails. Returns NaN if the molecule can't be
+    parsed or no tails detected; the physics computation then NaN-propagates.
+    """
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return float("nan")
+        # Match the SMARTS pattern: aryl-O-C(sp3) chain → count the (sp3 C) run length
+        patt = Chem.MolFromSmarts("[c,C]O[CH2,CH3]")
+        matches = mol.GetSubstructMatches(patt)
+        if not matches:
+            return float("nan")
+        chain_lengths = []
+        for match in matches:
+            o_idx = match[1]
+            c_start = match[2]
+            # Walk along the aliphatic chain via sp3 C neighbors
+            visited = {match[0], o_idx}
+            stack = [c_start]
+            chain = []
+            while stack:
+                a = stack.pop()
+                if a in visited:
+                    continue
+                visited.add(a)
+                atom = mol.GetAtomWithIdx(a)
+                if atom.GetAtomicNum() != 6 or atom.GetIsAromatic():
+                    continue
+                if atom.GetHybridization() not in (Chem.HybridizationType.SP3,):
+                    continue
+                chain.append(a)
+                for nb in atom.GetNeighbors():
+                    if nb.GetIdx() not in visited:
+                        stack.append(nb.GetIdx())
+            chain_lengths.append(len(chain))
+        if not chain_lengths:
+            return float("nan")
+        return float(np.mean(chain_lengths))
+    except Exception:
+        return float("nan")
 
 
 def _bioact_lookup():
@@ -494,8 +557,15 @@ def _extend_caches_for_smiles(smiles_list: List[str]) -> None:
 
 
 def _score_with_v14(smiles_list: List[str], bundle_v14: dict, bundle_bin: dict,
-                    threshold: float, extend_cache: bool = True):
-    """Return (yhat, p_above) arrays for the candidate SMILES list."""
+                    threshold: float, extend_cache: bool = True,
+                    return_ensemble_sigma: bool = False):
+    """Return (yhat, p_above[, sigma_ens]) arrays for the candidate SMILES list.
+
+    When `return_ensemble_sigma` is True, also returns per-candidate σ_eff
+    from the deep ensemble (T2 #5), computed on the SAME X used for the
+    binary regressor prediction. σ_eff = max(σ_query · calibration,
+    σ_family · 0.7). NaN if the ensemble bundle isn't loadable.
+    """
     if extend_cache:
         _extend_caches_for_smiles(smiles_list)
     X = _featurize_for_v14(smiles_list)
@@ -509,7 +579,147 @@ def _score_with_v14(smiles_list: List[str], bundle_v14: dict, bundle_bin: dict,
     c = bundle_bin["threshold_calibrators"][nearest]
     a, b = c["a"], c["b"]
     p_above = 1.0 / (1.0 + np.exp(-(a * (yhat - threshold) + b)))
-    return yhat, p_above
+    if not return_ensemble_sigma:
+        return yhat, p_above
+    # Per-candidate ensemble σ on the same X (T3 #8 active-learning surface)
+    sigma_ens = _ensemble_sigma_batch(X)
+    return yhat, p_above, sigma_ens
+
+
+def _expected_improvement(yhat: float, sigma: float, threshold: float) -> float:
+    """Closed-form Expected Improvement (EI) under a Normal(ŷ, σ²) posterior
+    relative to `threshold` (T3 #8 active-learning acquisition).
+
+    EI(ŷ, σ, T) = (ŷ − T)·Φ(z) + σ·φ(z),  z = (ŷ − T)/σ
+
+    High EI ⇔ candidate likely above T AND the model has enough uncertainty
+    that a real measurement would be informative. Returns 0 when σ <= 0 or
+    inputs are NaN — those candidates are uninformative for EI ranking.
+    """
+    import math
+    if not (sigma == sigma) or sigma <= 0:
+        return 0.0
+    if not (yhat == yhat):
+        return 0.0
+    z = (float(yhat) - float(threshold)) / float(sigma)
+    # Standard-normal CDF and PDF
+    phi = 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
+    pdf = math.exp(-0.5 * z * z) / math.sqrt(2.0 * math.pi)
+    return (float(yhat) - float(threshold)) * phi + float(sigma) * pdf
+
+
+def _ensemble_sigma_batch(X) -> np.ndarray:
+    """Per-row σ_eff for a batch X (shape n×92) from the deep ensemble bundle.
+
+    σ_eff = max(σ_query · calibration, σ_family · 0.7) using each row's
+    family (unavailable here, so falls back to global σ). Returns NaN-filled
+    array if ensemble bundle isn't loadable.
+    """
+    global _ENSEMBLE_BUNDLE_CACHE
+    try:
+        if _ENSEMBLE_BUNDLE_CACHE is None:
+            from predict_ensemble import load_ensemble_bundle
+            _ENSEMBLE_BUNDLE_CACHE = load_ensemble_bundle()
+    except Exception:
+        return np.full(len(X), np.nan)
+    b = _ENSEMBLE_BUNDLE_CACHE
+    models = b["models"]
+    # Per-model predictions on the full batch
+    M_preds = np.array([m.predict(X) for m in models])  # shape (M, n)
+    sigma_query_raw = M_preds.std(axis=0)               # per-candidate raw std
+    sigma_query = sigma_query_raw * float(b.get("sigma_calibration", 1.0))
+    fam_sigma_floor = float(b.get("global_sigma", 0.43)) * 0.7
+    sigma_eff = np.maximum(sigma_query, fam_sigma_floor)
+    return sigma_eff
+
+
+_ENSEMBLE_BUNDLE_CACHE = None
+
+# ---------------------------------------------------------------------------
+# ChemBERTa structural-novelty (T3 #7 honest pivot)
+# ---------------------------------------------------------------------------
+# We do NOT use ChemBERTa embeddings as v14 regression features (negative LOO
+# result, see docs/T3_7_chemberta_negative_result.md), but they DO give a
+# real structural-novelty signal that complements Tanimoto. Used as a
+# proposer column only.
+
+_CHEMBERTA_PCA = None
+_CHEMBERTA_TRAIN_EMB_N = None   # row-normalized training PCA embeddings
+
+def _ensure_chemberta_novelty():
+    """Load the saved PCA + training embeddings on first use."""
+    global _CHEMBERTA_PCA, _CHEMBERTA_TRAIN_EMB_N
+    if _CHEMBERTA_PCA is not None and _CHEMBERTA_TRAIN_EMB_N is not None:
+        return True
+    try:
+        import joblib, numpy as _np
+        bundle = joblib.load(ROOT / "IAJD_master/bundles_caches/chemberta_pca_bundle.joblib")
+        _CHEMBERTA_PCA = bundle["pca"]
+        train_emb = bundle["embeddings_pca"].astype(_np.float32)
+        norms = _np.linalg.norm(train_emb, axis=1, keepdims=True)
+        norms[norms == 0] = 1.0
+        _CHEMBERTA_TRAIN_EMB_N = train_emb / norms
+        return True
+    except Exception:
+        return False
+
+
+def _chemberta_novelty_batch(smiles_list):
+    """Per-candidate structural novelty = 1 − max cosine similarity to any
+    training molecule in ChemBERTa-PCA-32 space (T3 #7 active-learning surface).
+
+    No-proxy: every value comes from a real frozen-encoder forward pass on
+    the query SMILES (cached on disk by canonical SMILES). Returns NaN-filled
+    array if the bundle isn't loadable.
+    """
+    if not _ensure_chemberta_novelty():
+        return np.full(len(smiles_list), np.nan)
+    try:
+        from chemberta_embedder import embed_smiles_batch
+    except Exception:
+        return np.full(len(smiles_list), np.nan)
+    embs = embed_smiles_batch(smiles_list, use_cache=True)
+    if not np.isfinite(embs).all():
+        # fall back to zero-fill only the NaN rows so the others still produce
+        # real novelty; mark NaN rows as NaN in the output
+        bad_rows = ~np.isfinite(embs).all(axis=1)
+    else:
+        bad_rows = np.zeros(len(smiles_list), dtype=bool)
+    embs_pca = _CHEMBERTA_PCA.transform(embs)
+    norms = np.linalg.norm(embs_pca, axis=1, keepdims=True)
+    norms[norms == 0] = 1.0
+    embs_n = embs_pca / norms
+    # cos_max to training centroid set
+    cos_to_train = embs_n @ _CHEMBERTA_TRAIN_EMB_N.T
+    cos_max = cos_to_train.max(axis=1)
+    novelty = 1.0 - cos_max
+    novelty[bad_rows] = np.nan
+    return novelty
+
+
+def _per_family_sigma(family: str) -> float:
+    """Look up per-family σ from the deep ensemble bundle (T2 #5).
+
+    These are real LOO RMSEs from the ensemble's bootstrap CV, not constants.
+    Returns NaN if the ensemble bundle isn't available — caller falls back to
+    the pre-ensemble global σ.
+
+    No proxy. σ_family comes from real cross-validated residuals on that
+    family's training rows.
+    """
+    global _ENSEMBLE_BUNDLE_CACHE
+    try:
+        if _ENSEMBLE_BUNDLE_CACHE is None:
+            from predict_ensemble import load_ensemble_bundle
+            _ENSEMBLE_BUNDLE_CACHE = load_ensemble_bundle()
+    except Exception:
+        return float("nan")
+    pfs = _ENSEMBLE_BUNDLE_CACHE.get("per_family_sigma", {})
+    val = pfs.get(family)
+    if val is None:
+        # Fall back to the ensemble's overall global σ (still real, not arbitrary)
+        val = _ENSEMBLE_BUNDLE_CACHE.get("global_sigma", float("nan"))
+    return float(val)
 
 
 def _pick_seeds(df: pd.DataFrame, top_k: int) -> List[dict]:
@@ -571,13 +781,18 @@ def beam_search_streaming(threshold: float, beam: int, depth: int,
     no-signal tail-variant explosion is capped — so the few informed moves
     aren't drowned out (and we don't waste featurization on noise).
     """
-    # Load v15 once for σ values
+    # Load v15 once for σ values; prefer ensemble per-family σ (T2 #5) when
+    # the ensemble bundle is loaded. Per-family σ is the actual cross-validated
+    # residual std for that family, not a constant or an inflated v15 disagreement.
     _v15 = _load_v15_bundle()
     if _v15.get("_missing"):
-        sigma_combined = 0.4   # fallback
+        # No proxy: both ensemble per-family σ AND v15 σ unavailable → NaN.
+        # The UCB term will degrade to NaN; the proposer falls back to pure
+        # ML and physics-quality scoring without an honest upper-bound.
+        sigma_global_fallback = float("nan")
     else:
-        sigma_combined = (_v15["sigma"]["ml"] ** 2
-                          + _v15["sigma"]["disagreement"] ** 2) ** 0.5
+        sigma_global_fallback = (_v15["sigma"]["ml"] ** 2
+                                  + _v15["sigma"]["disagreement"] ** 2) ** 0.5
     explored = set()
     current = []
     seed_smis = []
@@ -597,6 +812,8 @@ def beam_search_streaming(threshold: float, beam: int, depth: int,
         current.append({
             "smiles": sm, "seed": s, "yhat": float(yh), "p_above": float(p),
             "yhat_seed": float(yh),
+            # Pure-physics seed baseline (used for α=1 score Δ)
+            "physics_yhat_seed": float(seed_phys["physics_yhat"]),
             "delta_vs_seed": 0.0,
             "tanim_max_to_train": float("nan"),
             "q_physics": seed_phys["q_physics"],
@@ -665,6 +882,7 @@ def beam_search_streaming(threshold: float, beam: int, depth: int,
                     "mutation_trail": parent["mutation_trail"] + [tag],
                     "tanim_max_to_train": float(tanim),
                     "yhat_seed": parent["yhat_seed"],
+                    "physics_yhat_seed": parent.get("physics_yhat_seed", float("nan")),
                     "sar_step": float(step),
                     "sar_prior": float(parent_cum + step),
                     "sar_reason": reason,
@@ -673,13 +891,23 @@ def beam_search_streaming(threshold: float, beam: int, depth: int,
         if not next_pool:
             break
         smis = [r["smiles"] for r in next_pool]
-        yhats, ps = _score_with_v14(smis, bundle_v14, bundle_bin, threshold)
-        for r, yh, p in zip(next_pool, yhats, ps):
+        # Score + per-candidate ensemble σ (T3 #8: active-learning surface)
+        yhats, ps, sigma_ens = _score_with_v14(
+            smis, bundle_v14, bundle_bin, threshold, return_ensemble_sigma=True,
+        )
+        # ChemBERTa structural novelty (T3 #7 honest pivot) — per-candidate
+        # cosine distance to training neighbourhood in pretrained semantic space.
+        novelty_ch = _chemberta_novelty_batch(smis)
+        for r, yh, p, s_ens, nov in zip(next_pool, yhats, ps, sigma_ens, novelty_ch):
             r["yhat"] = float(yh)
             r["p_above"] = float(p)
             r["delta_vs_seed"] = float(yh) - r["yhat_seed"]
+            r["sigma_ensemble"] = float(s_ens) if s_ens == s_ens else float("nan")
+            r["chemberta_novelty"] = float(nov) if nov == nov else float("nan")
 
-            # Inline physics quality (no live MolGpKa; uses family-median pKa)
+            # Inline physics quality — live MolGpKa subprocess + 3D ETKDGv3 head
+            # area + real RDKit logP/HLB/Manning (no family-median pKa, no
+            # head-area lookup proxy; audit 2026-05-29).
             cand_family = r["seed"].family if r.get("seed") else "GA-Tris"
             phys = _physics_quality_quick(r["smiles"], r.get("seed"), family=cand_family)
             r["q_physics"] = phys["q_physics"]
@@ -698,23 +926,55 @@ def beam_search_streaming(threshold: float, beam: int, depth: int,
             r["monotone_bonus"] = mono_bonus
             r["monotone_signals"] = "; ".join(f"{k}: {v}" for k, v in mono_signals.items())[:200]
 
-            # UCB upper bound
-            ucb = float(yh) + kappa_ucb * sigma_combined
+            # UCB upper bound — prefer PER-CANDIDATE σ from the deep ensemble
+            # (T3 #8); fall back to per-family σ from ensemble bundle (T2 #5);
+            # fall back to v15 disagreement σ. NaN if none available — UCB
+            # term degrades to NaN and is excluded from the score honestly.
+            cand_family = r.get("seed").family if r.get("seed") else "GA-Tris"
+            fam_sigma = _per_family_sigma(cand_family)
+            if r["sigma_ensemble"] == r["sigma_ensemble"] and r["sigma_ensemble"] > 0:
+                sigma_for_ucb = r["sigma_ensemble"]
+            elif fam_sigma == fam_sigma and fam_sigma > 0:
+                sigma_for_ucb = fam_sigma
+            else:
+                sigma_for_ucb = sigma_global_fallback
+            ucb = float(yh) + kappa_ucb * sigma_for_ucb
             r["ucb_score"] = ucb
+            r["sigma_for_ucb"] = float(sigma_for_ucb)
 
             # Component scores
+            # score_ml (pure ML): P(≥T) × max(0, ML Δ vs seed)
             score_ml = float(p) * max(0.0, r["delta_vs_seed"])
-            # Physics-weighted UCB Δ, with monotone bonus added linearly
-            # so a candidate that BOTH has good mechanism AND steps past
-            # training range along a monotone axis scores highest.
-            score_phys = (
-                float(phys["q_physics"]) * max(0.0, ucb - r["yhat_seed"])
-                + mono_bonus * max(0.5, abs(r["delta_vs_seed"]))   # at least 0.5 weight
-            )
+            # score_phys (PURE PHYSICS): Q_physics × max(0, physics-Ridge Δ vs seed)
+            # + monotone-axis extrapolation bonus. No ML term here — so α=1
+            # truly selects on physics-only signal. Physics Δ uses the v15
+            # Ridge prediction on real per-molecule features (CPP, escape,
+            # HLB, logKp, etc.), all computed live without proxy defaults.
+            phys_yhat = phys.get("physics_yhat", float("nan"))
+            seed_phys_yhat = r.get("physics_yhat_seed", float("nan"))
+            phys_delta = (float(phys_yhat) - float(seed_phys_yhat)
+                          if (phys_yhat == phys_yhat and seed_phys_yhat == seed_phys_yhat)
+                          else float("nan"))
+            q_phys_val = float(phys["q_physics"]) if phys["q_physics"] == phys["q_physics"] else float("nan")
+            if q_phys_val == q_phys_val and phys_delta == phys_delta:
+                score_phys_core = q_phys_val * max(0.0, phys_delta)
+            else:
+                score_phys_core = float("nan")
+            # Monotone bonus is itself a physics-derived RDKit-feature signal.
+            # Scale it by |phys_delta| (NOT ML delta) so α=1 is truly pure
+            # physics; floor at 0.5 to preserve the bonus when phys_delta is
+            # tiny but the monotone signal is real.
+            mono_scale = abs(phys_delta) if phys_delta == phys_delta else 0.5
+            mono_term = mono_bonus * max(0.5, mono_scale)
+            score_phys = (score_phys_core if score_phys_core == score_phys_core else 0.0) + mono_term
             r["score_ml"] = score_ml
             r["score_phys"] = score_phys
-            # Signed SAR term: favourable informed moves lift the rank, proven-
-            # adverse ones sink it. β = sar_weight.
+            r["physics_delta"] = phys_delta
+            # Active-learning / Expected Improvement (T3 #8)
+            r["expected_improvement"] = _expected_improvement(
+                float(yh), r["sigma_ensemble"], float(threshold),
+            )
+            # Blended score: at α=0 → pure ML; at α=1 → pure physics + monotone.
             r["score"] = ((1.0 - exploration_weight) * score_ml
                           + exploration_weight * score_phys
                           + sar_weight * r["sar_prior"])
@@ -753,13 +1013,42 @@ def beam_search_streaming(threshold: float, beam: int, depth: int,
 def beam_search(threshold: float, beam: int, depth: int,
                 seeds: List[Seed], library: Library,
                 bundle_v14: dict, bundle_bin: dict,
-                train_fps, sar_weight: float = 0.4) -> pd.DataFrame:
-    """Run depth-D beam search of width `beam`, keeping the best by combined score.
+                train_fps,
+                exploration_weight: float = 0.0,
+                kappa_ucb: float = 1.5,
+                sar_weight: float = 0.4,
+                prune_adverse: float = PRUNE_ADVERSE,
+                tail_nosig_cap: int = TAIL_NOSIG_CAP) -> pd.DataFrame:
+    """Run depth-D beam search of width `beam`, scoring by the same combined
+    formula as beam_search_streaming (live physics + UCB + monotone + SAR).
 
-    Combined score = P(≥T)·max(0, Δ vs seed) + β·SAR_prior, where SAR_prior is
-    the accumulated family informed-mutation prior (see family_sar). Strongly-
-    adverse moves are pruned pre-scoring and the no-signal tail-variant explosion
-    is capped — mirroring beam_search_streaming so the CLI and UI agree."""
+    Scoring:
+        score = (1 − α)·ML_score + α·PHYSICS_UCB_score + β·SAR_prior
+        ML_score      = P(≥T) × max(0, ŷ − ŷ_seed)
+        PHYSICS_UCB   = Q_physics × max(0, ŷ + κ·σ − ŷ_seed)
+                        + monotone_bonus · max(0.5, |Δ|)
+        SAR_prior     = accumulated family informed-mutation prior
+
+    Pre-ML steering:
+      - candidates with SAR step ≤ prune_adverse are dropped (only in families
+        with a data-supported prior)
+      - no-signal tail-variant moves capped at tail_nosig_cap per parent
+
+    Q_physics is computed inline via _physics_quality_quick (real CPP +
+    endosomal-escape + HLB + log Kp + Ridge-model y-hat, using live MolGpKa
+    pKa). σ comes from the v15 hybrid bundle when available.
+    """
+    # Load v15 σ once for UCB. Per-family σ from the deep ensemble (T2 #5) is
+    # preferred when available (real cross-validated residual std), with v15's
+    # disagreement-σ as the fallback.
+    _v15 = _load_v15_bundle()
+    if _v15.get("_missing"):
+        # No proxy fallback: leave σ as NaN so UCB degrades honestly.
+        sigma_global_fallback = float("nan")
+    else:
+        sigma_global_fallback = (_v15["sigma"]["ml"] ** 2
+                                  + _v15["sigma"]["disagreement"] ** 2) ** 0.5
+
     explored = set()
     current = []
     # Score the seeds first. Prefer the ORIGINAL training SMILES (cached) for
@@ -777,19 +1066,29 @@ def beam_search(threshold: float, beam: int, depth: int,
     seed_yhat, seed_p = _score_with_v14(seed_smis, bundle_v14, bundle_bin, threshold,
                                           extend_cache=False)  # training seeds already cached
     # Per-seed reference ŷ used to compute Δ vs seed for each candidate.
-    # Each candidate inherits its starting seed's ŷ_seed (so beam search across
-    # multiple seeds doesn't unfairly compare a sSS-Nonsym mutant against a
-    # GA-Tris seed's ŷ).
     for s, sm, yh, p in zip(seeds, seed_smis, seed_yhat, seed_p):
+        seed_phys = _physics_quality_quick(sm, s, family=s.family if s else "GA-Tris")
         current.append({
             "smiles": sm, "seed": s, "yhat": float(yh), "p_above": float(p),
             "yhat_seed": float(yh),
+            "physics_yhat_seed": float(seed_phys["physics_yhat"]),
             "delta_vs_seed": 0.0,
+            "tanim_max_to_train": float("nan"),
+            "q_physics": seed_phys["q_physics"],
+            "cpp": seed_phys["cpp"],
+            "endosomal_escape": seed_phys["endosomal_escape"],
+            "physics_yhat": seed_phys["physics_yhat"],
+            "ucb_score": float(yh),
+            "monotone_bonus": 0.0,
+            "monotone_signals": "",
+            "score_ml": 0.0,
+            "score_phys": 0.0,
             "sar_prior": 0.0, "sar_step": 0.0, "sar_reason": "",
             "mutation_trail": ["seed"],
             "mutation_description": "Original seed (no mutation)",
-            # score = improvement over seed × confidence that result clears T
-            "score": float(p) * max(0.0, float(yh) - float(yh)),  # seed Δ=0
+            "mutation_tag": "seed",
+            "parent_smiles": None,
+            "score": 0.0,  # Δ=0 for seed itself
         })
         explored.add(sm)
 
@@ -799,8 +1098,9 @@ def beam_search(threshold: float, beam: int, depth: int,
         # Sort current by score, keep top beam
         current.sort(key=lambda r: -r["score"])
         current = current[:beam]
-        print(f"  [beam d={d}] current best score={current[0]['score']:.3f}  "
-              f"(ŷ={current[0]['yhat']:.2f}, P≥{threshold}={current[0]['p_above']:.2f})")
+        if current:
+            print(f"  [beam d={d}] current best score={current[0]['score']:.3f}  "
+                  f"(ŷ={current[0]['yhat']:.2f}, P≥{threshold}={current[0]['p_above']:.2f})")
 
         next_pool = []
         for parent in current:
@@ -822,10 +1122,11 @@ def beam_search(threshold: float, beam: int, depth: int,
                     continue
                 step, reason = _sar_prior_for_mutation(
                     parent_seed, parent_feats, cand_seed, cand_smi, tag)
-                if fam_has_prior and step <= PRUNE_ADVERSE:
+                if fam_has_prior and step <= prune_adverse:
                     continue
-                if tag.startswith(_TAIL_TAG_PREFIXES) and abs(step) < 1e-6:
-                    if tail_nosig >= TAIL_NOSIG_CAP:
+                is_tail = tag.startswith(_TAIL_TAG_PREFIXES)
+                if is_tail and abs(step) < 1e-6:
+                    if tail_nosig >= tail_nosig_cap:
                         continue
                     tail_nosig += 1
                 explored.add(cand_smi)
@@ -838,6 +1139,7 @@ def beam_search(threshold: float, beam: int, depth: int,
                     "mutation_trail": parent["mutation_trail"] + [tag],
                     "tanim_max_to_train": float(tanim),
                     "yhat_seed": parent["yhat_seed"],
+                    "physics_yhat_seed": parent.get("physics_yhat_seed", float("nan")),
                     "sar_step": float(step),
                     "sar_prior": float(parent_cum + step),
                     "sar_reason": reason,
@@ -848,22 +1150,83 @@ def beam_search(threshold: float, beam: int, depth: int,
             print(f"  [beam d={d}] no new candidates; stopping.")
             break
         smis = [r["smiles"] for r in next_pool]
-        yhats, ps = _score_with_v14(smis, bundle_v14, bundle_bin, threshold)
-        for r, yh, p in zip(next_pool, yhats, ps):
+        # Per-candidate ensemble σ (T3 #8)
+        yhats, ps, sigma_ens = _score_with_v14(
+            smis, bundle_v14, bundle_bin, threshold, return_ensemble_sigma=True,
+        )
+        # ChemBERTa structural novelty (T3 #7 honest pivot)
+        novelty_ch = _chemberta_novelty_batch(smis)
+        for r, yh, p, s_ens, nov in zip(next_pool, yhats, ps, sigma_ens, novelty_ch):
             r["yhat"] = float(yh)
             r["p_above"] = float(p)
             r["delta_vs_seed"] = float(yh) - r["yhat_seed"]
-            # Rank by improvement over seed × P(≥T), plus the signed family SAR
-            # prior (β): rewards candidates predicted to push past the seed AND
-            # candidates moving along data-supported directions.
-            r["score"] = (float(p) * max(0.0, r["delta_vs_seed"])
+            r["sigma_ensemble"] = float(s_ens) if s_ens == s_ens else float("nan")
+            r["chemberta_novelty"] = float(nov) if nov == nov else float("nan")
+
+            # Live physics quality (MolGpKa pKa + CPP + escape + HLB + Ridge)
+            cand_family = r["seed"].family if r.get("seed") else "GA-Tris"
+            phys = _physics_quality_quick(r["smiles"], r.get("seed"),
+                                          family=cand_family)
+            r["q_physics"] = phys["q_physics"]
+            r["cpp"] = phys["cpp"]
+            r["endosomal_escape"] = phys["endosomal_escape"]
+            r["physics_yhat"] = phys["physics_yhat"]
+
+            # Monotone-axis bonus (favourable extrapolation beyond training range)
+            cand_features_for_monotone = (
+                _DESC_CACHE[r["smiles"]] if r["smiles"] in _DESC_CACHE
+                else _features_for_query_smiles(r["smiles"])
+            )
+            mono_bonus, mono_signals = _monotone_bonus(r["smiles"], cand_features_for_monotone)
+            r["monotone_bonus"] = mono_bonus
+            r["monotone_signals"] = "; ".join(f"{k}: {v}" for k, v in mono_signals.items())[:200]
+
+            # UCB upper bound — prefer per-candidate σ from the deep ensemble
+            # (T3 #8); then per-family σ from ensemble bundle (T2 #5); then v15
+            # disagreement σ; else NaN (no proxy).
+            fam_sigma = _per_family_sigma(cand_family)
+            if r["sigma_ensemble"] == r["sigma_ensemble"] and r["sigma_ensemble"] > 0:
+                sigma_for_ucb = r["sigma_ensemble"]
+            elif fam_sigma == fam_sigma and fam_sigma > 0:
+                sigma_for_ucb = fam_sigma
+            else:
+                sigma_for_ucb = sigma_global_fallback
+            ucb = float(yh) + kappa_ucb * sigma_for_ucb
+            r["ucb_score"] = ucb
+            r["sigma_for_ucb"] = float(sigma_for_ucb)
+
+            # Component scores
+            # Pure ML
+            score_ml = float(p) * max(0.0, r["delta_vs_seed"])
+            # Pure physics (no ML term inside) — uses physics_yhat from v15 Ridge.
+            phys_yhat = phys.get("physics_yhat", float("nan"))
+            seed_phys_yhat = r.get("physics_yhat_seed", float("nan"))
+            phys_delta = (float(phys_yhat) - float(seed_phys_yhat)
+                          if (phys_yhat == phys_yhat and seed_phys_yhat == seed_phys_yhat)
+                          else float("nan"))
+            q_phys_val = float(phys["q_physics"]) if phys["q_physics"] == phys["q_physics"] else float("nan")
+            if q_phys_val == q_phys_val and phys_delta == phys_delta:
+                score_phys_core = q_phys_val * max(0.0, phys_delta)
+            else:
+                score_phys_core = float("nan")
+            mono_scale = abs(phys_delta) if phys_delta == phys_delta else 0.5
+            mono_term = mono_bonus * max(0.5, mono_scale)
+            score_phys = (score_phys_core if score_phys_core == score_phys_core else 0.0) + mono_term
+            r["score_ml"] = score_ml
+            r["score_phys"] = score_phys
+            r["physics_delta"] = phys_delta
+            # Active-learning EI score (T3 #8)
+            r["expected_improvement"] = _expected_improvement(
+                float(yh), r["sigma_ensemble"], float(threshold),
+            )
+            r["score"] = ((1.0 - exploration_weight) * score_ml
+                          + exploration_weight * score_phys
                           + sar_weight * r["sar_prior"])
+
         all_candidates.extend(next_pool)
         current = next_pool
 
     df = pd.DataFrame(all_candidates)
-    # Primary sort: score (Δ × P(≥T)). Tie-breaker: raw ŷ so even seeds with
-    # negative delta candidates still show meaningful ordering.
     df["_tiebreak_yhat"] = df["yhat"]
     df = df.sort_values(["score", "_tiebreak_yhat"], ascending=[False, False]).reset_index(drop=True)
     df = df.drop(columns=["_tiebreak_yhat"])
@@ -882,6 +1245,27 @@ def main():
                     help="Number of top training IAJDs to seed from")
     ap.add_argument("--seed_smiles", default=None,
                     help="Optional explicit seed SMILES (overrides --top_seeds)")
+    ap.add_argument("--seed_family", default="GA-Tris",
+                    help="Family hint for --seed_smiles (used for pKa debias & "
+                         "assembler routing); ignored when --top_seeds is used.")
+    # Live scoring weights (mirroring beam_search_streaming)
+    ap.add_argument("--alpha", type=float, default=0.0,
+                    help="Exploration weight α ∈ [0,1]: blend of ML score vs "
+                         "physics UCB score. 0 = pure ML, 1 = pure physics+UCB.")
+    ap.add_argument("--kappa", type=float, default=1.5,
+                    help="UCB aggressiveness κ: ŷ + κ·σ. Higher = more "
+                         "exploration of uncertain candidates.")
+    ap.add_argument("--sar_weight", type=float, default=0.4,
+                    help="β: weight on accumulated family-SAR prior in the "
+                         "final score.")
+    # Mutation steering
+    ap.add_argument("--prune_adverse", type=float, default=PRUNE_ADVERSE,
+                    help="Per-mutation SAR prior at/below which a move is "
+                         "dropped pre-ML (only in families with a "
+                         "data-supported prior).")
+    ap.add_argument("--tail_nosig_cap", type=int, default=TAIL_NOSIG_CAP,
+                    help="Max no-signal tail-variant mutations kept per parent "
+                         "(prevents flat-family tail explosion).")
     ap.add_argument("--out_csv", default="proposed_iajds.csv")
     ap.add_argument("--out_json", default="proposed_iajds_summary.json")
     args = ap.parse_args()
@@ -908,10 +1292,31 @@ def main():
     # Seeds
     df = pd.read_excel(BIOACT_XLSX)
     if args.seed_smiles:
-        seed_row = {"family": "GA-Tris", "head_group": "HPRZ",
-                    "linker_length": 4, "linkage": "ester",
-                    "SMILES_canonical": args.seed_smiles}
-        seeds_list = [decompose_row(seed_row)]
+        # If the explicit seed matches a training row, reuse that row's full
+        # decomposition (correct family, head, linker_length, linkage). Falls
+        # back to GA-Tris defaults only when the SMILES is genuinely new.
+        canon = Chem.MolToSmiles(Chem.MolFromSmiles(args.seed_smiles))
+        match = None
+        for _, r in df.iterrows():
+            sm = r.get("SMILES_canonical") or r.get("SMILES")
+            if pd.isna(sm):
+                continue
+            try:
+                cs = Chem.MolToSmiles(Chem.MolFromSmiles(str(sm)))
+            except Exception:
+                continue
+            if cs == canon:
+                match = r.to_dict()
+                break
+        if match is not None:
+            seeds_list = [decompose_row(match)]
+            print(f"  --seed_smiles matched training row "
+                  f"IAJD_id={match.get('IAJD_id')} family={match.get('family')}")
+        else:
+            seed_row = {"family": args.seed_family, "head_group": "HPRZ",
+                        "linker_length": 4, "linkage": "ester",
+                        "SMILES_canonical": args.seed_smiles}
+            seeds_list = [decompose_row(seed_row)]
     else:
         seed_rows = _pick_seeds(df, args.top_seeds)
         seeds_list = [decompose_row(r) for r in seed_rows]
@@ -930,14 +1335,25 @@ def main():
         if m is not None:
             train_fps.append(_fp(m))
 
-    print(f"\nRunning beam search: threshold={args.threshold} beam={args.beam} depth={args.depth}")
+    print(f"\nRunning beam search: threshold={args.threshold} beam={args.beam} "
+          f"depth={args.depth}")
+    print(f"  α(alpha)={args.alpha}  κ(kappa)={args.kappa}  β(sar_weight)={args.sar_weight}")
+    print(f"  prune_adverse={args.prune_adverse}  tail_nosig_cap={args.tail_nosig_cap}")
     result = beam_search(args.threshold, args.beam, args.depth,
-                         seeds_list, library, bundle_v14, bundle_bin, train_fps)
+                         seeds_list, library, bundle_v14, bundle_bin, train_fps,
+                         exploration_weight=args.alpha,
+                         kappa_ucb=args.kappa,
+                         sar_weight=args.sar_weight,
+                         prune_adverse=args.prune_adverse,
+                         tail_nosig_cap=args.tail_nosig_cap)
 
-    # Trim columns for CSV
-    out_cols = ["smiles", "yhat", "yhat_seed", "delta_vs_seed",
-                "sar_prior", "sar_step", "sar_reason", "p_above",
-                "score", "tanim_max_to_train",
+    # Output columns: ML + live physics + UCB + monotone + SAR
+    out_cols = ["smiles", "yhat", "yhat_seed", "delta_vs_seed", "p_above",
+                "ucb_score", "q_physics", "cpp", "endosomal_escape",
+                "physics_yhat", "monotone_bonus", "monotone_signals",
+                "sar_prior", "sar_step", "sar_reason",
+                "score_ml", "score_phys", "score",
+                "tanim_max_to_train",
                 "mutation_description", "mutation_tag",
                 "mutation_trail", "parent_smiles"]
     for c in out_cols:
@@ -948,6 +1364,10 @@ def main():
     summary = {
         "threshold": args.threshold,
         "beam": args.beam, "depth": args.depth,
+        "alpha": args.alpha, "kappa": args.kappa,
+        "sar_weight": args.sar_weight,
+        "prune_adverse": args.prune_adverse,
+        "tail_nosig_cap": args.tail_nosig_cap,
         "n_candidates_total": len(result),
         "n_novel": int((result["tanim_max_to_train"] < NOVELTY_TANIMOTO_MAX).sum()),
         "top_10": result.head(10)[out_cols].to_dict(orient="records"),
@@ -958,10 +1378,12 @@ def main():
     print(f"  Novel (tanim < {NOVELTY_TANIMOTO_MAX}): {summary['n_novel']}")
     print(f"  Top 5:")
     for _, r in result.head(5).iterrows():
-        print(f"    score={r['score']:.3f}  ŷ={r['yhat']:.2f}  "
-              f"P(≥{args.threshold})={r['p_above']:.2f}  "
-              f"tanim={r['tanim_max_to_train']:.2f}  "
-              f"trail={r['mutation_trail'][-3:]}")
+        trail_str = r['mutation_trail'][-3:] if isinstance(r['mutation_trail'], list) else r['mutation_trail']
+        print(f"    score={r['score']:.3f}  (ml={r['score_ml']:.3f} phys={r['score_phys']:.3f})  "
+              f"ŷ={r['yhat']:.2f}  ucb={r['ucb_score']:.2f}  "
+              f"Q={r['q_physics']:.2f}  P(≥{args.threshold})={r['p_above']:.2f}  "
+              f"SAR={r['sar_prior']:+.2f}  tanim={r['tanim_max_to_train']:.2f}")
+        print(f"      trail={trail_str}")
         print(f"      {r['smiles']}")
     print(f"\n  Wrote {args.out_csv} and {args.out_json}")
 

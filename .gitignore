@@ -39,3 +39,39 @@ IAJD_master.zip
 
 # Runtime logs / dumps the user might generate
 *.log
+
+# Workflow snapshots — local checkpoints, not part of source
+workflow_snapshot_*/
+
+# External tool repositories cloned next to the project
+external_corpus_v1/
+agile_repo/
+
+# Dataset backups / expansions (regenerable from canonical xlsx)
+IAJD_master/datasets/*.bak_pre_*
+IAJD_master/datasets/*_backup.xlsx
+IAJD_master/datasets/*_expanded.xlsx
+
+# Debug / ad-hoc dev scripts (not runtime)
+audit_datasets.py
+build_diagnostic.py
+fix_and_rebuild.py
+rebuild_pka_model.py
+expand_datasets.py
+
+# Local debug outputs (regenerable; not part of the trained pipeline)
+proposed_iajds*.csv
+proposed_iajds*.json
+proposed_iajd*.csv
+proposed_iajd*.json
+molgpka_live_audit.json
+agile_embeddings_*.npy
+
+# Plots / screenshots (regenerated from the live model)
+*.png
+
+# Local physics scratch
+physics_pka_v1/
+
+# pytest cache
+.pytest_cache/

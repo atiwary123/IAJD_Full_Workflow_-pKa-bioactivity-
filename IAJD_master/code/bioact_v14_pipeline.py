@@ -196,15 +196,18 @@ def _lion_proxy_features(mol, fp, lion_train_fps=None):
 
 def compute_block_b(mols, fps, smi_list, lion_cache_path=None, lion_train_fps_path=None):
     """Compute 14-d LION feature matrix for each (mol, fp, canonical_smi).
-    Uses real LION cache when present, falls back to RDKit-based proxy.
-    Returns (X_b shape n×14, mode_per_row list)."""
+
+    No-proxy: real LION cache only. Cache miss → NaN (XGBoost routes through
+    learned default branch). Callers (predict_binary._assemble_X,
+    propose_iajds._extend_caches_for_smiles) run live LION subprocesses to
+    populate the cache BEFORE calling this, so cache misses in inference
+    indicate the subprocess itself failed.
+
+    Returns (X_b shape n×14, mode_per_row list).
+    """
     lion_cache = _load_external_cache(lion_cache_path) if lion_cache_path else {}
-    lion_train_fps = None
-    if lion_train_fps_path and Path(lion_train_fps_path).exists():
-        with open(lion_train_fps_path, 'rb') as f:
-            lion_train_fps = pickle.load(f)
-    n_cached = 0; n_proxy = 0
-    X = np.zeros((len(mols), 14))
+    n_cached = 0; n_nan = 0
+    X = np.full((len(mols), 14), np.nan)
     modes = []
     for i, (m, fp, s) in enumerate(zip(mols, fps, smi_list)):
         if s in lion_cache:
@@ -212,10 +215,12 @@ def compute_block_b(mols, fps, smi_list, lion_cache_path=None, lion_train_fps_pa
             modes.append('cached')
             n_cached += 1
         else:
-            X[i] = _lion_proxy_features(m, fp, lion_train_fps=lion_train_fps)
-            modes.append('proxy')
-            n_proxy += 1
-    print(f'  Block B (LION): {n_cached} cached / {n_proxy} proxy')
+            modes.append('nan')
+            n_nan += 1
+    if n_nan:
+        print(f'  Block B (LION): {n_cached} cached / {n_nan} NaN (live LION failed or unavailable)')
+    else:
+        print(f'  Block B (LION): {n_cached} cached / 0 NaN')
     return X, modes
 
 
@@ -258,17 +263,22 @@ def _admet_proxy_features(mol):
 
 
 def compute_block_c(mols, smi_list, admet_cache_path=None):
+    """No-proxy: real ADMET-AI cache only. Cache miss → NaN (XGBoost routes
+    through learned default branch). Callers run live ADMET subprocesses to
+    populate the cache before calling this."""
     admet_cache = _load_external_cache(admet_cache_path) if admet_cache_path else {}
-    n_cached = 0; n_proxy = 0
-    X = np.zeros((len(mols), 10))
+    n_cached = 0; n_nan = 0
+    X = np.full((len(mols), 10), np.nan)
     for i, (m, s) in enumerate(zip(mols, smi_list)):
         if s in admet_cache:
             X[i] = admet_cache[s]
             n_cached += 1
         else:
-            X[i] = _admet_proxy_features(m)
-            n_proxy += 1
-    print(f'  Block C (ADMET): {n_cached} cached / {n_proxy} proxy')
+            n_nan += 1
+    if n_nan:
+        print(f'  Block C (ADMET): {n_cached} cached / {n_nan} NaN (live ADMET failed or unavailable)')
+    else:
+        print(f'  Block C (ADMET): {n_cached} cached / 0 NaN')
     return X
 
 
@@ -295,79 +305,100 @@ def _detect_head_group(row, mol):
 
 
 def _peterca_radius(chain_min, chain_max, linker_length):
-    lamellar_d = 0.13 * float(linker_length or 4) + 0.125 * (chain_min + chain_max) / 2
+    """No-proxy: NaN inputs → NaN output. Removed `linker_length or 4` proxy."""
+    if linker_length is None or chain_min is None or chain_max is None:
+        return float("nan")
+    lamellar_d = 0.13 * float(linker_length) + 0.125 * (chain_min + chain_max) / 2
     return 30.0 + 5.0 * lamellar_d
 
 
 def _packing_parameter(chain_min, chain_max, head):
+    """No-proxy: NaN inputs (or unknown head) → NaN output. Removed
+    `A_LOOKUP_HEAD.get(head, 40)` proxy default."""
+    if chain_min is None or chain_max is None:
+        return float("nan")
+    a = A_LOOKUP_HEAD.get(head)
+    if a is None or not np.isfinite(a):
+        return float("nan")
     v = (chain_min + chain_max) * 27.4
     l = 0.125 * 10 * (chain_min + chain_max) / 2
-    a = A_LOOKUP_HEAD.get(head, 40)
-    if l <= 0: return 0.0
+    if l <= 0:
+        return float("nan")
     return v / (a * l)
 
 
 def _apoE_heuristic(size_nm, zeta_mV, MolLogP, pKa_pred):
-    if size_nm is None or np.isnan(size_nm): size_nm = 100.0
-    if zeta_mV is None or np.isnan(zeta_mV): zeta_mV = 0.0
-    if pKa_pred is None or (isinstance(pKa_pred, float) and np.isnan(pKa_pred)):
-        pKa_pred = 6.3
-    size_term = np.exp(-((size_nm - 100) / 50)**2)
-    zeta_term = np.exp(-(zeta_mV / 10)**2)
-    logp_term = np.exp(-((MolLogP - 11) / 4)**2)
-    pH_term   = 1.0 / (1.0 + np.exp(-(pKa_pred - 5.5) * 2))
+    """No-proxy (audit 2026-05-29): NaN inputs propagate to NaN output;
+    callers route the NaN through XGBoost's default branch instead of
+    substituting hardcoded constants (size=100, zeta=0, pKa=6.3 removed)."""
+    # NumPy arithmetic naturally produces NaN when any input is NaN.
+    size_term = np.exp(-((size_nm - 100) / 50)**2) if (size_nm is not None and not (isinstance(size_nm, float) and np.isnan(size_nm))) else float("nan")
+    zeta_term = np.exp(-(zeta_mV / 10)**2) if (zeta_mV is not None and not (isinstance(zeta_mV, float) and np.isnan(zeta_mV))) else float("nan")
+    logp_term = np.exp(-((MolLogP - 11) / 4)**2) if (MolLogP is not None and not (isinstance(MolLogP, float) and np.isnan(MolLogP))) else float("nan")
+    pH_term   = 1.0 / (1.0 + np.exp(-(pKa_pred - 5.5) * 2)) if (pKa_pred is not None and not (isinstance(pKa_pred, float) and np.isnan(pKa_pred))) else float("nan")
     return float(size_term * zeta_term * logp_term * pH_term)
 
 
 def _charge_density(pKa, pH, head):
+    """No-proxy: NaN pKa → NaN charge density. Unknown head → NaN a_head
+    (used to substitute 40 from A_LOOKUP_HEAD)."""
     if pKa is None or (isinstance(pKa, float) and np.isnan(pKa)):
-        pKa = 6.3
+        return float("nan")
+    a = A_LOOKUP_HEAD.get(head)
+    if a is None or not np.isfinite(a):
+        return float("nan")
     f_prot = 1.0 / (1.0 + 10**(pH - pKa))
-    a = A_LOOKUP_HEAD.get(head, 40)
     return float(f_prot / a)
 
 
 def compute_block_d(df, mols):
-    X = np.zeros((len(df), 6))
+    """Geometric / electrostatic block. No-proxy (audit 2026-05-29):
+    missing inputs propagate as NaN through to XGBoost's default branch
+    rather than substituting hardcoded defaults (link=4, total_c=48,
+    pka=6.5, logp=10.0 etc. — all removed)."""
+    X = np.full((len(df), 6), np.nan)
     for i, (_, row) in enumerate(df.iterrows()):
         m = mols[i]
-        # Get chain lengths
-        # In v13 we have linker_length and several chain-related columns
-        # Use linker_carbons or linker_length
-        link = row.get('Linker_Length') or row.get('linker_length') or 4
-        try: link = int(link)
-        except: link = 4
+        # Linker length: NaN if unparseable (no proxy default of 4)
+        link_raw = row.get('Linker_Length') or row.get('linker_length')
+        try:
+            link = int(link_raw) if link_raw is not None and not pd.isna(link_raw) else None
+        except Exception:
+            link = None
 
-        # Chain lengths: try a few sources, fallback by sniffing the SMILES
+        # Chain lengths: real values from the xlsx, else NaN
         chain_min = row.get('chain_min')
         chain_max = row.get('chain_max')
         if chain_min is None or pd.isna(chain_min):
-            # crude fallback: use total_hydrophobic_carbons / 4 chains
-            total_c = row.get('total_hydrophobic_carbons') or 12 * 4
-            try: total_c = int(total_c)
-            except: total_c = 48
-            chain_min = chain_max = total_c // 4
+            chain_min = None
         else:
-            chain_min = int(chain_min); chain_max = int(chain_max)
+            try: chain_min = int(chain_min)
+            except Exception: chain_min = None
+        if chain_max is None or pd.isna(chain_max):
+            chain_max = None
+        else:
+            try: chain_max = int(chain_max)
+            except Exception: chain_max = None
 
         head = _detect_head_group(row, m)
         size_nm = row.get('DNP_size_nm')
-        try: size_nm = float(size_nm)
-        except: size_nm = np.nan
+        try: size_nm = float(size_nm) if size_nm is not None and not pd.isna(size_nm) else float("nan")
+        except Exception: size_nm = float("nan")
         zeta = row.get('DNP_zeta_mV')
-        try: zeta = float(zeta)
-        except: zeta = np.nan
-        logp = MolLogP(m) if m else 10.0
-        pka = row.get('pKa') or row.get('pKa_paper')
-        try: pka = float(pka)
-        except: pka = 6.5
+        try: zeta = float(zeta) if zeta is not None and not pd.isna(zeta) else float("nan")
+        except Exception: zeta = float("nan")
+        logp = float(MolLogP(m)) if m is not None else float("nan")
+        pka_raw = row.get('pKa') or row.get('pKa_paper')
+        try: pka = float(pka_raw) if pka_raw is not None and not pd.isna(pka_raw) else float("nan")
+        except Exception: pka = float("nan")
 
-        X[i, 0] = _peterca_radius(chain_min, chain_max, link)
-        X[i, 1] = _packing_parameter(chain_min, chain_max, head)
+        # Each helper now returns NaN cleanly if its inputs are insufficient.
+        X[i, 0] = _peterca_radius(chain_min, chain_max, link) if (chain_min is not None and chain_max is not None and link is not None) else float("nan")
+        X[i, 1] = _packing_parameter(chain_min, chain_max, head) if (chain_min is not None and chain_max is not None) else float("nan")
         X[i, 2] = _apoE_heuristic(size_nm, zeta, logp, pka)
         X[i, 3] = _charge_density(pka, 7.4, head)
         X[i, 4] = _charge_density(pka, 5.0, head)
-        X[i, 5] = 1.0 / X[i, 0] if X[i, 0] > 0 else 0.0
+        X[i, 5] = 1.0 / X[i, 0] if (np.isfinite(X[i, 0]) and X[i, 0] > 0) else float("nan")
     return X
 
 
@@ -487,20 +518,74 @@ def compute_block_a(df, mols):
 # 6. Block: Formulation v2 (8-d)
 # =====================================================================
 
+def _real_or_nan(v):
+    """Honest no-proxy float coercion: NaN passes through to XGBoost which
+    routes it through its learned default branch. Never substitute a median
+    or constant in place of a real measurement."""
+    if v is None:
+        return float('nan')
+    if isinstance(v, float) and (np.isnan(v) or np.isinf(v)):
+        return float('nan')
+    try:
+        return float(v)
+    except Exception:
+        return float('nan')
+
+
 def compute_block_form(df):
-    X = np.zeros((len(df), 8))
+    """Formulation features (8-d). No proxy defaults — NaN stays NaN, XGBoost
+    handles via its learned default branch."""
+    X = np.full((len(df), 8), np.nan)
     for i, (_, row) in enumerate(df.iterrows()):
-        size = _safe_float(row.get('DNP_size_nm'), 150.0)
-        pdi  = _safe_float(row.get('DNP_PDI'), 0.28)
-        ee   = _safe_float(row.get('DNP_EE_pct'), 95.0)
-        zeta = _safe_float(row.get('DNP_zeta_mV'), 0.0)
-        ph   = _safe_float(row.get('buffer_pH'), 4.0)
-        dose = _safe_float(row.get('dose_mRNA_ug'), 10.0)
-        # missing flag — true if size/pdi/ee weren't reported
+        size = _real_or_nan(row.get('DNP_size_nm'))
+        pdi  = _real_or_nan(row.get('DNP_PDI'))
+        ee   = _real_or_nan(row.get('DNP_EE_pct'))
+        zeta = _real_or_nan(row.get('DNP_zeta_mV'))
+        ph   = _real_or_nan(row.get('buffer_pH'))
+        dose = _real_or_nan(row.get('dose_mRNA_ug'))
         missing = int(pd.isna(row.get('DNP_size_nm')) or
                       pd.isna(row.get('DNP_PDI')) or
                       pd.isna(row.get('DNP_EE_pct')))
-        X[i] = [size, np.log10(size + 1), pdi, ee, zeta, ph, dose, missing]
+        size_log = np.log10(size + 1) if np.isfinite(size) else np.nan
+        X[i] = [size, size_log, pdi, ee, zeta, ph, dose, missing]
+    return X
+
+
+# =====================================================================
+# 6b. Block E — sample-prep covariates (NEW, no-proxy)
+# =====================================================================
+#
+# These are real experimental conditions extracted from the bioact xlsx:
+#   pH_sample       — buffer pH at the time of measurement (numeric)
+#   T_hours         — time post-injection (numeric)
+#   inj_route_IV    — 1.0 if intravenous, 0.0 if retro-orbital, NaN if unknown
+#   inj_route_retro — 1.0 if retro-orbital, 0.0 if IV, NaN if unknown
+#
+# Spearman ρ vs log10_flux on the 247-row training set:
+#   pH_sample      ρ = -0.316  (strongest sample-prep signal)
+#   T_hours        ρ = -0.280
+#   inj_route IV vs retro: large categorical effect
+#
+# No medians substituted at training; no medians substituted at inference.
+# XGBoost natively handles NaN.
+def compute_block_e_sampleprep(df):
+    X = np.full((len(df), 4), np.nan)
+    for i, (_, row) in enumerate(df.iterrows()):
+        ph = _real_or_nan(row.get('pH_sample'))
+        T  = _real_or_nan(row.get('T_hours'))
+        route = row.get('inj_route')
+        if pd.isna(route):
+            iv, retro = float('nan'), float('nan')
+        else:
+            r = str(route).strip().lower()
+            if r in ('intravenous', 'iv'):
+                iv, retro = 1.0, 0.0
+            elif r in ('retro-orbital', 'retro_orbital', 'retro'):
+                iv, retro = 0.0, 1.0
+            else:
+                # Unknown category — honest NaN, no proxy
+                iv, retro = float('nan'), float('nan')
+        X[i] = [ph, T, iv, retro]
     return X
 
 
@@ -508,15 +593,18 @@ def compute_block_form(df):
 # 7. Assemble full v14 feature matrix
 # =====================================================================
 
+BLOCK_E_NAMES = ['pH_sample', 'T_hours', 'inj_route_IV', 'inj_route_retro']
+
 ALL_NAMES_V14 = (
     BLOCK_A_NAMES +
     BLOCK_B_NAMES +
     BLOCK_C_NAMES +
     BLOCK_D_NAMES +
     ['DNP_size_nm', 'DNP_size_nm_log', 'DNP_PDI', 'DNP_EE_pct',
-     'DNP_zeta_mV', 'buffer_pH', 'dose_mRNA_ug', 'missing_formulation']
+     'DNP_zeta_mV', 'buffer_pH', 'dose_mRNA_ug', 'missing_formulation'] +
+    BLOCK_E_NAMES
 )
-assert len(ALL_NAMES_V14) == 88
+assert len(ALL_NAMES_V14) == 92, f"got {len(ALL_NAMES_V14)}"
 
 BLOCK_SLICES = {
     'A':            slice(0, 50),
@@ -524,6 +612,7 @@ BLOCK_SLICES = {
     'C':            slice(64, 74),
     'D':            slice(74, 80),
     'formulation':  slice(80, 88),
+    'E_sampleprep': slice(88, 92),
 }
 
 
@@ -535,7 +624,8 @@ def assemble_X(df, mols, fps, smis,
     XC = compute_block_c(mols, smis, admet_cache_path)
     XD = compute_block_d(df, mols)
     XF = compute_block_form(df)
-    X = np.hstack([XA, XB, XC, XD, XF])
+    XE = compute_block_e_sampleprep(df)
+    X = np.hstack([XA, XB, XC, XD, XF, XE])
     print(f'  Assembled X: shape={X.shape}')
     return X, lion_modes
 

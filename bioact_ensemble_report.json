@@ -1,0 +1,49 @@
+{
+  "version": "bioact_ensemble_v1_2026-05-29",
+  "seeds": [
+    42,
+    123,
+    7,
+    2024,
+    999,
+    31415,
+    27182
+  ],
+  "bootstrap_sizes": [
+    209,
+    209,
+    209,
+    209,
+    209,
+    209,
+    209
+  ],
+  "sigma_calibration": 2.584747583184033,
+  "per_family_sigma": {
+    "Dialkoxybenzyl": 0.42802518641577075,
+    "G1-Janus-Dendrimer": 0.643677988728502,
+    "GA-Tris": 0.43972114103708126,
+    "PE-Gallic": 0.9081812348882677,
+    "PE-Tris": 0.5930077443510766,
+    "sSS-Nonsym": 0.49652655406703505
+  },
+  "global_sigma": 0.5450897063491394,
+  "block_slices": {
+    "A": "slice(0, 50, None)",
+    "B": "slice(50, 64, None)",
+    "C": "slice(64, 74, None)",
+    "D": "slice(74, 80, None)",
+    "formulation": "slice(80, 88, None)",
+    "E_sampleprep": "slice(88, 92, None)"
+  },
+  "n_features": 92,
+  "training_size": 247,
+  "metrics": {
+    "loo_mae_ensemble_mean": 0.44487434456532376,
+    "ensemble_mean_sigma_raw": 0.2108870165486984,
+    "actual_residual_std": 0.5450897063491394,
+    "calibration_factor": 2.584747583184033,
+    "M": 7,
+    "bootstrap_frac": 0.85
+  }
+}

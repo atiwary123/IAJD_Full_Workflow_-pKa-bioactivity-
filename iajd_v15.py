@@ -657,16 +657,31 @@ def predict_bioactivity_v15(smiles: str, bundle: V15Bundle,
     fam = family_hint or fam_detected
     out["family_assigned"] = fam
 
+    # No-proxy (audit 2026-05-29): NaN pKa passes through to XGBoost's
+    # default branch instead of substituting 6.5. Caller is expected to
+    # inject live MolGpKa pKa via injected_pka when available.
     row = {
         "SMILES_canonical": canonical, "canonical_smi": canonical,
         "family": fam, "IAJD_id": "v15_query",
         "log10_flux_total": 0,
-        "pKa": injected_pka if injected_pka is not None else 6.5,
-        "pKa_sd": injected_pka_sd if injected_pka_sd is not None else 0.5,
+        "pKa": injected_pka if injected_pka is not None else float("nan"),
+        "pKa_sd": injected_pka_sd if injected_pka_sd is not None else float("nan"),
     }
     df_q = pd.DataFrame([row])
     lion_path = CACHE_DIR / "lion_cache_v13.json"
     admet_path = CACHE_DIR / "admet_cache_v13.json"
+    # No-proxy: extend caches via real LION + ADMET subprocesses BEFORE
+    # assemble_X so novel SMILES get real values, not (now-removed) RDKit
+    # proxies. assemble_X itself will NaN-passthrough on a cache miss.
+    try:
+        import sys as _sys
+        from pathlib import Path as _Path
+        _proj_root = _Path(__file__).resolve().parent
+        _sys.path.insert(0, str(_proj_root))
+        from predict_binary import _extend_caches_live as _extend
+        _extend([canonical])
+    except Exception:
+        pass
     X_q, lion_modes = assemble_X(
         df_q, [mol], [_mfp2], [canonical],
         lion_cache_path=str(lion_path) if lion_path.exists() else None,
@@ -684,7 +699,9 @@ def predict_bioactivity_v15(smiles: str, bundle: V15Bundle,
         "lion_real": bool(lion_real),
         "lion_live_call": bool(live_lion),
         "admet_live_call": bool(live_admet),
-        "warnings": out.get("warnings", []) + ([] if lion_real else ["LION_PROXY_USED"]),
+        # No-proxy: when LION cache miss happens now, Block B is NaN (XGBoost
+        # default branch); the warning labels that honestly.
+        "warnings": out.get("warnings", []) + ([] if lion_real else ["LION_NAN_PASSTHROUGH"]),
         # Expose the assembled 88-feature vector so downstream callers can
         # apply alternate heads (the v1 bioactivity stacker uses cols
         # 50-63 for LION and 64-73 for ADMET).

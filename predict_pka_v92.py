@@ -46,20 +46,60 @@ def load_v92_bundle() -> Dict[str, Any]:
     return _V92_BUNDLE
 
 
-def _live_molgpka(mol) -> float:
-    """Run live MolGpKa GCN and return max basic pKa (NaN if no basic site)."""
-    sys.path.insert(0, str(ROOT / "molgpka_src"))
-    try:
-        from predict_pka import predict as molgpka_predict
-    except Exception:
+_LIVE_MOLGPKA_CACHE: dict = {}
+
+def _live_molgpka(mol, timeout_s: float = 60.0) -> float:
+    """Run live MolGpKa GCN via SUBPROCESS (T5 #14 hardened path) and return
+    max basic pKa (NaN on failure or timeout).
+
+    Why subprocess: the in-process MolGpKa load + forward pass can hang when
+    the parent process already has chemprop's torch initialized — the two
+    torch threadpools / OMP runtimes occasionally deadlock during state-dict
+    deserialization. A subprocess with `start_new_session=True` isolates
+    MolGpKa from whatever torch state lives in the parent.
+
+    No-proxy: if MolGpKa subprocess fails or times out we return NaN — never
+    a family median or constant. The v9.2 caller then drops the MolGpKa head
+    weight to 0 and re-normalizes the blend over the remaining heads.
+    """
+    import subprocess, json
+    canon = Chem.MolToSmiles(mol) if mol else None
+    if canon is None:
         return float("nan")
+    if canon in _LIVE_MOLGPKA_CACHE:
+        return _LIVE_MOLGPKA_CACHE[canon]
+    runner = ROOT / "molgpka_runner.py"
+    if not runner.exists():
+        _LIVE_MOLGPKA_CACHE[canon] = float("nan")
+        return float("nan")
+    clean_env = {k: v for k, v in os.environ.items()
+                  if not k.startswith(("DYLD_", "LD_LIBRARY_PATH", "PYTHON"))}
+    clean_env["PATH"] = os.environ.get("PATH", "/usr/bin:/bin")
+    clean_env["OMP_NUM_THREADS"] = "1"
+    clean_env["MKL_NUM_THREADS"] = "1"
     try:
-        base_dict, _ = molgpka_predict(mol)
-        if base_dict:
-            return float(max(base_dict.values()))
+        proc = subprocess.run(
+            [sys.executable, str(runner), canon],
+            capture_output=True, text=True,
+            timeout=timeout_s,
+            env=clean_env, start_new_session=True,
+        )
+        if proc.returncode != 0:
+            _LIVE_MOLGPKA_CACHE[canon] = float("nan")
+            return float("nan")
+        result = json.loads(proc.stdout.strip())
+        if "error" in result:
+            _LIVE_MOLGPKA_CACHE[canon] = float("nan")
+            return float("nan")
+        val = float(result.get("max_base_pka", float("nan")))
+        _LIVE_MOLGPKA_CACHE[canon] = val
+        return val
+    except subprocess.TimeoutExpired:
+        _LIVE_MOLGPKA_CACHE[canon] = float("nan")
+        return float("nan")
     except Exception:
-        pass
-    return float("nan")
+        _LIVE_MOLGPKA_CACHE[canon] = float("nan")
+        return float("nan")
 
 
 def _v52_features_for_smiles(smiles: str) -> np.ndarray:
@@ -137,16 +177,19 @@ def predict_pka_v92(smiles: str, family_hint: Optional[str] = None) -> Dict[str,
     p_analog = float(np.sum(w * train_pkas[np.array(above)]))
     max_tanimoto = float(np.max(sims))
 
-    # Head 2: pure XGB on 30 features
+    # Head 2: pure XGB on 30 features. No-proxy: NaN inputs are routed via
+    # XGBoost's default branch (the StandardScaler can't handle NaN, so we
+    # do the equivalent z-score manually with NaN passthrough).
     q_feats = _v52_features_for_smiles(canonical)
+    scaler = b["xgb_pure"]["scaler"]
     nan_mask = ~np.isfinite(q_feats)
     if nan_mask.any():
-        # Fill with column medians from training (the scaler captures them)
-        med = b["xgb_pure"]["scaler"].mean_
-        q_feats = np.where(nan_mask, med, q_feats)
-        out["warnings"].append(f"IMPUTED_{int(nan_mask.sum())}_FEATURES")
-    q_scaled = b["xgb_pure"]["scaler"].transform(q_feats.reshape(1, -1))
-    p_xgb = float(b["xgb_pure"]["model"].predict(q_scaled)[0])
+        out["warnings"].append(f"NAN_PASSTHROUGH_{int(nan_mask.sum())}_FEATURES")
+    # Z-score the finite entries, leave NaN as NaN
+    q_scaled = np.full_like(q_feats, np.nan, dtype=float)
+    finite = ~nan_mask
+    q_scaled[finite] = (q_feats[finite] - scaler.mean_[finite]) / scaler.scale_[finite]
+    p_xgb = float(b["xgb_pure"]["model"].predict(q_scaled.reshape(1, -1))[0])
 
     # Head 3: live MolGpKa → per-family debias
     raw = _live_molgpka(mol)
@@ -166,21 +209,40 @@ def predict_pka_v92(smiles: str, family_hint: Optional[str] = None) -> Dict[str,
         out["warnings"].append("MOLGPKA_LIVE_FAILED")
 
     weights = b["weights"]
+    # Resolve weights: prefer per-family LOO-optimized triple; fall back to
+    # global LOO-optimized triple. No constants — both come from real CV.
+    if "per_family" in weights and fam in weights["per_family"]:
+        triple = weights["per_family"][fam]
+        w_a, w_x, w_m = float(triple[0]), float(triple[1]), float(triple[2])
+        out["weights_source"] = f"per_family[{fam}]"
+    elif "global" in weights:
+        g = weights["global"]
+        w_a = float(g["analog"]); w_x = float(g["xgb_pure"]); w_m = float(g["molgpka_debiased"])
+        out["weights_source"] = "global"
+    else:
+        # Legacy schema fallback (flat dict)
+        w_a = float(weights.get("analog", 0.0))
+        w_x = float(weights.get("xgb_pure", 0.0))
+        w_m = float(weights.get("molgpka_debiased", 0.0))
+        out["weights_source"] = "legacy_flat"
+
     components = {"analog": p_analog, "xgb_pure": p_xgb,
                    "molgpka_debiased": p_molgpka}
-    # Renormalize weights if MolGpKa unavailable
+    # Renormalize over the remaining heads if MolGpKa unavailable. No proxy:
+    # we drop MolGpKa's weight and redistribute proportionally, rather than
+    # substituting a default pKa.
     if not np.isfinite(p_molgpka):
-        w_a = weights["analog"]; w_x = weights["xgb_pure"]
         s = w_a + w_x
-        pka = (w_a * p_analog + w_x * p_xgb) / s if s > 0 else p_analog
+        if s > 0:
+            pka = (w_a * p_analog + w_x * p_xgb) / s
+        else:
+            pka = p_analog
     else:
-        pka = (weights["analog"] * p_analog
-                + weights["xgb_pure"] * p_xgb
-                + weights["molgpka_debiased"] * p_molgpka)
+        pka = w_a * p_analog + w_x * p_xgb + w_m * p_molgpka
     out["pKa_pred"] = round(float(pka), 4)
     out["components"] = {k: round(v, 4) if np.isfinite(v) else None
                           for k, v in components.items()}
-    out["weights"] = weights
+    out["weights_applied"] = {"analog": w_a, "xgb_pure": w_x, "molgpka_debiased": w_m}
     out["raw_molgpka"] = round(raw, 4) if np.isfinite(raw) else None
     out["max_tanimoto_to_training"] = round(max_tanimoto, 4)
     return out

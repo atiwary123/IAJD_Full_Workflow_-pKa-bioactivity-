@@ -59,13 +59,21 @@ HEAD_AREA_PER_GROUP_NM2 = {
 
 
 def head_area_for_group(head_group: str) -> float:
-    """Return real per-head-group cross-sectional area in nm². No fallback —
-    returns NaN if the head_group is unknown so downstream code can refuse
-    to substitute a constant."""
-    a = HEAD_AREA_PER_GROUP_NM2.get(head_group)
-    if a is None:
-        return float("nan")
-    return a
+    """Return real per-head-group cross-sectional area in nm².
+
+    Real path only: compute from 3D ETKDGv3+MMFF94 conformer of the head
+    fragment using van der Waals projection (head_area_3d.head_area_for_group).
+    If 3D computation fails or the head fragment is unknown, returns NaN —
+    no hand-curated lookup proxy. Callers must handle NaN honestly.
+    """
+    try:
+        from head_area_3d import head_area_for_group as _head_area_3d
+        a_3d = _head_area_3d(head_group)
+        if a_3d is not None and a_3d == a_3d and a_3d > 0:
+            return float(a_3d)
+    except Exception:
+        pass
+    return float("nan")
 
 # Tunable scaling from training-set calibration (set heuristically; tuned in
 # train_physics_predictor.py against measured log10_flux residuals)
@@ -303,9 +311,10 @@ def compute_all_physics_features(mol_or_smiles, *,
     substitute a constant in place of an unknown are removed; callers must
     pass real values (or pass NaN and accept NaN outputs).
 
-    head_group selects the real per-head a_head from HEAD_AREA_PER_GROUP_NM2.
-    pka must be the actual predicted/measured pKa for this molecule (e.g.
-    live MolGpKa + per-family debias); do NOT pass a family median.
+    head_group selects the real per-head a_head from the 3D ETKDGv3+MMFF94
+    van der Waals projection (head_area_3d). pka must be the actual
+    predicted/measured pKa for this molecule (e.g. live MolGpKa + per-family
+    debias); do NOT pass a family median.
     """
     if isinstance(mol_or_smiles, str):
         mol = Chem.MolFromSmiles(mol_or_smiles)

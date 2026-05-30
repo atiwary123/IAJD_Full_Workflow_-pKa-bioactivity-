@@ -45,6 +45,11 @@ from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*')
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# RDKit compat shim (project root, not code/) must load before GetMorganGenerator call
+_proj_root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+if _proj_root not in sys.path:
+    sys.path.insert(0, _proj_root)
+import rdkit_compat  # noqa: F401
 from bioact_v14_pipeline import (
     assemble_X, BLOCK_SLICES, ALL_NAMES_V14,
 )
