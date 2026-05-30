@@ -674,11 +674,16 @@ def _chemberta_novelty_batch(smiles_list):
     """
     if not _ensure_chemberta_novelty():
         return np.full(len(smiles_list), np.nan)
+    # The ChemBERTa forward pass needs `transformers` + `torch`, which the
+    # light HF Space runtime deliberately omits. Both the import and the lazy
+    # model load inside embed_smiles_batch can raise (ModuleNotFoundError,
+    # OSError on offline weights, …) — catch all of it and degrade this single
+    # optional column to NaN rather than aborting the whole proposer.
     try:
         from chemberta_embedder import embed_smiles_batch
+        embs = embed_smiles_batch(smiles_list, use_cache=True)
     except Exception:
         return np.full(len(smiles_list), np.nan)
-    embs = embed_smiles_batch(smiles_list, use_cache=True)
     if not np.isfinite(embs).all():
         # fall back to zero-fill only the NaN rows so the others still produce
         # real novelty; mark NaN rows as NaN in the output
