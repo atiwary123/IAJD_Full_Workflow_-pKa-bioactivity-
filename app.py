@@ -601,10 +601,33 @@ def _attach_ensemble_and_per_organ(
     return r
 
 
+def _parse_optional_float(x, lo: float | None = None, hi: float | None = None):
+    """Parse a Textbox-style optional float. Blank / whitespace / non-numeric
+    returns None (downstream uses NaN → XGBoost default branch). Out-of-range
+    also returns None rather than raising — UI hint should already discourage
+    this, and we'd rather route to the default branch than crash a prediction."""
+    if x is None:
+        return None
+    s = str(x).strip()
+    if not s:
+        return None
+    try:
+        v = float(s)
+    except (TypeError, ValueError):
+        return None
+    if v != v:    # NaN
+        return None
+    if lo is not None and v < lo:
+        return None
+    if hi is not None and v > hi:
+        return None
+    return v
+
+
 def single_predict(smiles: str, family_choice: str, neighbors: int,
                     threshold: float = 8.0,
-                    pH_sample: float | None = None,
-                    T_hours: float | None = None,
+                    pH_sample=None,
+                    T_hours=None,
                     inj_route: str | None = None):
     if not smiles or not smiles.strip():
         return "_Enter a SMILES._", ""
@@ -616,10 +639,11 @@ def single_predict(smiles: str, family_choice: str, neighbors: int,
     _attach_v11(r)
     _attach_pka_v92(r)
     _attach_binary(r, float(threshold))
-    # Build sample-prep dict from UI inputs. Untouched → NaN → XGBoost default branch.
+    # Build sample-prep dict from UI inputs. Blank / out-of-range → None →
+    # XGBoost default branch (equivalent to the pre-Block-E model).
     sample_prep = {
-        "pH_sample": float(pH_sample) if pH_sample not in (None, "", float("nan")) else None,
-        "T_hours": float(T_hours) if T_hours not in (None, "", float("nan")) else None,
+        "pH_sample": _parse_optional_float(pH_sample, lo=4.0, hi=9.0),
+        "T_hours":   _parse_optional_float(T_hours,   lo=0.0, hi=24.0),
         "inj_route": inj_route if inj_route and inj_route != "(unspecified)" else None,
     }
     r["sample_prep_inputs"] = sample_prep
@@ -902,8 +926,14 @@ def build_ui() -> gr.Blocks:
                     "conditions for an honest, condition-specific prediction._"
                 )
                 with gr.Row():
-                    pH_in = gr.Number(label="pH at sample prep (4–9)", value=None, minimum=4.0, maximum=9.0)
-                    T_in = gr.Number(label="Ageing time T (hours, 0–24)", value=None, minimum=0.0, maximum=24.0)
+                    pH_in = gr.Textbox(
+                        label="pH at sample prep (4–9)",
+                        value="", placeholder="(blank = unspecified)",
+                    )
+                    T_in = gr.Textbox(
+                        label="Ageing time T (hours, 0–24)",
+                        value="", placeholder="(blank = unspecified)",
+                    )
                     route_in = gr.Dropdown(
                         ["(unspecified)", "intravenous", "retro-orbital"],
                         value="(unspecified)", label="Injection route",
