@@ -1,5 +1,5 @@
 ---
-title: IAJD Tandem Predictor
+title: STRIDE
 emoji: 🧬
 colorFrom: indigo
 colorTo: purple
@@ -10,10 +10,12 @@ app_file: app.py
 pinned: false
 ---
 
-# IAJD Tandem Predictor
+# STRIDE
 
-Predicts **pKa (v9.1)** and **log₁₀ flux total bioactivity (v14 + stacker v1)**
-for ionizable amino-lipid janus dendrimers (IAJDs).
+**ST**ructural **R**anking + **I**nformed **D**esign **E**ngine for ionizable
+amphiphilic Janus dendrimers (IAJDs). Predicts **pKa (v9.1)** and **log₁₀ flux
+total bioactivity (v14 + stacker v1)**, and proposes novel IAJDs via beam search
+over single-step structural mutations steered by per-family SAR priors.
 
 ## What's in here
 

@@ -1,5 +1,9 @@
 """
-iajd_server.py — Localhost HTTP frontend for the IAJD tandem predictor.
+iajd_server.py — Localhost HTTP frontend for STRIDE.
+
+STRIDE = STRuctural Ranking + Informed Design Engine: pKa + bioactivity
+tandem predictor with a beam-search proposer for ionizable amphiphilic Janus
+dendrimers (IAJDs).
 
 Pure stdlib (no Flask / FastAPI). Serves:
     GET  /              — HTML form (SMILES field, ChemDraw upload, family, neighbors)
@@ -51,7 +55,7 @@ INDEX_HTML = """<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>IAJD Tandem Predictor</title>
+<title>STRIDE</title>
 <style>
   html, body { background: #ffffff; color: #000000; }
   body { font-family: Helvetica, Arial, sans-serif;
@@ -93,8 +97,8 @@ INDEX_HTML = """<!doctype html>
 </style>
 </head>
 <body>
-<h1>IAJD Tandem Predictor</h1>
-<p class="sub">pKa (v9.1) + bioactivity (v14.0) + Tanimoto neighbor routing + 2D positional structural refinement</p>
+<h1>STRIDE</h1>
+<p class="sub">STructural Ranking + Informed Design Engine — pKa (v9.1) + bioactivity (v14.0) + Tanimoto neighbor routing + 2D positional structural refinement</p>
 
 <fieldset>
   <legend>Single SMILES</legend>
@@ -497,7 +501,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="IAJD tandem localhost HTTP server.")
+    ap = argparse.ArgumentParser(description="STRIDE localhost HTTP server.")
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8000)
     args = ap.parse_args()

@@ -1,5 +1,10 @@
 """
-app.py — Gradio entrypoint for the IAJD Tandem Predictor on Hugging Face Spaces.
+app.py — Gradio entrypoint for STRIDE on Hugging Face Spaces.
+
+STRIDE = STRuctural Ranking + Informed Design Engine: a tandem pKa +
+bioactivity predictor for ionizable amphiphilic Janus dendrimers (IAJDs),
+plus a beam-search proposer that suggests novel candidates steered by
+per-family SAR priors.
 
 Wraps `predict()` and `predict_batch()` from iajd_predict.py and renders the
 single-SMILES and multi-molecule batch flows that the localhost HTTP server
@@ -844,9 +849,9 @@ def batch_predict(file_obj, smiles_text: str, family_choice: str, neighbors: int
 
 def build_ui() -> gr.Blocks:
     intro = """
-# IAJD Tandem Predictor
+# STRIDE
 
-Predicts **pKa** and **bioactivity (log₁₀ total flux)** for ionizable amphiphilic Janus dendrimers from molecular input.
+**ST**ructural **R**anking + **I**nformed **D**esign **E**ngine. Predicts **pKa** and **bioactivity (log₁₀ total flux)** for ionizable amphiphilic Janus dendrimers from molecular input, and proposes novel IAJDs via beam search over structural mutations.
 
 | Property | Model | LOO MAE (95% bootstrap CI) |
 |---|---|---|
@@ -865,7 +870,7 @@ Predicts **pKa** and **bioactivity (log₁₀ total flux)** for ionizable amphip
 - *Propose better IAJDs* — beam search over single-step structural mutations of a seed
 """
 
-    with gr.Blocks(title="IAJD Tandem Predictor") as demo:
+    with gr.Blocks(title="STRIDE") as demo:
         gr.Markdown(intro)
         if not BUNDLE_OK:
             gr.Markdown(f"**Bundle load failed at startup.** {BUNDLE_ERR}")

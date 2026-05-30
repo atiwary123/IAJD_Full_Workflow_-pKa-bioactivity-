@@ -1,5 +1,8 @@
 """
-iajd_gui.py — Minimal Tkinter GUI for the IAJD tandem predictor.
+iajd_gui.py — Minimal Tkinter GUI for STRIDE.
+
+STRIDE = STRuctural Ranking + Informed Design Engine: the pKa + bioactivity
+tandem predictor for ionizable amphiphilic Janus dendrimers (IAJDs).
 
 Inputs:  SMILES (required), Family (optional dropdown).
 Outputs: pKa with 60% and 90% CIs, bioactivity with both CIs, nearest neighbors
@@ -106,7 +109,7 @@ def _result_text(r: dict) -> str:
 class IAJDApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
-        self.title("IAJD Tandem Predictor")
+        self.title("STRIDE")
         self.geometry("900x700")
 
         frm = ttk.Frame(self, padding=10)

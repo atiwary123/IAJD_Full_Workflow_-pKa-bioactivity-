@@ -1,4 +1,4 @@
-# IAJD tandem predictor — runtime deps for Hugging Face Spaces (Gradio SDK).
+# STRIDE — runtime deps for Hugging Face Spaces (Gradio SDK).
 gradio>=5.0,<6
 numpy<2
 pandas>=2.0,<2.3
