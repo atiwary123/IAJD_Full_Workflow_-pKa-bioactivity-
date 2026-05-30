@@ -72,23 +72,28 @@ def _attach_head(head_group: str) -> str:
 
 def assemble_ga_tris(head_group: str, linker_n: int, linkage: str,
                      tails: Tuple[str, str, str]) -> Optional[str]:
-    """3,4,5-tris(O-tail)-benzyl ester/amide-linker-piperazine_head."""
+    """3,4,5-tris(O-tail)-benzyl ester/amide-linker-piperazine_head.
+
+    Tails are alpha-first SMILES strings (alpha-C is the FIRST atom): every
+    position uses the `O(tail)` / `O{tail}` form so a branched tail like
+    `CC(CC)CCCC` (2-ethylhexyl) attaches via its alpha-CH2, preserving the
+    branching position relative to the ether O. Mixing alpha-last and
+    alpha-first forms across the three ring positions silently swaps in a
+    different branched isomer on round-trip (bug fixed 2026-05-30).
+    """
     head_body = _attach_head(head_group)
     if head_body is None or linker_n is None or linker_n < 1 or len(tails) != 3:
         return None
     chain = "C" * (max(linker_n, 1) - 1)
     link = "OC(=O)" if linkage == "ester" else "NC(=O)"
     t1, t2, t3 = tails
-    smi = f"{t1}Oc1cc(CO{link}{chain}{head_body})cc({t2})c1O{t3}"
-    # Wait: the t2/t3 attachment also needs O. Fix:
-    smi = f"{t1}Oc1cc(C{link[::-1] if False else ''}{link}{chain}{head_body})cc(O{t2})c1O{t3}"
-    # cleaner build:
     smi = (
-        f"{t1}Oc1cc("           # tail1-O-benzene-C
+        f"O({t1})"              # tail1-O attached as a branch off the first ring carbon
+        f"c1cc("
         f"C{link}"              # benzyl-OC(=O)/NC(=O)
         f"{chain}"              # linker (CH2)_{n-1}
         f"{head_body}"          # piperazine head
-        f")cc(O{t2})c1O{t3}"    # tails 2,3 on the ring
+        f")cc(O{t2})c1O{t3}"    # tails 2, 3 on the ring (alpha-first, consistent)
     )
     m = Chem.MolFromSmiles(smi)
     if m is None:
@@ -108,7 +113,12 @@ def assemble_pe_tris(head_group: str, linker_n: int, linkage: str,
 
 def assemble_sss_nonsym(head_group: str, linker_n: int, linkage: str,
                         tails: Tuple[str, str]) -> Optional[str]:
-    """3,5-bis(O-tail)-benzyl  linkage  linker  head."""
+    """3,5-bis(O-tail)-benzyl  linkage  linker  head.
+
+    Tails are alpha-first SMILES (alpha-C is the FIRST atom); see
+    assemble_ga_tris for why the `O({t1})` branch form is used on the first
+    ring carbon.
+    """
     head_body = _attach_head(head_group)
     if head_body is None or linker_n is None or linker_n < 1 or len(tails) != 2:
         return None
@@ -116,7 +126,8 @@ def assemble_sss_nonsym(head_group: str, linker_n: int, linkage: str,
     link = "OC(=O)" if linkage == "ester" else "NC(=O)"
     t1, t2 = tails
     smi = (
-        f"{t1}Oc1cc("
+        f"O({t1})"
+        f"c1cc("
         f"C{link}"
         f"{chain}"
         f"{head_body}"
@@ -172,7 +183,14 @@ class Library:
 
 def _extract_tails_from_smiles(smiles: str) -> List[str]:
     """Find each `c-O-(CH2)…` substituent on aromatic rings; return tail SMILES
-    (just the alkyl chain, no leading O)."""
+    rooted at the alpha-carbon (the CH2 directly bonded to the ether O).
+
+    The alpha-first form is REQUIRED for round-trip fidelity on branched tails
+    (e.g. 2-ethylhexyl `CC(CC)CCCC`): canonicalizing the isolated tail without
+    a root atom rewrites it as `CCCCC(C)CC`, which is the SAME free molecule
+    but moves the branch point relative to the eventual O attachment — yielding
+    a different isomer when the assembler glues O back on (bug fixed 2026-05-30).
+    """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return []
@@ -202,10 +220,14 @@ def _extract_tails_from_smiles(smiles: str) -> List[str]:
                 stack.append(ni)
         if tail_atoms:
             try:
-                sm = Chem.MolFragmentToSmiles(mol, atomsToUse=tail_atoms, canonical=True)
+                # rootedAtAtom=c0 forces the canonical SMILES to start at the
+                # alpha-C, so prepending `O` reattaches at the original site.
+                sm = Chem.MolFragmentToSmiles(
+                    mol, atomsToUse=tail_atoms, rootedAtAtom=c0, canonical=True,
+                )
                 m = Chem.MolFromSmiles(sm)
                 if m is not None and m.GetNumHeavyAtoms() >= 3:
-                    tails.append(Chem.MolToSmiles(m))
+                    tails.append(sm)
                     seen.update(tail_atoms)
             except Exception:
                 pass
@@ -306,7 +328,13 @@ def decompose_row(row: dict) -> Optional[Seed]:
 
 
 def _tail_modify(tail_smi: str, delta_c: int) -> Optional[str]:
-    """Add or remove CH2 from the end of the tail string."""
+    """Add or remove CH2 from the omega end of an alpha-first tail SMILES.
+
+    Returns the modified string verbatim (no canonicalization) so the alpha-C
+    stays at position 0 — required for the `O({tail})` assembler form to
+    reattach at the original branch position on branched tails (bug fixed
+    2026-05-30).
+    """
     m = Chem.MolFromSmiles(tail_smi)
     if m is None:
         return None
@@ -316,13 +344,12 @@ def _tail_modify(tail_smi: str, delta_c: int) -> Optional[str]:
     new_sm = tail_smi + ("C" * delta_c) if delta_c > 0 else tail_smi[:delta_c]
     if not new_sm:
         return None
-    try:
-        m2 = Chem.MolFromSmiles(new_sm)
-        if m2 is None:
-            return None
-        return Chem.MolToSmiles(m2)
-    except Exception:
+    # Validate the slice/append left a parseable SMILES (string slicing can
+    # cut a branch open if the omega end is inside `(...)`).
+    m2 = Chem.MolFromSmiles(new_sm)
+    if m2 is None:
         return None
+    return new_sm
 
 
 def humanize_mutation_tag(tag: str) -> str:
