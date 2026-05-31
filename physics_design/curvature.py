@@ -108,9 +108,9 @@ def spontaneous_curvature(profile: ProfileResult, lipid_name: str = "_default",
     # uses dP = P_L - P_N and z from the midplane; with that orientation the first
     # moment tau is negative for both DOPC and DOPE (DOPE far more so), so c0 = +tau/kappa
     # makes DOPE strongly negative and DOPC mildly negative, reproducing the benchmark.
-    # (The build-prompt's "-(1/kappa) integral z (p_L-p_N) dz" corresponds to the
-    # opposite (p_N-p_L) profile/z convention; the physics — DOPE<0, |DOPE|>>|DOPC| — is
-    # identical and is what the DOPE/DOPC gate validates.)
+    # (Verified 2026-05-31 from the saved profiles: tau_DOPC=-98.6, tau_DOPE=-228.7 ->
+    # c0_DOPC=-0.23, c0_DOPE=-0.53. A negated form gives the WRONG (positive) sign;
+    # stale +0.53 JSONs were from an earlier build before this convention was set.)
     c0_nm = (tau_N / kappa) * 1e-9
     R0 = (1.0 / c0_nm) if abs(c0_nm) > 1e-9 else float("inf")
     # convergence curve: tau integrated to a range of zmax
