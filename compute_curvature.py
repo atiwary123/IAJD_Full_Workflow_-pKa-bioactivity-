@@ -230,8 +230,9 @@ def characterize(lipid_name: str, *, n_per_leaflet: int, prod_ns: float,
     sysarr = build_atom_arrays(lip, n_lip, len(pos), ff)
     prof = compute_profile(workdir / "prod.xtc", workdir / "prod.gro", sysarr,
                            last_frac=last_frac, contour=contour)
-    # monolayer cutoff = headgroup plane + ~1 nm (membrane-water interface)
-    zmax = thick / 2.0 + 1.0
+    # monolayer cutoff = headgroup plane + ~1.5 nm: far enough to capture the full
+    # interfacial peak and reach the first-moment plateau, then into flat bulk water.
+    zmax = thick / 2.0 + 1.5
     cr = spontaneous_curvature(prof, lipid_name, zmax=zmax)
     rec["surface_tension_mNm"] = prof.surface_tension_mNm
     rec["gamma_global_mNm"] = prof.gamma_global_mNm
@@ -289,7 +290,7 @@ def _recompute_c0_from_npz(rec: Dict) -> Dict:
                          area_nm2=0.0)
     thick = rec.get("thickness_PP_nm", 3.7)
     cr = spontaneous_curvature(prof, rec.get("lipid", "_default"),
-                               zmax=thick / 2.0 + 1.0)
+                               zmax=thick / 2.0 + 1.5)
     rec["c0_nm_inv"] = cr.c0_nm_inv
     rec["tau_moment_bar_nm2"] = cr.tau_moment_bar_nm2
     rec["kappa_mono_J"] = cr.kappa_mono_J
