@@ -72,12 +72,15 @@ def gaff_parameterize(smiles: str, workdir: Path, net_charge: int) -> Dict:
     molf = workdir / "lig.mol"
     if not _rdkit_3d(smiles, molf, net_charge):
         return {"status": "rdkit_embed_failed"}
-    # antechamber: .mol -> .mol2 with GAFF atom types + AM1-BCC charges
+    # antechamber: .mol -> .mol2 with GAFF atom types + charges. AM1-BCC (sqm SCF) HANGS
+    # for ~130-atom flexible IAJDs; the Rg/SIZE criterion is dominated by GAFF bonded+vdw,
+    # not charge accuracy, so we use fast Gasteiger charges (-c gas). (AM1-BCC is preferable
+    # for the energetics-sensitive partitioning/solvation criteria — re-derive there.)
     mol2 = workdir / "lig.mol2"
     r = subprocess.run(AMBER + ["antechamber", "-i", str(molf), "-fi", "mdl",
-                                "-o", str(mol2), "-fo", "mol2", "-c", "bcc",
+                                "-o", str(mol2), "-fo", "mol2", "-c", "gas",
                                 "-nc", str(net_charge), "-s", "2", "-at", "gaff2"],
-                       cwd=str(workdir), capture_output=True, text=True, timeout=3600)
+                       cwd=str(workdir), capture_output=True, text=True, timeout=900)
     if not mol2.exists():
         return {"status": "antechamber_failed", "log": (r.stdout + r.stderr)[-2500:]}
     # acpype: mol2 -> GROMACS .top/.gro
