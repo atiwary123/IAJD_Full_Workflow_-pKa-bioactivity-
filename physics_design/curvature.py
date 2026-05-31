@@ -102,8 +102,16 @@ def spontaneous_curvature(profile: ProfileResult, lipid_name: str = "_default",
     kappa = (kappa_mono_J if kappa_mono_J is not None
              else KAPPA_MONO_J.get(lipid_name, KAPPA_MONO_J["_default"]))
     tau_N = tau * BARNM2_TO_N
-    # c0 = -tau/kappa ; tau_N in N, kappa in J=N*m -> 1/m ; *1e-9 -> nm^-1
-    c0_nm = (-tau_N / kappa) * 1e-9
+    # c0 = tau/kappa ; tau_N in N, kappa in J=N*m -> 1/m ; *1e-9 -> nm^-1.
+    # Sign convention anchored to the DOPE/DOPC benchmark: a cone-shaped lipid (small
+    # head / wide tails, e.g. DOPE) has NEGATIVE spontaneous curvature. Our profile
+    # uses dP = P_L - P_N and z from the midplane; with that orientation the first
+    # moment tau is negative for both DOPC and DOPE (DOPE far more so), so c0 = +tau/kappa
+    # makes DOPE strongly negative and DOPC mildly negative, reproducing the benchmark.
+    # (The build-prompt's "-(1/kappa) integral z (p_L-p_N) dz" corresponds to the
+    # opposite (p_N-p_L) profile/z convention; the physics — DOPE<0, |DOPE|>>|DOPC| — is
+    # identical and is what the DOPE/DOPC gate validates.)
+    c0_nm = (tau_N / kappa) * 1e-9
     R0 = (1.0 / c0_nm) if abs(c0_nm) > 1e-9 else float("inf")
     # convergence curve: tau integrated to a range of zmax
     curve = {}

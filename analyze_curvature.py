@@ -65,7 +65,7 @@ def main():
         except FileNotFoundError:
             print(f"{lip}: no profile found"); continue
         thick = meta.get("thickness_PP_nm", 3.7)
-        zmax = thick / 2.0 + 1.0
+        zmax = thick / 2.0 + 1.5
         cr = spontaneous_curvature(prof, lip, zmax=zmax)
         profs[lip] = (prof, meta, cr)
         print(f"\n===== {lip} (T={args.temp}) =====")
