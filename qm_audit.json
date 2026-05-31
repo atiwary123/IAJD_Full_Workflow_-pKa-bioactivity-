@@ -303,5 +303,20 @@
     "smiles_canonical": "CCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCC)c1",
     "elapsed_s": 259.0,
     "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 171.4,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCOC1=CC2=CC(OCC(CC)CCCC)=CCCCCCN3C=CC=CC=C4CCCCCN1CCCC(=O)OCCOCCOCCOc1cc(cc(c1OCCOCCOCCOC4)OCCOCCOCCOC(=O)CCC3)C(=O)OC2",
+    "elapsed_s": 912.8,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCC(CC)COc1cc(COC(=O)CCCN2CCN(CCOCCO)CC2)cc(OCC(CC)CCCC)c1OCC(CC)CCCC",
+    "elapsed_s": 179.5,
+    "error": null
   }
 ]

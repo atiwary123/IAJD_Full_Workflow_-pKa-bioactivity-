@@ -1,0 +1,60 @@
+{
+  "results": {
+    "DOPC_T300_curvature": {
+      "lipid": "DOPC",
+      "temp_K": 300.0,
+      "n_per_leaflet": 64,
+      "prod_ns": 40.0,
+      "contour": "ik",
+      "c0_nm_inv": -0.156115741044273,
+      "error": null,
+      "n_lipids": 128,
+      "n_water": 2503,
+      "md_status": "ok",
+      "apl_nm2": 0.6716171280062501,
+      "thickness_PP_nm": 3.830343750000001,
+      "surface_tension_mNm": -2.925445413272773,
+      "gamma_global_mNm": -2.9254454018160074,
+      "P_config_bar": [
+        -363.19386329986406,
+        -359.44622021296357,
+        -363.9593427457117
+      ],
+      "n_frames": 481,
+      "tau_moment_bar_nm2": 66.34918994381601,
+      "kappa_mono_J": 4.25e-20,
+      "R0_nm": -6.028709624619636,
+      "integration_zmax_nm": 2.9151718750000004,
+      "moment_curve_bar_nm2": {
+        "1.6": 85.02,
+        "1.8": -53.36,
+        "2.0": -164.79,
+        "2.2": -209.59,
+        "2.4": -112.59,
+        "2.6": -35.02,
+        "2.8": 30.65,
+        "3.0": 74.93,
+        "3.2": 115.09,
+        "3.4": 177.55,
+        "3.6": 181.27,
+        "3.8": 183.67,
+        "4.0": 200.08,
+        "4.2": 246.65,
+        "4.4": 335.56,
+        "4.6": 339.37,
+        "4.8": 146.76,
+        "5.0": -239.38,
+        "5.2": -532.73,
+        "5.4": -557.29
+      },
+      "water_baseline_bar": 113.64363081055845,
+      "tensionless": true,
+      "water_flat": false,
+      "c0_trusted": false,
+      "cpp": 0.6330941136893458,
+      "profile_npz": "/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/IAJD_master/bundles_caches/physics/design/DOPC_T300_profile.npz",
+      "elapsed_min": 23.5
+    }
+  },
+  "gate": {}
+}
