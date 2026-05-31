@@ -213,5 +213,55 @@
     "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC(=O)CCCN3CCCCC3)c(OCCOCCOCCOC(=O)Cc3ccccc3)c(OCCOCCOCCOC(=O)CCCN3CCCCC3)c2C(=O)NCc2cc(OCCOCCOCCOC(=O)CCCN3CCCCC3)c(OCCOCCOCCOC(=O)Cc3ccccc3)c(OCCOCCOCCOC(=O)CCCN3CCCCC3)c2C(=O)NCc2cc(OCCCCCCCCCCCC)cc(OCCCCCCCCCCCC)c2)cc(OCCCCCCCCCCCC)c1",
     "elapsed_s": 6980.2,
     "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCC)c1",
+    "elapsed_s": 191.9,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCC)c1OCCCCCCCCCCCC",
+    "elapsed_s": 280.0,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOC1=CCCCCCN2C=CC=CC=C3CCCCCN4CCCC(=O)OCCOCCOCCOc5cc(cc(c5OCCOCCOCCOC3)OCCOCCOCCOC(=O)CCC2)C(=O)OCC(=C1)C=C4OCCCCCCCCCCCC",
+    "elapsed_s": 962.6,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOCC(COCCCCCCCCCCCC)(COCCCCCCCCCCCC)COC(=O)CCCN1CCN(C)CC1",
+    "elapsed_s": 287.8,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOC1=CCCN(C)CCN2CCCC(=O)OCC(=C1)C=C2OCCCCCCCCCCCC",
+    "elapsed_s": 277.3,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCC)c1",
+    "elapsed_s": 120.4,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCOC1=CCCCCCN2C=CC=CC=C3CCCCCN4CCCC(=O)OCCOCCOCCOc5cc(cc(c5OCCOCCOCCOC3)OCCOCCOCCOC(=O)CCC2)C(=O)OCC(=C1)C=C4OCCCCCCCCCCC",
+    "elapsed_s": 1063.6,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCC(CC)COc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCC(CC)CCCC)c1OCC(CC)CCCC",
+    "elapsed_s": 144.6,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CC(C)CCCC(C)COc1cc(COC(=O)c2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)Cc3ccccc3)c(OCCOCCOCCOC(=O)CCCN(C)C)c2C(=O)OCc2cc(OCC(C)CCCC(C)C)cc(OCC(C)CCCC(C)C)c2)cc(OCC(C)CCCC(C)C)c1",
+    "elapsed_s": 2688.1,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOCC(COCCCCCCCCCCCC)(COCCCCCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+    "elapsed_s": 247.8,
+    "error": null
   }
 ]
