@@ -56,7 +56,9 @@ launch() {  # match-pattern  logfile  command...
 MD_ARGS=""
 [ "${QUICK:-0}" = "1" ] && MD_ARGS="--quick"
 
-launch "precompute_qm_parallel.py" "$LOGDIR/qm_$STAMP.log"     env QM_THREADS="${QM_THREADS:-2}" "$PY" precompute_qm_parallel.py --workers "${QM_WORKERS:-4}"
+# Thermal-safe defaults for the fanless M4 Air: 2 workers x 2 threads = 4 cores,
+# nice 10 so QM yields to the system. Bump via QM_WORKERS=… if on a cooled Mac.
+launch "precompute_qm_parallel.py" "$LOGDIR/qm_$STAMP.log"     nice -n 10 env QM_THREADS="${QM_THREADS:-2}" "$PY" precompute_qm_parallel.py --workers "${QM_WORKERS:-2}"
 if [ "${SKIP_MD:-0}" = "1" ]; then
   echo "[skip]  run_md_continuous.py (SKIP_MD=1 — MD deferred by request)"
 else
