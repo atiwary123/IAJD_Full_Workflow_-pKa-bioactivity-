@@ -1,0 +1,20 @@
+{
+  "name": "aniline_check",
+  "sel": "name P2",
+  "ref": "name WN",
+  "is_base": true,
+  "pH_values": [
+    4.0,
+    5.5
+  ],
+  "prod_ns": 1.0,
+  "points": [
+    {
+      "pH": 4.0,
+      "q": NaN,
+      "status": "ok"
+    }
+  ],
+  "apparent_pKa": NaN,
+  "error": null
+}
