@@ -93,6 +93,32 @@ def _atomic_write(records: list, audit: list) -> None:
     os.replace(tmpa, AUDIT_JSON)
 
 
+def _family_balanced(todo, bioact_xlsx):
+    """Reorder `todo` round-robin across families so QM coverage is DIVERSE
+    early (option C) — makes the correlation/ablation decisive after ~30-40
+    compounds instead of needing full coverage. Falls back to input order if
+    family info is unavailable."""
+    try:
+        df = pd.read_excel(bioact_xlsx)
+        fam = {}
+        for _, r in df.iterrows():
+            c = _canonical_smi(r.get("SMILES_canonical", ""))
+            if c:
+                fam.setdefault(c, str(r.get("family", "other")))
+    except Exception:
+        return todo
+    buckets = {}
+    for s in todo:
+        buckets.setdefault(fam.get(s, "other"), []).append(s)
+    out = []
+    maxlen = max((len(v) for v in buckets.values()), default=0)
+    for i in range(maxlen):
+        for f in sorted(buckets):
+            if i < len(buckets[f]):
+                out.append(buckets[f][i])
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--workers", type=int, default=4,
@@ -114,6 +140,7 @@ def main() -> int:
         for _, r in pd.read_csv(CACHE_CSV).iterrows():
             done[r["smiles_canonical"]] = dict(r)
     todo = [s for s in unique if s not in done]
+    todo = _family_balanced(todo, BIOACT_XLSX)   # option C: diversity-first order
     if args.limit:
         todo = todo[:args.limit]
 
