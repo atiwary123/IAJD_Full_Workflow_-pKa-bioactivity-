@@ -378,5 +378,45 @@
     "smiles_canonical": "CCCCC(CC)COc1cc(CNC(=O)CCCN2CCN(CCO)CC2)cc(OCC(CC)CCCC)c1OCC(CC)CCCC",
     "elapsed_s": 174.5,
     "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCCCCCOCC(COCCCCCCCCCCCCCCCC)(COCCCCCCCCCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+    "elapsed_s": 512.8,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCC(CC)COC1=CCCN(C)CCN2CCCC(=O)OCC(=C1)C=C2OCCCCC(C)CC",
+    "elapsed_s": 169.7,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCC(CC)COc1ccc(C(=O)OCCCCN2CCN(CCO)CC2)cc1OCC(CC)CCCC",
+    "elapsed_s": 152.9,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCCCCCCOC1=CCCCCCN2C=CC=CC=C3CCCCCN4CCCC(=O)OCCOCCOCCOc5cc(cc(c5OCCOCCOCCOC3)OCCOCCOCCOC(=O)CCC2)C(=O)OCC(=C1)C=C4OCCCCCCCCCCC",
+    "elapsed_s": 1346.2,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCC(CC)COc1cc(COC(=O)CCN2CCN(CCO)CC2)cc(OCC(CC)CCCC)c1OCC(CC)CCCC",
+    "elapsed_s": 153.1,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCOCC(COCCCCCCCC)(COCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+    "elapsed_s": 190.0,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCOC1=CCCN(C)CCN2CCCC(=O)OCC(=C1)C=C2OCCCCCCCCC",
+    "elapsed_s": 201.3,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCCCCCCCOc1cc(OCCCCCCCCCCCCC)cc(C(=O)OCCCCN2CCN(C)CC2)c1",
+    "elapsed_s": 194.0,
+    "error": null
   }
 ]
