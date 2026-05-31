@@ -1,1 +1,46 @@
-[]
+[
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCO)c(OCCOCCOCCO)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)cc(OCCCCCCCCCCCC)c1",
+    "error": "decompose_failed_skipped"
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCC)c1OCCCCCCCCCCCC",
+    "elapsed_s": 2106.2,
+    "error": null,
+    "audit": {
+      "smiles_canonical": "CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCC)c1OCCCCCCCCCCCC",
+      "states": {
+        "neutral": {
+          "workdir": "/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/physics_cache/md_runs/CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCC)c1OCCCC/neutral",
+          "n_molecules": 16,
+          "box_nm": [
+            6.0,
+            6.0,
+            6.0
+          ],
+          "prod_ns": 20.0,
+          "seed": 42,
+          "gmx_available": true,
+          "status": "ok",
+          "traj": "/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/physics_cache/md_runs/CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCC)c1OCCCC/neutral/prod.xtc",
+          "final_gro": "/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/physics_cache/md_runs/CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCC)c1OCCCC/neutral/prod.gro"
+        },
+        "prot": {
+          "workdir": "/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/physics_cache/md_runs/CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCC)c1OCCCC/prot",
+          "n_molecules": 16,
+          "box_nm": [
+            6.0,
+            6.0,
+            6.0
+          ],
+          "prod_ns": 20.0,
+          "seed": 43,
+          "gmx_available": true,
+          "status": "ok",
+          "traj": "/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/physics_cache/md_runs/CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCC)c1OCCCC/prot/prod.xtc",
+          "final_gro": "/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/physics_cache/md_runs/CCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCC)c1OCCCC/prot/prod.gro"
+        }
+      }
+    }
+  }
+]
