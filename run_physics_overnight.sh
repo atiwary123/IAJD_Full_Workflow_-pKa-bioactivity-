@@ -56,7 +56,7 @@ launch() {  # match-pattern  logfile  command...
 MD_ARGS=""
 [ "${QUICK:-0}" = "1" ] && MD_ARGS="--quick"
 
-launch "precompute_qm.py"        "$LOGDIR/qm_$STAMP.log"       "$PY" precompute_qm.py --resume --skip-correlations --checkpoint-every 1
+launch "precompute_qm_parallel.py" "$LOGDIR/qm_$STAMP.log"     env QM_THREADS="${QM_THREADS:-2}" "$PY" precompute_qm_parallel.py --workers "${QM_WORKERS:-4}"
 if [ "${SKIP_MD:-0}" = "1" ]; then
   echo "[skip]  run_md_continuous.py (SKIP_MD=1 — MD deferred by request)"
 else

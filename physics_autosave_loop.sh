@@ -23,7 +23,7 @@ PATHS=(
   qmmd_features_v14_train.npy
   docs/PREDICTIVE_PHYSICS_BUILD.md
   setup_physics_env.sh run_physics_overnight.sh physics_autosave_loop.sh
-  precompute_qm.py precompute_md.py run_md_continuous.py
+  precompute_qm.py precompute_qm_parallel.py precompute_md.py run_md_continuous.py
   qm_descriptors.py auto_retrain_watcher.py
   physics_features.py physics_cache_io.py physics_status.py
   train_qm_emulator.py train_md_emulator.py train_qmmd_head_only.py

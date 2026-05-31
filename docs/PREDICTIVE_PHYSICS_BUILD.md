@@ -143,7 +143,8 @@ each event to `auto_retrain_log.csv`.
 |---|---|
 | **Full overnight build (detached)** | `bash run_physics_overnight.sh` |
 | Smoke-scale overnight | `QUICK=1 bash run_physics_overnight.sh` |
-| QM only, resume | `./.venv/bin/python precompute_qm.py --resume --skip-correlations` |
+| QM only, resume (sequential) | `./.venv/bin/python precompute_qm.py --resume --skip-correlations` |
+| **QM parallel (recommended, ~3× faster)** | `QM_THREADS=2 ./.venv/bin/python precompute_qm_parallel.py --workers 4` |
 | MD only, production | `./.venv/bin/python run_md_continuous.py` |
 | MD only, smoke | `./.venv/bin/python run_md_continuous.py --quick --limit 1 --keep-trajectories` |
 | Retrain watcher | `./.venv/bin/python auto_retrain_watcher.py` |
@@ -171,9 +172,11 @@ each event to `auto_retrain_log.csv`.
 
 ## 7. Cost expectations
 
-- **QM:** ~9 min per compound (measured; ETKDGv3 + GFN-FF + GFN2/ALPB opt on
-  whole + head + tail, both states). ~255 left → roughly 1.5 days of wall-clock,
-  resumable.
+- **QM:** ~15–40 min per compound (measured; varies a lot with size / number of
+  protomers; ETKDGv3 + GFN-FF + GFN2/ALPB opt on whole + head + tail, both
+  states). Sequential ≈ 3–4 days for the ~255 remaining; **`precompute_qm_parallel.py`
+  (4 workers × 2 threads) ≈ 1–1.5 days** by using all 10 cores. Fully resumable.
+  Do NOT drop `n_confs` to go faster — that's a fidelity cut.
 - **MD:** production is 256 molecules × 2 µs per state × 2 states. This is hours
   per compound on CPU; full coverage of 268 remaining compounds is a multi-day
   background effort. The watcher improves the model incrementally as rows land,
