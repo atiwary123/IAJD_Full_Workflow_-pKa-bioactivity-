@@ -103,7 +103,7 @@ def lipid_template(lip: Lipid, *, dz: float = 0.27, splay: float = 0.13
 
 def build_bilayer_coords(lip: Lipid, n_per_leaflet: int, *,
                          apl_nm2: float = 0.66, midgap_nm: float = 0.35,
-                         water_pad_nm: float = 3.2
+                         water_pad_nm: float = 4.0
                          ) -> Tuple[np.ndarray, List[str], List[str], Tuple[float, float, float], float]:
     """Build bilayer bead coordinates (lipids only).
 
@@ -234,7 +234,7 @@ def read_gro(path: Path) -> Tuple[np.ndarray, List[str], List[str], Tuple[float,
 
 def build_system(lip: Lipid, workdir: Path, gmx_cmd: List[str], *,
                  n_per_leaflet: int = 64, apl_nm2: float = 0.66,
-                 water_per_lipid: float = 35.0, seed: int = 1,
+                 water_per_lipid: float = 45.0, seed: int = 1,
                  strip_core_waters: bool = True) -> Dict:
     """Build the solvated flat bilayer in `workdir`. Returns an info dict with the
     final .gro/.top paths and counts. Uses gmx solvate for water."""
