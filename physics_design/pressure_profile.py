@@ -154,14 +154,20 @@ class ProfileResult:
     contour: str = "ik"
 
 
-def _deposit(acc: np.ndarray, s: np.ndarray, zi: np.ndarray, zj: np.ndarray,
-             zmin: float, dz: float, contour: str = "ik", K: int = 10):
-    """Distribute each pair stress s onto the z grid.
+def _deposit(acc: np.ndarray, s: np.ndarray, zi: np.ndarray, dz_z: np.ndarray,
+             Lz: float, zmin: float, dz: float, contour: str = "ik", K: int = 10):
+    """Distribute each pair stress s onto the z grid along the MINIMUM-IMAGE z path.
+
+    The contour runs from z_i (t=0) to z_j = z_i - dz_z (t=1), where dz_z is the
+    minimum-image z separation (= (r_i-r_j)_z). Each sampled point is wrapped into
+    [-Lz/2, Lz/2] before binning, so a pair straddling the periodic z-boundary
+    deposits its stress along the SHORT path across the boundary (bulk water at the
+    box edge) rather than the long path through the membrane — fixing the spurious
+    water-region baseline.
 
     'harasima' : half at z_i, half at z_j (spiky; fast).
-    'ik'       : Irving-Kirkwood contour — s spread uniformly along the line from
-                 z_i to z_j, evaluated by K-point midpoint quadrature (smooth;
-                 the rigorous choice, matches GROMACS-LS in the planar limit).
+    'ik'       : Irving-Kirkwood — s spread uniformly along the path by K-point
+                 midpoint quadrature (smooth; the rigorous choice).
     """
     nb = acc.shape[0]
     if contour == "harasima":
@@ -170,8 +176,9 @@ def _deposit(acc: np.ndarray, s: np.ndarray, zi: np.ndarray, zj: np.ndarray,
     else:
         ts = (np.arange(K) + 0.5) / K          # midpoints of K sub-segments
         w = 1.0 / K
-    # z positions (npairs, len(ts))
-    zpos = zi[:, None] * (1.0 - ts)[None, :] + zj[:, None] * ts[None, :]
+    # z positions along the min-image path (npairs, len(ts)), wrapped into [-Lz/2,Lz/2]
+    zpos = zi[:, None] - ts[None, :] * dz_z[:, None]
+    zpos = ((zpos + 0.5 * Lz) % Lz) - 0.5 * Lz
     bins = np.floor((zpos - zmin) / dz).astype(np.int64)
     m = (bins >= 0) & (bins < nb)
     vals = np.broadcast_to((w * s)[:, None], zpos.shape)
@@ -277,7 +284,7 @@ def compute_profile(traj: Path, topol: Path, sysarr: AtomArrays, *,
             c12 = c12m[tix[ii], tix[jj]]
             qq = q[ii] * q[jj]
             f = _lj_rf_scalar(r, c6, c12, qq, eps_r, rc)
-            _add_pairs(acc_nb, Wframe, f, d, r, zprime[ii], zprime[jj],
+            _add_pairs(acc_nb, Wframe, f, d, r, zprime[ii], box_nm[2],
                        invA, zmin, dz, contour, ik_K)
 
         # ---- bonds ----
@@ -286,7 +293,7 @@ def compute_profile(traj: Path, topol: Path, sysarr: AtomArrays, *,
             d = _minimum_image(pos[ia] - pos[ib], box_nm)
             r = np.linalg.norm(d, axis=1)
             fb = -sysarr.bond_k * (r - sysarr.bond_r0)
-            _add_pairs(acc_bond, Wframe, fb, d, r, zprime[ia], zprime[ib],
+            _add_pairs(acc_bond, Wframe, fb, d, r, zprime[ia], box_nm[2],
                        invA, zmin, dz, contour, ik_K)
 
         # ---- reaction-field correction for EXCLUDED (bonded) charged pairs ----
@@ -300,7 +307,7 @@ def compute_profile(traj: Path, topol: Path, sysarr: AtomArrays, *,
             r = np.linalg.norm(d, axis=1)
             krf = 1.0 / (2.0 * rc ** 3)
             f_excl = (F_COULOMB / eps_r) * qqe * (-2.0 * krf * r)
-            _add_pairs(acc_nb, Wframe, f_excl, d, r, zprime[ea], zprime[eb],
+            _add_pairs(acc_nb, Wframe, f_excl, d, r, zprime[ea], box_nm[2],
                        invA, zmin, dz, contour, ik_K)
 
         # ---- angles (analytic forces -> central-force decomposition) ----
@@ -334,10 +341,11 @@ def compute_profile(traj: Path, topol: Path, sysarr: AtomArrays, *,
                          contour=contour)
 
 
-def _add_pairs(acc, Wframe, f, d, r, zi, zj, invA, zmin, dz, contour, K):
+def _add_pairs(acc, Wframe, f, d, r, zi, Lz, invA, zmin, dz, contour, K):
     """Add a batch of central pair forces (scalar f along d=r_a-r_b, |d|=r) to the
-    local profile `acc` (P_L-P_N stress via the chosen contour) and to the global
-    configurational virial diagonal `Wframe` (kJ/mol)."""
+    local profile `acc` (P_L-P_N stress via the min-image z contour) and to the
+    global configurational virial diagonal `Wframe` (kJ/mol). `zi` is the centered
+    z of the first atom; the partner's z is z_i - d_z (min image)."""
     fr = f / r
     wxx = fr * d[:, 0] ** 2
     wyy = fr * d[:, 1] ** 2
@@ -346,7 +354,7 @@ def _add_pairs(acc, Wframe, f, d, r, zi, zj, invA, zmin, dz, contour, K):
     Wframe[1] += wyy.sum()
     Wframe[2] += wzz.sum()
     s = (0.5 * (wxx + wyy) - wzz) * invA
-    _deposit(acc, s, zi, zj, zmin, dz, contour, K)
+    _deposit(acc, s, zi, d[:, 2], Lz, zmin, dz, contour, K)
 
 
 def _accumulate_angles(acc, Wframe, pos, box_nm, zprime, angles, cos0, kk, invA,
@@ -386,10 +394,12 @@ def _accumulate_angles(acc, Wframe, pos, box_nm, zprime, angles, cos0, kk, invA,
     MtM += 1e-9 * np.eye(3)[None, :, :]
     a = np.linalg.solve(MtM, MtF)                    # (n_ang,3): a_ij,a_ik,a_jk
 
-    # each central pair contributes like a normal pair force of scalar a along dvec
+    # each central pair contributes like a normal pair force of scalar a along
+    # dvec = r_pa - r_pb (so the contour partner z_pb = z_pa - dvec_z is correct).
+    Lz = box_nm[2]
     for col, (pa, pb, dvec, dist) in enumerate([
-            (i, j, rij, nij), (i, k, rik, nik), (j, k, rkj, nkj)]):
-        _add_pairs(acc, Wframe, a[:, col], dvec, dist, zprime[pa], zprime[pb],
+            (i, j, rij, nij), (i, k, rik, nik), (j, k, -rkj, nkj)]):
+        _add_pairs(acc, Wframe, a[:, col], dvec, dist, zprime[pa], Lz,
                    invA, zmin, dz, contour, K)
 
 

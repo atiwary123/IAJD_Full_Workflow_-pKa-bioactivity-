@@ -30,6 +30,9 @@ PATHS=(
   retrain_with_physics.py train_v15_physics_ml.py adaptive_stacker.py
   head_area_3d.py head_area_ensemble.py extend_caches.py
   martini requirements-offline.txt
+  physics_design compute_curvature.py analyze_curvature.py
+  docs/PHYSICS_DESIGN_MODULE_B.md docs/PHYSICS_DESIGN_BUILD_PROMPT.md
+  physics_guard.sh physics_guard.log
 )
 
 echo "[autosave] loop start $(date)  branch=$BRANCH  interval=${INTERVAL}s"
