@@ -1,0 +1,77 @@
+[
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCO)c(OCCOCCOCCO)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 497.4,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCO)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCO)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 420.2,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCO)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 666.7,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCO)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 468.1,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)Cc3ccccc3)c(OCCOCCOCCOC(=O)Cc3ccccc3)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 1296.6,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC(=O)Cc3ccccc3)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)Cc3ccccc3)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 1670.1,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)Cc3ccccc3)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 685.7,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCO)c(OCCOCCOCCO)c2C(=O)NCc2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCO)c(OCCOCCOCCO)c2C(=O)NCc2cc(OCCCCCCCCCCCC)cc(OCCCCCCCCCCCC)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 3314.1,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCO)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCO)c2C(=O)NCc2cc(OCCOCCOCCO)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCO)c2C(=O)NCc2cc(OCCCCCCCCCCCC)cc(OCCCCCCCCCCCC)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 3552.3,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCO)c2C(=O)NCc2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCO)c2C(=O)NCc2cc(OCCCCCCCCCCCC)cc(OCCCCCCCCCCCC)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 1268.9,
+    "error": "neutral_xtb_failed"
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCO)c(OCCOCCOCCOC(=O)CCCN(C)C)c2C(=O)NCc2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCO)c(OCCOCCOCCOC(=O)CCCN(C)C)c2C(=O)NCc2cc(OCCCCCCCCCCCC)cc(OCCCCCCCCCCCC)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 1258.7,
+    "error": "neutral_xtb_failed"
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)CCCN(C)C)c2C(=O)NCc2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)CCCN(C)C)c2C(=O)NCc2cc(OCCCCCCCCCCCC)cc(OCCCCCCCCCCCC)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 3722.4,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)Cc3ccccc3)c(OCCOCCOCCOC(=O)Cc3ccccc3)c2C(=O)NCc2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)Cc3ccccc3)c(OCCOCCOCCOC(=O)Cc3ccccc3)c2C(=O)NCc2cc(OCCCCCCCCCCCC)cc(OCCCCCCCCCCCC)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 1290.9,
+    "error": "neutral_xtb_failed"
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC(=O)Cc3ccccc3)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)Cc3ccccc3)c2C(=O)NCc2cc(OCCOCCOCCOC(=O)Cc3ccccc3)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)Cc3ccccc3)c2C(=O)NCc2cc(OCCCCCCCCCCCC)cc(OCCCCCCCCCCCC)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 1288.6,
+    "error": "neutral_xtb_failed"
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)Cc3ccccc3)c2C(=O)NCc2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)Cc3ccccc3)c2C(=O)NCc2cc(OCCCCCCCCCCCC)cc(OCCCCCCCCCCCC)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 1284.3,
+    "error": "neutral_xtb_failed"
+  }
+]

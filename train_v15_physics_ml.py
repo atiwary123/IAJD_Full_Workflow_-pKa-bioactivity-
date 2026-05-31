@@ -52,6 +52,14 @@ PHYSICS_COLS = [
     "cpp_geometric", "lamellar_d_nm", "logKp_membrane",
     "protonation_endosome", "protonation_cytosol",
     "endosomal_escape_score", "cmc_log10_molar", "hlb_griffin",
+    # W-A/W-B/W-C grounded extensions — real QM + MD-derived columns. NaN
+    # passthrough downstream; the Ridge re-fit absorbs scale differences.
+    "md_a_head_prot_nm2", "md_delta_a_head_nm2",
+    "md_cpp_prot", "md_delta_cpp",
+    "md_bilayer_thick_nm", "md_order_param",
+    "qm_q_ionizableN", "qm_dipole_D",
+    "qm_dGsolv_kJmol", "qm_homo_lumo_eV",
+    "dG_escape_helfrich",
 ]
 
 
@@ -83,11 +91,36 @@ def _physics_matrix(df: pd.DataFrame, pka_lookup: dict) -> np.ndarray:
         linker_n = int(r["linker_length"]) if pd.notna(r.get("linker_length")) else None
         n_chains = 3 if "Tris" in str(r.get("family", "")) else 2
         head_group = r.get("head_group") if pd.notna(r.get("head_group")) else None
+        # Pull MD/QM inputs (real or NaN) from physics_cache_io so the
+        # Helfrich-form escape is enabled where MD data is cached.
+        try:
+            from physics_cache_io import load_physics
+            pr = load_physics(str(smi), head_group=head_group,
+                               pka=pka if np.isfinite(pka) else None)
+            md_c0  = pr.md.get("md_c0_spontaneous", float("nan"))
+            md_t   = pr.md.get("md_bilayer_thick_nm", float("nan"))
+            md_a_p = pr.md.get("md_a_head_prot_nm2", float("nan"))
+        except Exception:
+            md_c0 = md_t = md_a_p = float("nan")
+            pr = None
         feats = compute_all_physics_features(
             str(smi), pka=pka, linker_length=linker_n,
             n_tail_chains=n_chains, chain_avg_carbons=10.0,
             head_group=head_group,
+            md_c0_spontaneous=md_c0,
+            md_bilayer_thick_nm=md_t,
+            md_a_head_prot_nm2=md_a_p,
         )
+        # Merge the W-A/W-B columns the new PHYSICS_COLS schema expects.
+        if pr is not None:
+            for k in ("md_a_head_prot_nm2", "md_delta_a_head_nm2",
+                      "md_cpp_prot", "md_delta_cpp",
+                      "md_bilayer_thick_nm", "md_order_param"):
+                feats[k] = pr.md.get(k, float("nan"))
+            for k in ("qm_q_ionizableN", "qm_dipole_D",
+                      "qm_dGsolv_kJmol", "qm_homo_lumo_eV"):
+                feats[k] = pr.qm.get(k, float("nan"))
+            feats["dG_escape_helfrich"] = pr.dG_escape_helfrich
         rows.append({k: feats.get(k, np.nan) for k in PHYSICS_COLS})
     print(f"  rows without real pKa: {n_nan_pka}/{len(df)}", flush=True)
     X = pd.DataFrame(rows)[PHYSICS_COLS].values.astype(float)

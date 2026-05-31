@@ -1,0 +1,12 @@
+ts,qm_rows,md_rows,delta_qm,delta_md,label,build_qmmd_block_ok,train_qmmd_head_ok,qmmd_cv_mae,train_qm_emulator_ok,train_md_emulator_ok
+2026-05-30T19:12:54,8,0,8,0,qm+8/md+0,True,True,0.5969,True,False
+2026-05-30T19:40:47,8,2,0,2,qm+0/md+2,True,True,0.5969,True,True
+2026-05-30T20:06:02,9,2,1,0,qm+1/md+0,True,True,0.5946,True,True
+2026-05-30T21:06:16,10,2,1,0,qm+1/md+0,True,True,0.5946,True,True
+2026-05-30T21:26:30,11,2,1,0,qm+1/md+0,True,True,0.5946,True,True
+2026-05-30T21:46:45,12,2,1,0,qm+1/md+0,True,True,0.5946,True,True
+2026-05-30T22:47:06,13,2,1,0,qm+1/md+0,True,True,0.5946,True,True
+2026-05-30T23:07:23,14,2,1,0,qm+1/md+0,True,True,0.5946,True,True
+2026-05-30T23:32:38,15,2,1,0,qm+1/md+0,True,True,0.5946,True,True
+2026-05-30T23:52:53,16,2,1,0,qm+1/md+0,True,True,0.5946,True,True
+2026-05-31T00:18:07,16,3,0,1,qm+0/md+1,True,True,0.5946,True,True

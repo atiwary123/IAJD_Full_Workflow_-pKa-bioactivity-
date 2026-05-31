@@ -1,0 +1,45 @@
+# IAJD predictive-physics offline (Mac, never shipped to HF Space).
+#
+# These deps drive the QM (xTB) and CG-MD (MARTINI 3) precompute pipelines
+# that build qm_cache + md_cache. The Space-runtime requirements.txt stays
+# light; emulators + caches are shipped via bundles_caches/physics/.
+#
+# Install with:
+#   conda create -n iajd-phys python=3.11
+#   conda activate iajd-phys
+#   conda install -c conda-forge gromacs="2024.*" xtb tblite xtb-python crest \
+#                                rdkit numpy pandas scipy scikit-learn xgboost \
+#                                joblib mdanalysis pyarrow matplotlib
+#   pip install vermouth        # martinize2 (atomistic→MARTINI helper)
+
+# Core scientific stack (pinned to match Space runtime where relevant).
+numpy<2
+pandas>=2.0,<2.3
+scipy>=1.10
+scikit-learn>=1.3,<1.7
+xgboost>=2.0,<3.0
+joblib>=1.3
+rdkit>=2024.3.5
+openpyxl>=3.1
+
+# Storage / I/O for caches.
+pyarrow>=14.0
+
+# MD trajectory analysis (W-B observables extraction).
+mdanalysis>=2.6
+
+# MARTINI 3 atomistic→CG conversion helper.
+vermouth>=0.10
+
+# Plotting for eval / figures.
+matplotlib>=3.7
+
+# xTB Python bindings (optional — driver also shells out to xtb).
+# Conda-forge wheel only on Apple Silicon.
+# xtb-python>=22.1     # pip install only via wheels; prefer conda channel
+
+# Notes on binaries (installed via conda, not pip):
+#   - xtb 6.7.1+         GFN2-xTB / GFN-FF, ALPB(water) solvation
+#   - tblite 0.3.0+      light-binding electronic structure
+#   - crest 3.0+         conformer ensemble generation (CREGEN/NMR-RMSD)
+#   - gromacs 2024.x     CG-MD engine for MARTINI 3 self-assembly

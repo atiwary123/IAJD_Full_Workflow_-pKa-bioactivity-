@@ -155,23 +155,66 @@ def henderson_hasselbalch_fraction(pka: float, ph: float = 5.5) -> float:
 
 
 def endosomal_escape_score(pka: float, cpp: float,
-                            ph_endosome: float = 5.5, ph_cytosol: float = 7.4) -> float:
-    """Composite escape score.
+                            ph_endosome: float = 5.5, ph_cytosol: float = 7.4,
+                            *, mode: str = "auto",
+                            md_c0_spontaneous: Optional[float] = None,
+                            bilayer_thick_nm: Optional[float] = None,
+                            a_head_nm2: Optional[float] = None) -> float:
+    """Composite endosomal-escape score.
 
-    The "proton sponge" / membrane-disruption picture:
-      1. Endosomal acidification protonates the head (Δprotonation).
-      2. Protonation increases head area → CPP shifts AWAY from 1 (lamellar)
-         toward 0.5 (micellar) or > 1 (inverted hexagonal), destabilizing the
-         endosomal membrane.
-      3. |CPP - 1| × Δprotonation approximates fusogenic potential.
+    Two forms are supported, selected by `mode`:
+
+      mode="helfrich"  (preferred, when MARTINI MD provides md_c0_spontaneous):
+        ΔG_escape ≈ ½ · κ_b · (c_prot − c_neutral)² · Δprotonation
+                 = ½ · (t² / a_head) · md_c0² · Δprot
+        — Helfrich/Evans-Skalak bending-energy form. κ_b ≈ t²/a in k_BT units
+          (see bending_modulus_kBT). Inputs:
+            md_c0_spontaneous (1/nm) — spontaneous-curvature shift on protonation
+                                       from MARTINI MD (W-B). REAL, not |cpp-1|.
+            bilayer_thick_nm        — measured CG-MD bilayer thickness.
+            a_head_nm2              — measured CG-MD area per head (prot state).
+          NaN-passthrough if any of those three is missing — never fall through
+          to a constant default.
+
+      mode="cpp_legacy"  (kept for ablation against the old heuristic):
+        |CPP − 1| × Δprotonation
+        — same formula as before; CPP must be the protonated-state CPP from
+          compute_cpp/physics_features.
+
+      mode="auto"  (default): uses Helfrich when all three MD inputs are
+        finite, else falls back to cpp_legacy. The legacy fallback preserves
+        backwards-compatible behavior for compounds whose MD cache is missing.
+
+    No-proxy: all numeric inputs are required for the chosen mode; missing
+    inputs return NaN. Callers can route the NaN through XGBoost's default
+    branch in Block D'.
     """
     f_endo = henderson_hasselbalch_fraction(pka, ph_endosome)
     f_cyto = henderson_hasselbalch_fraction(pka, ph_cytosol)
-    if not (np.isfinite(f_endo) and np.isfinite(f_cyto) and np.isfinite(cpp)):
+    if not (np.isfinite(f_endo) and np.isfinite(f_cyto)):
         return float("nan")
-    delta_protonation = f_endo - f_cyto       # 0 to 1
-    cpp_departure = abs(cpp - 1.0)            # destabilization magnitude
-    return ESCAPE_GAIN * delta_protonation * cpp_departure
+    delta_protonation = f_endo - f_cyto
+
+    helfrich_ok = (md_c0_spontaneous is not None
+                    and bilayer_thick_nm is not None
+                    and a_head_nm2 is not None
+                    and np.isfinite(md_c0_spontaneous)
+                    and np.isfinite(bilayer_thick_nm)
+                    and np.isfinite(a_head_nm2)
+                    and bilayer_thick_nm > 0 and a_head_nm2 > 0)
+
+    if mode == "helfrich" or (mode == "auto" and helfrich_ok):
+        if not helfrich_ok:
+            return float("nan")
+        kappa_kBT = (bilayer_thick_nm ** 2) / a_head_nm2
+        return float(ESCAPE_GAIN * 0.5 * kappa_kBT
+                      * (md_c0_spontaneous ** 2) * delta_protonation)
+
+    # cpp_legacy fallback
+    if not np.isfinite(cpp):
+        return float("nan")
+    cpp_departure = abs(cpp - 1.0)
+    return float(ESCAPE_GAIN * delta_protonation * cpp_departure)
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -304,7 +347,10 @@ def compute_all_physics_features(mol_or_smiles, *,
                                   v_tail_nm3: Optional[float] = None,
                                   l_tail_nm: Optional[float] = None,
                                   a_head_nm2: Optional[float] = None,
-                                  head_group: Optional[str] = None) -> Dict[str, float]:
+                                  head_group: Optional[str] = None,
+                                  md_c0_spontaneous: Optional[float] = None,
+                                  md_bilayer_thick_nm: Optional[float] = None,
+                                  md_a_head_prot_nm2: Optional[float] = None) -> Dict[str, float]:
     """Compute all physics-grounded descriptors for a SMILES (or Mol).
 
     No-proxy policy: every input must be real or NaN. Defaults that would
@@ -390,8 +436,24 @@ def compute_all_physics_features(mol_or_smiles, *,
         out["protonation_endosome"] = henderson_hasselbalch_fraction(pka, 5.5)
         out["protonation_cytosol"] = henderson_hasselbalch_fraction(pka, 7.4)
         if np.isfinite(out["cpp_geometric"]):
+            # Auto-mode: Helfrich form when MD inputs are present, else
+            # cpp_legacy. Both forms are exposed for ablation.
             out["endosomal_escape_score"] = endosomal_escape_score(
-                pka, out["cpp_geometric"]
+                pka, out["cpp_geometric"],
+                mode="auto",
+                md_c0_spontaneous=md_c0_spontaneous,
+                bilayer_thick_nm=md_bilayer_thick_nm,
+                a_head_nm2=md_a_head_prot_nm2,
+            )
+            out["endosomal_escape_score_helfrich"] = endosomal_escape_score(
+                pka, out["cpp_geometric"],
+                mode="helfrich",
+                md_c0_spontaneous=md_c0_spontaneous,
+                bilayer_thick_nm=md_bilayer_thick_nm,
+                a_head_nm2=md_a_head_prot_nm2,
+            )
+            out["endosomal_escape_score_cpp_legacy"] = endosomal_escape_score(
+                pka, out["cpp_geometric"], mode="cpp_legacy",
             )
 
     # Self-assembly thermodynamics

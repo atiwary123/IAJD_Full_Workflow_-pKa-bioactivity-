@@ -73,5 +73,9 @@ agile_embeddings_*.npy
 # Local physics scratch
 physics_pka_v1/
 
+# Physics MD working dir — large transient GROMACS trajectories, deleted after
+# observable extraction. Not source; caches live in bundles_caches/physics/.
+physics_cache/
+
 # pytest cache
 .pytest_cache/

@@ -26,8 +26,11 @@ Architecture:
 """
 from __future__ import annotations
 import pickle, warnings
+from pathlib import Path
 import numpy as np
 import xgboost as xgb
+
+ROOT = Path(__file__).resolve().parent
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import StratifiedKFold
@@ -80,6 +83,10 @@ def adaptive_blend(head_preds, novelty, weights_at_zero, k_decay, k_grow):
         'admet': 'gnn',
         'agile': 'physics',
         'cpp': 'physics',
+        # MD/QM physics head (Block D'): xTB charges + MARTINI a_head/CPP +
+        # Helfrich escape. First-principles physics, designed to extrapolate
+        # outside the analog-similarity regime, so it grows with novelty.
+        'qmmd': 'physics',
     }
 
     raw_weights = {}
@@ -174,6 +181,21 @@ def build_adaptive_stacker():
                   min_child_weight=4, subsample=0.8, colsample_bytree=0.7,
                   reg_lambda=3.0, random_state=42, n_jobs=1)
 
+    # QM/MD physics head (Block D' from W-A/W-B/W-C). Pulled via
+    # physics_cache_io.load_physics so the same code-path serves training and
+    # inference. Falls through to NaN where the cache/emulator are missing.
+    X_qmmd_path = ROOT / 'qmmd_features_v14_train.npy'
+    QMMD_HP = dict(n_estimators=200, max_depth=3, learning_rate=0.06,
+                    min_child_weight=4, subsample=0.85, colsample_bytree=0.7,
+                    reg_lambda=3.0, random_state=42, n_jobs=1)
+    if X_qmmd_path.exists():
+        X_qmmd = np.load(X_qmmd_path)
+        print(f"  QM/MD physics block: shape={X_qmmd.shape}")
+    else:
+        X_qmmd = None
+        print(f"  QM/MD physics block: not found ({X_qmmd_path.name}) — "
+              f"build via build_qmmd_block_for_training() first")
+
     # Compute training fingerprints for novelty scoring
     try:
         fpgen = AllChem.GetMorganGenerator(radius=3, fpSize=2048)
@@ -209,6 +231,7 @@ def build_adaptive_stacker():
 
     agile_loo = np.full(n, np.nan)
     cpp_loo = np.full(n, np.nan)
+    qmmd_loo = np.full(n, np.nan) if X_qmmd is not None else None
     for tr, te in skf.split(X_cpp, fam_labels):
         # AGILE
         sc = StandardScaler().fit(agile_emb[tr])
@@ -220,9 +243,15 @@ def build_adaptive_stacker():
         # CPP
         m2 = xgb.XGBRegressor(**CPP_HP).fit(X_cpp[tr], y_all[tr], verbose=False)
         cpp_loo[te] = m2.predict(X_cpp[te])
+        # QM/MD
+        if X_qmmd is not None:
+            m3 = xgb.XGBRegressor(**QMMD_HP).fit(X_qmmd[tr], y_all[tr], verbose=False)
+            qmmd_loo[te] = m3.predict(X_qmmd[te])
 
     print(f"  AGILE LOO MAE: {mean_absolute_error(y_all, agile_loo):.4f}")
     print(f"  CPP LOO MAE:   {mean_absolute_error(y_all, cpp_loo):.4f}")
+    if qmmd_loo is not None and np.isfinite(qmmd_loo).all():
+        print(f"  QM/MD LOO MAE: {mean_absolute_error(y_all, qmmd_loo):.4f}")
 
     # ── Fit adaptive weights ──
     print("\nFitting adaptive weights...")
@@ -234,6 +263,8 @@ def build_adaptive_stacker():
         'agile': agile_loo,
         'cpp': cpp_loo,
     }
+    if qmmd_loo is not None:
+        head_loo['qmmd'] = qmmd_loo
 
     base_weights, k_decay, k_grow, opt_mae = fit_adaptive_weights(
         head_loo, y_all, novelty_loo)
@@ -309,10 +340,16 @@ def build_adaptive_stacker():
     agile_head = xgb.XGBRegressor(**AGILE_HP).fit(agile_pca_data, y_all, verbose=False)
 
     cpp_head = xgb.XGBRegressor(**CPP_HP).fit(X_cpp, y_all, verbose=False)
+    qmmd_head = None
+    if X_qmmd is not None:
+        qmmd_head = xgb.XGBRegressor(**QMMD_HP).fit(X_qmmd, y_all, verbose=False)
 
     # Save bundle
+    stack_features = ["direct", "analog", "lion", "admet", "agile", "cpp"]
+    if X_qmmd is not None:
+        stack_features.append("qmmd")
     bundle = {
-        "version": "adaptive_stacker_v1",
+        "version": "adaptive_stacker_v2" if X_qmmd is not None else "adaptive_stacker_v1",
         "direct_head": direct_head,
         "lion_head": lion_head,
         "admet_head": admet_head,
@@ -320,6 +357,7 @@ def build_adaptive_stacker():
         "agile_pca": agile_pca,
         "agile_scaler": agile_scaler,
         "cpp_head": cpp_head,
+        "qmmd_head": qmmd_head,
         "block_lion": (BLOCK_LION.start, BLOCK_LION.stop),
         "block_admet": (BLOCK_ADMET.start, BLOCK_ADMET.stop),
         "adaptive_params": {
@@ -327,13 +365,14 @@ def build_adaptive_stacker():
             "k_decay": float(k_decay),
             "k_grow": float(k_grow),
         },
-        "stack_features": ["direct", "analog", "lion", "admet", "agile", "cpp"],
+        "stack_features": stack_features,
         "train_fps": train_fps,
         "train_metrics": {
             "n_train": n,
             "static_4head_loo_mae": round(static_mae, 4),
-            "adaptive_6head_loo_mae": round(adaptive_mae, 4),
+            "adaptive_loo_mae": round(adaptive_mae, 4),
             "improvement": round(static_mae - adaptive_mae, 4),
+            "has_qmmd_head": qmmd_head is not None,
         },
     }
 
@@ -345,5 +384,55 @@ def build_adaptive_stacker():
     return bundle
 
 
+def build_qmmd_block_for_training(smiles_list=None, families_list=None,
+                                    out_path=None):
+    """Materialize the qmmd_features_v14_train.npy feature block from the
+    physics caches. Call this once before retraining the stacker so the
+    qmmd head trains on the cached QM/MD values.
+
+    Schema: one row per training compound. Columns = physics_cache_io
+    BLOCK_DPRIME_KEYS (14 features). NaN where the cache/emulator is missing.
+    """
+    if smiles_list is None or families_list is None:
+        # Load from the v14 bundle.
+        with open('IAJD_master/bundles_caches/bioact_v14_bundle.pkl', 'rb') as f:
+            b = pickle.load(f)
+        smiles_list = list(b["smis_train"])
+        families_list = list(b["families_train"])
+    from physics_cache_io import load_physics, BLOCK_DPRIME_KEYS
+    # Need the row dict for head_group + pKa, so re-load the bioact xlsx.
+    import pandas as pd
+    df_bio = pd.read_excel(ROOT / 'IAJD_master/datasets/IAJD_Bioact_v13_clean.xlsx')
+    bio_by_smi = {}
+    for _, r in df_bio.iterrows():
+        m = Chem.MolFromSmiles(r.get("SMILES_canonical") or "")
+        if m is None:
+            continue
+        bio_by_smi[Chem.MolToSmiles(m)] = r.to_dict()
+    n = len(smiles_list)
+    X = np.full((n, len(BLOCK_DPRIME_KEYS)), np.nan)
+    for i, smi in enumerate(smiles_list):
+        row = bio_by_smi.get(smi, {})
+        head = row.get("head_group")
+        pka = row.get("pKa") or row.get("pKa_paper")
+        try:
+            pka_v = float(pka) if pka is not None and not pd.isna(pka) else None
+        except (TypeError, ValueError):
+            pka_v = None
+        rec = load_physics(smi, head_group=head, pka=pka_v)
+        flat = rec.as_block_dprime()
+        for j, k in enumerate(BLOCK_DPRIME_KEYS):
+            X[i, j] = float(flat.get(k, float("nan")))
+    out_path = out_path or (ROOT / "qmmd_features_v14_train.npy")
+    np.save(out_path, X)
+    print(f"Saved qmmd training block: {out_path}  shape={X.shape}  "
+          f"NaN fraction={np.isnan(X).mean():.2%}")
+    return X
+
+
 if __name__ == "__main__":
-    bundle = build_adaptive_stacker()
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "--build-qmmd-block":
+        build_qmmd_block_for_training()
+    else:
+        bundle = build_adaptive_stacker()
