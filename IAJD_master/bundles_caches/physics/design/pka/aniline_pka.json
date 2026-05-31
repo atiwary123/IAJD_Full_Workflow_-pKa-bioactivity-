@@ -55,8 +55,16 @@
       "pH": 6.5,
       "q": 0.8666666666666667,
       "status": "ok"
+    },
+    {
+      "pH": 7.0,
+      "q": 0.9666666666666667,
+      "status": "ok"
     }
   ],
-  "apparent_pKa": NaN,
-  "error": null
+  "apparent_pKa": 4.828236106954686,
+  "error": null,
+  "hill_n": 0.5188612364946156,
+  "fit_rmse": 0.026401461326547488,
+  "elapsed_min": 229.2
 }

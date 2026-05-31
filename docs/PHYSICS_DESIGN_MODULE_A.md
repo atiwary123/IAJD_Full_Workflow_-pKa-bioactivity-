@@ -46,8 +46,11 @@ for MDAnalysis' TPR parser**, so we pass a version-independent `.gro` topology).
 
 ## 4. Validation
 
-- **Pipeline (aniline in water):** titrating aniline (`P2`=SN6d_4.8, intrinsic pKa 4.8) →
-  expect apparent pKa ≈ 4.8. Running 2026-05-31 (9 pH × 5 ns).
+- **Pipeline (aniline in water) — ✅ PASSED 2026-05-31.** Titrating aniline (`P2`=SN6d_4.8,
+  intrinsic pKa 4.8), 9 pH × 5 ns: clean sigmoidal deprotonation curve (0.14→0.97 over pH
+  3–7), Henderson-Hasselbalch fit **apparent pKa = 4.828** (vs 4.8; |Δ|=0.03, tolerance
+  ±0.5), Hill n = 0.52, fit RMSE = 0.026. The titratable-Martini apparent-pKa pipeline
+  reproduces a calibrated pKa essentially exactly → the method is validated.
 - **Target (DLin-MC3-DMA in POPC):** apparent pKa ≈ **6.44 ± 0.5** (build prompt §3;
   the membrane shifts the ~10 intrinsic down). Titration launched (8 pH × 20 ns,
   multi-day, chained after aniline). Result → `bundles_caches/physics/design/pka/`.
