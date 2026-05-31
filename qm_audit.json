@@ -483,5 +483,70 @@
     "smiles_canonical": "CCCCC(CC)COc1cc(COC(=O)CN2CCN(CCO)CC2)cc(OCC(CC)CCCC)c1OCC(CC)CCCC",
     "elapsed_s": 214.9,
     "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOCC(COCCCCCCCCCCCC)(COCCCCCCCCCCCC)COC(=O)CCCN1CCN(CCOCCO)CC1",
+    "elapsed_s": 317.9,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCC)c1",
+    "elapsed_s": 78.5,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCC(CC)COc1cc(COC(=O)CN2CCN(CCOCCO)CC2)cc(OCC(CC)CCCC)c1OCC(CC)CCCC",
+    "elapsed_s": 243.1,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCOCC(COCCCCCCCCC)(COCCCCCCCCC)COC(=O)CCCN1CCN(C)CC1",
+    "elapsed_s": 179.5,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCOC1=CCCN(CCO)CCN2CCCC(=O)OCC(=C1)C=C2OCCCCCCCCCC",
+    "elapsed_s": 327.8,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCC(CC)CCOc1cc(COC(=O)CCCN2CCN(CCOCCO)CC2)cc(OCCC(CC)CCCC)c1OCCC(CC)CCC",
+    "elapsed_s": 268.2,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCOCC(COCCCCCCCCC)(COCCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+    "elapsed_s": 197.7,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCC(CC)COC(=O)CCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCC(=O)OCC(CC)CCCC)c1",
+    "elapsed_s": 236.1,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCC(CC)CCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCC(CC)CCCC)c1OCCC(CC)CCC",
+    "elapsed_s": 231.9,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCOCC(COCCCCCCCCCC)(COCCCCCCCCCC)COC(=O)CCCN1CCN(C)CC1",
+    "elapsed_s": 170.2,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCCCCCCCOC1=CCCN(C)CCN2CCCC(=O)OCC(=C1)C=C2OCCCCCCCCCCCCCCCCCC",
+    "elapsed_s": 657.2,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCC(CC)CCOc1cc(COC(=O)CCN2CCN(CCOCCO)CC2)cc(OCCC(CC)CCCC)c1OCCC(CC)CCCC",
+    "elapsed_s": 256.8,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCOCC(COCCCCCCCCCC)(COCCCCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1",
+    "elapsed_s": 219.4,
+    "error": null
   }
 ]
