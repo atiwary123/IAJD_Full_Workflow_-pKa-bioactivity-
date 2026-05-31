@@ -1,0 +1,14 @@
+#define pH<value>
+#include "../../force_fields/martini.itp"
+#include "../../force_fields/molecules.itp"
+#include "../../force_fields/PPI_G5.itp"
+
+[ System ]
+;Name
+G5 dendrimer PPI
+
+[ molecules ]
+G5  1
+WNA 1936
+H+  1936
+

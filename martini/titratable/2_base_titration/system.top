@@ -1,0 +1,11 @@
+#define pH<value>
+#include "../../force_fields/martini.itp"
+#include "../../force_fields/molecules.itp"
+
+[ System ]
+aniline
+
+[ molecules ]
+ANIL     1 
+WNA   2021 
+H+    2021
