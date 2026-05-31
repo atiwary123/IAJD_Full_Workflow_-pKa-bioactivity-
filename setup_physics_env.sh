@@ -88,3 +88,11 @@ NOTE: qm_descriptors.py hardcodes the root-prefix path. If \$HOME is not
 Next:  bash run_physics_overnight.sh        # resume the full build
    or  ./.venv/bin/python physics_status.py # one-glance health check
 EOF
+
+# 4) Module E atomistic-reference toolchain: AmberTools (antechamber/GAFF) + acpype.
+if "$MM" run -n ambertools -r "$MAMBA_ROOT" which antechamber >/dev/null 2>&1; then
+  echo "  [ok]  ambertools env present (antechamber/acpype)"
+else
+  echo "  [..]  creating ambertools env (conda-forge ambertools + acpype)"
+  "$MM" create -y -r "$MAMBA_ROOT" -n ambertools -c conda-forge ambertools acpype
+fi
