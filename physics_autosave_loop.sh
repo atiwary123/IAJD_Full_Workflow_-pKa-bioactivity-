@@ -22,7 +22,7 @@ PATHS=(
   qm_audit.json md_audit.json auto_retrain_log.csv
   qmmd_features_v14_train.npy
   docs/PREDICTIVE_PHYSICS_BUILD.md
-  setup_physics_env.sh run_physics_overnight.sh physics_autosave_loop.sh stop_qm.sh
+  setup_physics_env.sh run_physics_overnight.sh physics_autosave_loop.sh stop_qm.sh qm_scratch_janitor.sh
   precompute_qm.py precompute_qm_parallel.py precompute_md.py run_md_continuous.py
   qm_descriptors.py auto_retrain_watcher.py
   physics_features.py physics_cache_io.py physics_status.py

@@ -66,6 +66,7 @@ else
 fi
 launch "auto_retrain_watcher.py" "$LOGDIR/watcher_$STAMP.log"  "$PY" auto_retrain_watcher.py
 launch "physics_autosave_loop"   "$LOGDIR/autosave_$STAMP.log" bash physics_autosave_loop.sh
+launch "qm_scratch_janitor"      "$LOGDIR/janitor_$STAMP.log"  bash qm_scratch_janitor.sh
 
 cat <<EOF
 
