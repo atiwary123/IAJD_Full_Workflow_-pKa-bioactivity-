@@ -32,7 +32,8 @@ PATHS=(
   martini requirements-offline.txt
   physics_design compute_curvature.py analyze_curvature.py compute_apparent_pka.py
   docs/PHYSICS_DESIGN_MODULE_B.md docs/PHYSICS_DESIGN_MODULE_A.md docs/PHYSICS_DESIGN_BUILD_PROMPT.md
-  docs/PHYSICS_DESIGN_FUTURE_WORK.md
+  docs/PHYSICS_DESIGN_FUTURE_WORK.md docs/PHYSICS_DESIGN_PROTOCOL.md docs/DESIGN_OPTIMIZATION_PROTOCOL.md
+  physics_calibrate.py physics_design/build_membrane_pka.py
   physics_guard.sh physics_guard.log
   IAJD_master/bundles_caches/physics/design
 )
