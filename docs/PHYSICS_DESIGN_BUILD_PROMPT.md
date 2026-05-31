@@ -187,28 +187,46 @@ This turns the spleen-mechanism unknown into an *empirical, in-domain* target.
 
 ---
 
-## 5. THE DESIGN LOOP (how to beat 369)
+## 5. THE DESIGN LOOP (how to beat 369) — find the OPTIMUM, don't extrapolate the extreme
 
-1. **Baseline.** Compute 369's coordinates: (apparent pKa, ΔG(pH), CPP, c₀,
-   H_II score). This is the reference point.
-2. **Family map (calibration, §4b).** Place the GA-Tris panel in the same space;
-   identify the escape-discriminating axis/axes.
-3. **Generate analogs.** Enumerate structural moves on 369 that shift the
-   discriminating axis favorably while honoring the coupling law (§2):
-   - tail: branch count/position, length, saturation (changes v, c₀ — and pKa)
-   - head: H2EPRZ → other ionizable (pip­erazine substitution, hydroxyethyl count →
-     head hydration/area → c₀ and pKa)
-   - linker: length/chemistry (ester vs amide — `architecture` field shows the
-     levers already in the dataset)
-   Restrict to synthetically-plausible, in-family moves (consult the dataset's
-   `architecture` vocabulary and any SAR prior in the repo).
-4. **Score & rank** candidates by predicted movement along the discriminating
-   axis (recomputing A+B+C for each — full physics, no shortcut).
-5. **Confirm the winner** with the rigor-escalation runs (atomistic CpHMD pKa +
-   CHARMM36 H_II) on the single best analog.
-6. **Deliverable:** a ranked shortlist with, for each, the computed physics, the
-   mechanistic rationale ("more-negative c₀ via added tail branch, apparent pKa held
-   in-window despite the coupling"), and the honest uncertainty.
+> Full, generalizable methodology: **`docs/DESIGN_OPTIMIZATION_PROTOCOL.md`**.
+> The mechanistic levers are **optima, not monotones** (apparent pKa ~6–6.5; c₀/CPP
+> have sweet spots), so the question is *"where is the peak and is 369 on the right
+> side of it,"* never *"push X past 369."* Do **not** use a high-capacity model
+> (XGBoost/NN) to locate optima — at this n it overfits, gives no calibrated
+> uncertainty, and step-functions can't resolve a smooth peak.
+
+1. **Baseline.** Compute 369's coordinates: (apparent pKa, ΔG(pH), CPP, c₀, H_II score).
+2. **Family-stratified map.** Place the GA-Tris panel (and other families) in physics
+   space vs measured flux, with **family as a stratum/covariate** so each physics lever
+   is isolated from architecture confounds.
+3. **Find the optima — GAM / response curves.** Fit a Generalized Additive Model
+   `flux ~ s(pKa) + s(c₀) + s(CPP) + s(H_II) + family` (smooth per-variable terms);
+   read each variable's response curve, its **peak**, and its confidence band. **Cross-
+   check every data-peak against the mechanistic prior** (e.g. pKa peak should sit
+   ~6–6.5; spleen may differ) — and **trust the mechanism over a data-peak that
+   contradicts it** (your "369 flux may be mismeasured" failure mode). This is exactly
+   how the pKa optimum was found experimentally (Jayaraman 2012).
+4. **Surrogate + propose — Gaussian Process + Bayesian optimization.** Fit a GP
+   (Matérn/RBF, ARD length-scales to reveal which variables matter, explicit noise term
+   from replicates, family as covariate / multi-task) — small-n-robust with **calibrated
+   uncertainty**, so you know whether a predicted optimum is signal or noise near 369.
+   Enumerate synthetically-plausible in-family moves on 369 (tail branch/length/saturation
+   → v, c₀, pKa; head H2EPRZ variants → head area/hydration → c₀, pKa; linker ester/amide)
+   as the candidate pool, then **rank by an acquisition function (Expected Improvement)**
+   that balances *near the predicted optimum* against *where the GP is most uncertain* —
+   that tells you which analog to compute/make next. Honour the coupling law (§2):
+   recompute pKa whenever a tail move changes c₀.
+5. **Score the top picks with full physics.** For the acquisition-ranked shortlist,
+   recompute A+B+C from scratch (no surrogate shortcut) and re-rank.
+6. **Confirm the winner** with rigor-escalation runs (atomistic CpHMD pKa + CHARMM36 H_II).
+7. **Deliverable:** a ranked shortlist; for each — the computed physics, **where it sits
+   vs each variable's optimum**, the GP mean ± uncertainty, the mechanistic rationale, and
+   the honest caveat (small n; the surrogate *refines* the physics prior, never overrides it).
+
+**The hierarchy (never invert it):** mechanism (prior) → GAM/curves (does the data agree?)
+→ GP/BO (quantify + propose next) → full physics evaluation (confirm). A model optimum
+that contradicts the mechanism is a flag for *measurement error*, not a discovery.
 
 ---
 
