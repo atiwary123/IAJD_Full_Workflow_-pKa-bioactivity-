@@ -45,6 +45,30 @@ else
   "$MM" create -y -r "$MAMBA_ROOT" -n xtb_env -c conda-forge xtb
 fi
 
+# 3b) Physics-design assets: Martini-3 lipid topologies + martinize2 (Module B/E).
+LIPIDOME="$(dirname "$0")/martini/lipidome"
+mkdir -p "$LIPIDOME"
+fetch() {  # url dest
+  if [ -s "$2" ]; then echo "  [ok]  $(basename "$2")"; else
+    echo "  [..]  fetch $(basename "$2")"
+    curl -fsSL "$1" -o "$2" || echo "  [WARN] could not fetch $1 (offline?)"
+  fi
+}
+fetch "https://raw.githubusercontent.com/marrink-lab/TS2CG1.1/master/Tutorials/files/itp/martini3/martini_v3.0_phospholipids.itp" \
+      "$LIPIDOME/martini_v3.0_phospholipids.itp"
+fetch "https://raw.githubusercontent.com/Martini-Force-Field-Initiative/M3-Lipid-Parameters/main/ITPs/martini_v3.0.0_phospholipids_PE_v2.itp" \
+      "$LIPIDOME/martini_v3.0.0_phospholipids_PE_v2.itp"
+# martinize2 (vermouth) into the project .venv for Module E CG mapping.
+VENV_PY="$(dirname "$0")/.venv/bin/python"
+if [ -x "$VENV_PY" ]; then
+  if "$VENV_PY" -c "import vermouth" >/dev/null 2>&1; then
+    echo "  [ok]  vermouth (martinize2) present in .venv"
+  else
+    echo "  [..]  pip install vermouth into .venv"
+    "$VENV_PY" -m pip install --quiet vermouth || echo "  [WARN] vermouth install failed"
+  fi
+fi
+
 # 3) Verify both engines actually run.
 echo "== verify =="
 "$MM" run -n xtb_env -r "$MAMBA_ROOT" xtb --version 2>&1 | grep -i "xtb version" \

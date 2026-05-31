@@ -28,8 +28,23 @@ pyarrow>=14.0
 # MD trajectory analysis (W-B observables extraction).
 mdanalysis>=2.6
 
-# MARTINI 3 atomistic→CG conversion helper.
-vermouth>=0.10
+# MARTINI 3 atomistic→CG conversion helper (martinize2). Pinned to the version
+# verified working in .venv on Apple Silicon for the physics-design Module E.
+vermouth>=0.10            # installed: 0.15.0 (provides `martinize2`)
+
+# ── Physics-design (Module B curvature / Module A apparent-pKa) extras ──
+#  * Martini-3 lipid topologies are vendored under martini/lipidome/:
+#      martini_v3.0_phospholipids.itp          (DOPC, POPC, DOPE, ...; marrink-lab/TS2CG1.1)
+#      martini_v3.0.0_phospholipids_PE_v2.itp  (DOPE/POPE; Martini-Force-Field-Initiative/M3-Lipid-Parameters)
+#  * The lateral-pressure-profile c0 (physics_design/pressure_profile.py) needs no
+#    extra binary: GROMACS-LS is frozen at GROMACS 4.6.6 and cannot read 2026.x
+#    trajectories, so the Irving-Kirkwood configurational stress is recomputed in
+#    Python from a stock-GROMACS trajectory (validated to reproduce GROMACS
+#    energies/forces to <1e-3 % via compute_curvature.py --force-check).
+#  * BUMPy (optional c0 confirmation builder, Boyd & Swanson 2018): the PyPI
+#    package is Python-2 only and does NOT build under 3.11; install from a
+#    maintained fork only if the curved-geometry confirmation is run. The primary
+#    pressure-profile method does not require it.
 
 # Plotting for eval / figures.
 matplotlib>=3.7
