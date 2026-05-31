@@ -171,8 +171,9 @@ each event to `auto_retrain_log.csv`.
 
 ## 7. Cost expectations
 
-- **QM:** ~5–15 min per compound (ETKDGv3 + GFN-FF + GFN2/ALPB opt on whole +
-  head + tail, both states). ~255 left → roughly a day of wall-clock.
+- **QM:** ~9 min per compound (measured; ETKDGv3 + GFN-FF + GFN2/ALPB opt on
+  whole + head + tail, both states). ~255 left → roughly 1.5 days of wall-clock,
+  resumable.
 - **MD:** production is 256 molecules × 2 µs per state × 2 states. This is hours
   per compound on CPU; full coverage of 268 remaining compounds is a multi-day
   background effort. The watcher improves the model incrementally as rows land,

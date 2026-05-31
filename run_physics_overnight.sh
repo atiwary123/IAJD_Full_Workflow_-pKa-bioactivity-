@@ -56,8 +56,12 @@ launch() {  # match-pattern  logfile  command...
 MD_ARGS=""
 [ "${QUICK:-0}" = "1" ] && MD_ARGS="--quick"
 
-launch "precompute_qm.py"        "$LOGDIR/qm_$STAMP.log"       "$PY" precompute_qm.py --resume --skip-correlations
-launch "run_md_continuous.py"    "$LOGDIR/md_$STAMP.log"       "$PY" run_md_continuous.py $MD_ARGS
+launch "precompute_qm.py"        "$LOGDIR/qm_$STAMP.log"       "$PY" precompute_qm.py --resume --skip-correlations --checkpoint-every 1
+if [ "${SKIP_MD:-0}" = "1" ]; then
+  echo "[skip]  run_md_continuous.py (SKIP_MD=1 — MD deferred by request)"
+else
+  launch "run_md_continuous.py"  "$LOGDIR/md_$STAMP.log"       "$PY" run_md_continuous.py $MD_ARGS
+fi
 launch "auto_retrain_watcher.py" "$LOGDIR/watcher_$STAMP.log"  "$PY" auto_retrain_watcher.py
 launch "physics_autosave_loop"   "$LOGDIR/autosave_$STAMP.log" bash physics_autosave_loop.sh
 
