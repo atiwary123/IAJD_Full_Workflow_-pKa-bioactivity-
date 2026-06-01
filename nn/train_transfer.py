@@ -51,6 +51,17 @@ def morgan_features(smiles_list, n_bits=2048, radius=2):
     return np.array(X), np.array(ok)
 
 
+def _featurize(smiles, encoder):
+    """Molecular features: 'morgan' (fingerprint+descriptors, CPU) or 'agile' (frozen 60k
+    MolCLR embedding, the GNN transfer encoder; GPU-accelerated if available)."""
+    if encoder == "agile":
+        import sys as _s
+        _s.path.insert(0, str(Path(__file__).resolve().parent))
+        from agile_embed import agile_embeddings
+        return agile_embeddings(list(smiles))
+    return morgan_features(smiles)[0]
+
+
 def gp_loo_family(X, y, families, label):
     """Leave-one-FAMILY-out GP CV. Returns (spearman, r2, n) over held-out predictions."""
     from sklearn.gaussian_process import GaussianProcessRegressor
@@ -98,13 +109,15 @@ def main():
                    help="featurizer: morgan (runs now) or agile (frozen 60k MolCLR; upgrade)")
     args = p.parse_args()
 
+    from rdkit import Chem
     iajd = pd.read_csv(IAJD_CSV)
     iajd = iajd.dropna(subset=[args.target, "smiles"]).reset_index(drop=True)
+    valid = iajd["smiles"].apply(lambda s: Chem.MolFromSmiles(str(s)) is not None)
+    if (~valid).any():
+        print(f"  dropping {int((~valid).sum())} unparseable SMILES")
+    iajd = iajd[valid].reset_index(drop=True)
     print(f"IAJDs with {args.target}: {len(iajd)}  ({iajd['family'].nunique()} families)")
-    if args.encoder == "agile":
-        raise SystemExit("agile encoder path: load frozen 60k MolCLR embedding here (pod-side; "
-                         "see RUNPOD_LAUNCH.md). Falling back to morgan for the local de-risk.")
-    Xi, ok = morgan_features(iajd["smiles"])
+    Xi = _featurize(iajd["smiles"].tolist(), args.encoder)
     y = iajd[args.target].to_numpy(float)
     fams = iajd["family"] if "family" in iajd else pd.Series(["?"] * len(iajd))
 
@@ -138,9 +151,10 @@ def main():
             print(f"  organ-matched prior: {organ} ({len(ln)} LNPDB rows)")
         else:
             print(f"  generic in-vivo prior ({len(ln)} LNPDB rows, per-study normalized)")
-        Xl, okl = morgan_features(ln["smiles"])
+        ln = ln[ln["smiles"].apply(lambda s: Chem.MolFromSmiles(str(s)) is not None)]
+        Xl = _featurize(ln["smiles"].tolist(), args.encoder)
         from sklearn.ensemble import HistGradientBoostingRegressor
-        prior = HistGradientBoostingRegressor(max_iter=300).fit(Xl[okl], ln["value"].to_numpy(float)[okl])
+        prior = HistGradientBoostingRegressor(max_iter=300).fit(Xl, ln["value"].to_numpy(float))
         iajd_prior = prior.predict(Xi).reshape(-1, 1)   # LNPDB-learned delivery prior per IAJD
         Xi_tr = np.hstack([Xi_phys, iajd_prior])
         results["transfer"] = gp_loo_family(Xi_tr, y, fams, "transfer")
