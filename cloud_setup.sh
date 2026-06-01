@@ -33,18 +33,33 @@ if ! "$MM" run -r "$MAMBA_ROOT_PREFIX" -n iajd gmx --version >/dev/null 2>&1; th
   "$MM" create -y -r "$MAMBA_ROOT_PREFIX" -n iajd -c conda-forge \
     python=3.11 "gromacs=2024.*" xtb ambertools \
     "numpy<2" scipy pandas mdanalysis rdkit scikit-learn xgboost pyarrow \
-    matplotlib openpyxl joblib git
+    matplotlib openpyxl joblib git git-lfs
 fi
+GIT="$MAMBA_ROOT_PREFIX/envs/iajd/bin/git"   # git+git-lfs from the env
 # 3) pip-only deps
 echo "[3] pip deps (pygam, scikit-optimize, pymbar, vermouth, acpype, tqdm)"
 "$MM" run -r "$MAMBA_ROOT_PREFIX" -n iajd pip install -q pygam scikit-optimize pymbar tqdm vermouth acpype
 
-# 4) clone the repo (code + vendored Martini/titratable FFs + dataset)
+# 4) clone the repo (code + vendored Martini/titratable FFs + dataset).
+# The repo uses git-LFS for *.xlsx/*.npy/*.pkl/*.parquet/*.joblib — a plain clone gets
+# 131-byte POINTERS for the dataset .xlsx, which breaks read_excel. So skip the (huge) LFS
+# blobs during clone, then pull ONLY the small dataset .xlsx the pipeline actually reads.
+"$GIT" lfs install --skip-repo 2>/dev/null || true
 if [ ! -d "$WORK/IAJD/.git" ]; then
-  echo "[4] cloning repo ($BRANCH)"
-  git clone -b "$BRANCH" "$GIT_URL" "$WORK/IAJD"
+  echo "[4] cloning repo ($BRANCH) — LFS smudge skipped"
+  GIT_LFS_SKIP_SMUDGE=1 "$GIT" clone -b "$BRANCH" "$GIT_URL" "$WORK/IAJD"
 else
-  echo "[4] repo present; pulling latest"; git -C "$WORK/IAJD" pull --ff-only || true
+  echo "[4] repo present; pulling latest"; "$GIT" -C "$WORK/IAJD" pull --ff-only || true
+fi
+echo "[4b] fetching LFS dataset files (the .xlsx the panel + NN read)"
+( cd "$WORK/IAJD" && "$GIT" lfs install --local 2>/dev/null
+  "$GIT" lfs pull --include="IAJD_master/datasets/*.xlsx" 2>&1 | tail -2 )
+# verify the dataset is a REAL file, not an LFS pointer
+_xlsx="$WORK/IAJD/IAJD_master/datasets/IAJD_Bioact_v13_clean.xlsx"
+if [ "$(wc -c < "$_xlsx" 2>/dev/null || echo 0)" -lt 1000 ]; then
+  echo "  !! WARNING: $_xlsx is still tiny (LFS pull failed?). Run: cd $WORK/IAJD && $GIT lfs pull"
+else
+  echo "  dataset OK ($(wc -c < "$_xlsx") bytes)"
 fi
 
 # 5) point the IAJD code at the cloud engines (gmx/xtb live in the conda env)
