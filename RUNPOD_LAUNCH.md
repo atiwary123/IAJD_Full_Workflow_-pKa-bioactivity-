@@ -24,13 +24,18 @@ The pure-IAJD bilayer collapses for membrane-active IAJDs (FW-4), so the panel u
 locally on 369: bilayer stays intact, mixed-system forces exact to 0.00008%.
 
 ```bash
-# whole GA-Tris family, FW-3 order, host method, parallel across cores (CPU).
+# EFFICIENCY: size --jobs to your cores. Each IAJD ≈ 28 min (60 ns, 4 threads). So
+#   throughput ≈ jobs × (60 IAJD/28min) ; e.g. 32 vCPU→jobs 8→~17/h ; 64 vCPU→jobs 16→~34/h.
 # n-per-leaflet 48 + n-iajd 8 => x=0.167, the validated config (369 converged: c0=+1.27,
-# tensionless, exact forces). Lower x noisens the 1/x curvature extraction, so keep these.
+# tensionless, exact forces). prod-ns 60 is the validated minimum; don't go lower.
 python run_iajd_panel.py --family GA-Tris --host --n-iajd 8 --n-per-leaflet 48 \
-       --jobs 6 --threads 4 --gpu-jobs 0 --prod-ns 80 --force-check
+       --jobs $(( $(nproc) / 4 )) --threads 4 --gpu-jobs 0 --prod-ns 60 --force-check
 ```
-- `--jobs N` concurrent IAJDs, `--threads K` cores each → size to `N*K ≈ vCPUs`.
+- `--jobs N` concurrent IAJDs, `--threads K` cores each → keep `N*K ≈ vCPUs` (4 threads/job
+  is the sweet spot; more threads/job scale poorly on these small systems).
+- **Run GA-Tris first (369's family, the design target), then `--family PE-Tris`** (n=42, the
+  family with the strongest existing pKa↔flux signal). FW-3 ordering means the EARLY runs span
+  the flux range, so the correlation is visible after ~8–10 IAJDs (~1 h), not at the end.
 - **GPU:** conda-forge GROMACS is **CPU-only**, so keep `--gpu-jobs 0` UNLESS you ran
   `BUILD_GPU_GMX=1 bash cloud_setup.sh` and `source /workspace/gromacs-gpu/bin/GMXRC` first
   (only then does `--gpu-jobs 1` / `-nb gpu` work). The CG panel is CPU-parallel-bound anyway,
@@ -42,7 +47,27 @@ python run_iajd_panel.py --family GA-Tris --host --n-iajd 8 --n-per-leaflet 48 \
   PROVISIONAL until Module E validates the CG mapping. Honestly read the converged flag.
 - Scale to other families: `--family PE-Tris` etc., or `--iajds 369,360,...`.
 
-**Cost:** ~80 ns × ~150 IAJD-runs, parallel → roughly $30–80 over a few days on a 4090 pod.
+**Cost/time:** ~28 min/IAJD ÷ parallelism. On a 32-vCPU box (~17/h) the whole 273-IAJD set is
+~16 h; on 64 vCPU (~34/h), ~8 h. So **a 24 h CPU run covers the entire dataset** — well within
+your decision window. ~$15–60 depending on box.
+
+## 1b. THE 24-HOUR DECISION: is a physics→flux signal emerging?
+
+Run this **anytime as results land** (no need to wait for the panel to finish):
+```bash
+python analyze_panel.py --target log10_flux_spleen   # or --target log10_flux_total
+python analyze_panel.py --target log10_flux_spleen --family GA-Tris
+```
+It reports, with honest small-n bootstrap CIs: **c₀↔flux** (converged points), **pKa↔flux**
+(the existing-feature baseline, available *immediately*), per-family breakdowns, a GAM response
+curve once n≥8, and a conservative **VERDICT** (signal needs |Spearman|≥0.35, 90% CI excluding
+0, n≥8).
+- **You already have a read before any physics:** pKa↔flux_spleen is weak pooled (−0.22) but
+  **PE-Tris is moderate (−0.35, n=25)** — so PE-Tris is the most promising family to test whether
+  c₀ adds signal.
+- **Decision:** if after a family completes (~1–2 h) c₀↔flux is flat AND pKa↔flux is flat, the
+  physics axis likely isn't the lever *for that family* → don't burn more compute there; pivot
+  family or stop. If a family shows |Spearman|≥0.35 with a CI off 0, keep going + widen the panel.
 
 ### (optional) Module A apparent-pKa on IAJDs
 Needs a titratable IAJD model first (per-IAJD, not yet built — see FW-2). The METHOD is
