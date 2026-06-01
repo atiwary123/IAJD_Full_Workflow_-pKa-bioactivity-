@@ -1,0 +1,64 @@
+{
+  "iajd": 369,
+  "species": "IAJD369",
+  "method": "host_POPC_upper_leaflet",
+  "temp_K": 300.0,
+  "n_iajd_upper": 4,
+  "n_per_leaflet": 36,
+  "prod_ns": 12.0,
+  "head_bead_idx": 9,
+  "cg_mapping_validated": false,
+  "contour": "ik",
+  "c0_nm_inv": 3.118320642225521,
+  "error": null,
+  "provisional": true,
+  "assumptions": "linear composition mixing; single mole fraction; assumed kappa",
+  "x_upper": 0.1111111111111111,
+  "n_iajd": 4,
+  "n_popc": 68,
+  "n_water": 1714,
+  "box_nm": [
+    4.8,
+    4.8,
+    12.13
+  ],
+  "md_status": "ok",
+  "apl_nm2": 0.6797040617361111,
+  "thickness_PP_nm": 3.9097951388888887,
+  "bilayer_intact": true,
+  "force_check": {
+    "status": "ok",
+    "gromacs": {
+      "Bond": 1115.45,
+      "Angle": 614.46,
+      "LJ": -58451.9,
+      "Coul": -219.121,
+      "Pot": -56941.1
+    },
+    "recomputed": {
+      "Bond": 1115.4491582296828,
+      "Angle": 614.4594938426734,
+      "LJ": -58451.91433581569,
+      "Coul": -219.12085678527643
+    },
+    "pct_err": {
+      "Bond": -7.546463913805191e-05,
+      "Angle": -8.237433301439921e-05,
+      "LJ": -2.4525833524019896e-05,
+      "Coul": 6.535873949960141e-05
+    },
+    "max_abs_pct_err": 8.237433301439921e-05
+  },
+  "surface_tension_mNm": 13.402359334144407,
+  "n_frames": 85,
+  "tau_upper_bar_nm2": -124.1454105201565,
+  "tau_lower_bar_nm2": -305.3243709534068,
+  "tau_iajd_bar_nm2": 1325.2862729458461,
+  "kappa_mono_J": 4.25e-20,
+  "R0_nm": 0.32068543127313165,
+  "tensionless": false,
+  "c0_physics_converged": false,
+  "c0_trusted": false,
+  "profile_npz": "/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/IAJD_master/bundles_caches/physics/design/IAJD369_host_T300_profile.npz",
+  "elapsed_min": 4.0
+}
