@@ -103,6 +103,37 @@ first, then GP/BO fills descriptor gaps.)
   A near-analog-of-369 low fluxer would give cleaner attribution but less contrast — do the
   max-contrast pair FIRST (see any shift at all), refine with near-analogs after.
 
+## FW-4 — IAJD c₀ via the HOST METHOD (pure IAJD bilayer collapses) — found 2026-06-01
+
+**Finding (first real IAJD Module B run, IAJD 369 neutral):** the pipeline runs end-to-end
+with the de-overlap fix (no crash; force recompute **exact, 0.0002 %** vs GROMACS), BUT the
+**pure-369 flat bilayer collapses** under the tensionless semiisotropic barostat: APL →
+**0.265 nm²** (impossibly dense — one tail alone is ~0.2 nm²), thickness → **8.3 nm** (a
+bilayer is ~4–5), `bilayer_intact=False`, γ=−9.6 mN/m, water not flat → `c0_physics_converged
+=False`. The reported c₀=+1.55 nm⁻¹ is a collapsed-aggregate artifact and is correctly
+flagged untrusted (NOT handed back as a real number).
+
+**Interpretation (honest, and itself a signal):** 369 is the highest-flux GA-Tris member, a
+3-tail dendritic amphiphile — i.e. strongly **non-bilayer-prone**. A pure flat bilayer of it
+is not even metastable (unlike DOPE, which holds flat for ~100 ns and so passed Module B).
+That non-lamellar propensity is *exactly* the membrane-disrupting property that drives
+endosomal escape, so "the pure bilayer won't stay flat" is information, not just a failure.
+
+**The fix — HOST METHOD (standard for H_II-formers):** measure 369's **spontaneous-curvature
+contribution** by embedding it dilutely in a stable POPC host bilayer and using the
+first-moment difference (or the host-area / Δc₀-per-mole-fraction extrapolation, as the field
+does for DOPE/PE). Reuse `build_membrane_pka.py` (it already swaps ONE molecule into a POPC
+bilayer) — drop the titratable conversion, keep the host bilayer, add 1–few IAJDs, run the
+Module B pressure profile, attribute the curvature shift to the IAJD. This gives a TRUSTED
+(modulo Module E) c₀ for non-bilayer IAJDs.
+
+**Panel implication:** the `c0_physics_converged` flag honestly separates bilayer-stable
+members (likely lower-flux → pure-bilayer c₀ measurable) from collapsing ones (likely
+higher-flux → need the host method); the *bilayer-stability threshold itself* may track flux.
+For collapsing members, **Module C (H_II / self-assembly)** is the complementary, more natural
+characterization. (Diagnostic in progress: re-running 369 at a smaller start APL 0.65 to
+confirm the collapse is fundamental, not a barostat overshoot from the loose 1.2 start.)
+
 ## FW-2 (implied) — generalize the membrane-pKa builder to arbitrary IAJDs
 
 `build_membrane_pka.py` currently swaps one MC3 into a POPC bilayer. For 369 and the FW-1
