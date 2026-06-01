@@ -99,7 +99,67 @@ def lipid_template(lip: Lipid, *, dz: float = 0.27, splay: float = 0.13,
         coords[i, 0] = xoff[i]
         coords[i, 1] = 0.0
         coords[i, 2] = -depth[i] * dz
+    bonded = {frozenset((i, j)) for (i, j, _r, _k) in lip.bonds}
+    coords = _spread_xy_overlaps(coords, bonded)
     return coords
+
+
+def _spread_xy_overlaps(coords: np.ndarray, bonded_pairs, min_dist: float = 0.25,
+                        max_iter: int = 400) -> np.ndarray:
+    """Push NON-BONDED beads apart IN THE XY PLANE (preserving the head-up z set by graph
+    depth) until no non-bonded pair is closer than `min_dist` nm.
+
+    A true NO-OP for standard lipids: their only sub-`min_dist` contacts are either
+    directly bonded (skipped — they're LJ-excluded and held by the bond) or the two
+    splayed tails at ~0.26 nm (> min_dist), so the validated DOPE/DOPC path is byte-for-
+    byte unchanged. It rescues complex IAJD topologies whose (depth, branch) layout
+    collapses several NON-bonded beads (rings, multiple same-depth branches) onto
+    IDENTICAL coordinates → infinite LJ force → EM NaN crash (IAJD 369: 460 coincident
+    pairs). Only non-bonded pairs cause the crash (bonded pairs are LJ-excluded and feel
+    a finite harmonic force); EM + equilibration relax the rest. min_dist=0.25 sits below
+    the ~0.26 nm legitimate cross-tail spacing yet matches the proven-OK lipid contact
+    regime, so EM handles the separated IAJD start the same way it handles a lipid."""
+    n = len(coords)
+    if n < 2:
+        return coords
+
+    def _close_nonbonded(c):
+        for i in range(n):
+            for j in range(i + 1, n):
+                if frozenset((i, j)) in bonded_pairs:
+                    continue
+                d = c[j] - c[i]
+                if float(d @ d) < min_dist * min_dist:
+                    return True
+        return False
+
+    if not _close_nonbonded(coords):
+        return coords                       # standard lipids: nothing to do
+    c = coords.astype(float).copy()
+    GA = 2.399963322759                      # golden angle (rad), deterministic tie-break
+    for i in range(n):                       # break exact ties so push directions exist
+        c[i, 0] += 0.04 * np.cos(i * GA)
+        c[i, 1] += 0.04 * np.sin(i * GA)
+    for _ in range(max_iter):
+        moved = False
+        for i in range(n):
+            for j in range(i + 1, n):
+                if frozenset((i, j)) in bonded_pairs:
+                    continue
+                dx = c[j, 0] - c[i, 0]; dy = c[j, 1] - c[i, 1]; dz = c[j, 2] - c[i, 2]
+                r = (dx * dx + dy * dy + dz * dz) ** 0.5
+                if r < min_dist:
+                    rxy = (dx * dx + dy * dy) ** 0.5
+                    if rxy < 1e-6:           # stacked in xy -> deterministic direction
+                        ang = (2 * i + j) * GA
+                        dx, dy, rxy = np.cos(ang), np.sin(ang), 1.0
+                    push = 0.5 * (min_dist - r) + 1e-3
+                    c[i, 0] -= push * dx / rxy; c[i, 1] -= push * dy / rxy
+                    c[j, 0] += push * dx / rxy; c[j, 1] += push * dy / rxy
+                    moved = True
+        if not moved:
+            break
+    return c
 
 
 # ──────────────────────────────────────────────────────────────────────
