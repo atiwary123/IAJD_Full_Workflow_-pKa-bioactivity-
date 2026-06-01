@@ -44,6 +44,11 @@
       "pH": 6.5,
       "q": NaN,
       "status": "ok"
+    },
+    {
+      "pH": 7.0,
+      "q": 0.9866666666666667,
+      "status": "ok"
     }
   ],
   "apparent_pKa": NaN,
