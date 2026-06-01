@@ -59,3 +59,8 @@ ts,qm_rows,md_rows,delta_qm,delta_md,label,build_qmmd_block_ok,train_qmmd_head_o
 2026-05-31T23:04:22,172,4,3,0,qm+3/md+0,True,True,0.5949,True,True
 2026-05-31T23:14:42,175,4,3,0,qm+3/md+0,True,True,0.5848,True,True
 2026-05-31T23:30:03,178,4,3,0,qm+3/md+0,True,True,0.5813,True,True
+2026-05-31T23:45:24,181,4,3,0,qm+3/md+0,True,True,0.5883,True,True
+2026-05-31T23:55:44,184,4,3,0,qm+3/md+0,True,True,0.597,True,True
+2026-06-01T00:06:06,188,4,4,0,qm+4/md+0,True,True,0.6,True,True
+2026-06-01T00:16:28,191,4,3,0,qm+3/md+0,True,True,0.605,True,True
+2026-06-01T00:26:48,195,4,4,0,qm+4/md+0,True,True,0.596,True,True
