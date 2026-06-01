@@ -1253,5 +1253,80 @@
     "smiles_canonical": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCC)c1",
     "elapsed_s": 229.1,
     "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCC)c1",
+    "elapsed_s": 178.0,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCCCC)c1",
+    "elapsed_s": 224.1,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCCCCCCC)c1",
+    "elapsed_s": 368.4,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCCCCCCCCCCC)c1",
+    "elapsed_s": 309.9,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCC)c1",
+    "elapsed_s": 92.8,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCC)c1",
+    "elapsed_s": 114.1,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCC(CC)CCCC)c1",
+    "elapsed_s": 90.4,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCC(CC)CCCC)c1",
+    "elapsed_s": 103.7,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCC)c1",
+    "elapsed_s": 157.4,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCCCCCCCCC)c1",
+    "elapsed_s": 213.0,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCCCCCCCC)c1",
+    "elapsed_s": 271.8,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCCCCCCCCCCC)c1",
+    "elapsed_s": 381.4,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCOC1=CCCN(CCO)CCN2CCCC(=O)OCC(=C1)C=C2OCCCCCCCCC",
+    "elapsed_s": 362.9,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCCCCC)c1",
+    "elapsed_s": 140.2,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCCOC1=CCCN(C)CCN2CCCC(=O)OCC(=C1)C=C2OCCCCCCCCCCCCC",
+    "elapsed_s": 337.8,
+    "error": null
   }
 ]
