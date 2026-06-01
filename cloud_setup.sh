@@ -63,6 +63,32 @@ if [ "$(wc -c < "$_xlsx" 2>/dev/null || echo 0)" -lt 1000 ]; then
 else
   echo "  dataset OK ($(wc -c < "$_xlsx") bytes)"
 fi
+# [4c] verify the dataset is the AUDIT-CORRECTED data (not stale pre-audit). set -e makes this a
+# HARD GATE: if the pod somehow got old SMILES, abort before any compute runs (dataset audit 2026-06-01).
+python - "$_xlsx" <<'PYEOF'
+import sys
+try:
+    import pandas as pd
+    d = pd.read_excel(sys.argv[1])
+    has = "audit_status" in d.columns
+    n = int(d["audit_status"].astype(str).str.contains(
+        "corrected|reconstruct|rebuilt|REGEN", case=False, na=False).sum()) if has else 0
+    if has and n >= 40:
+        print(f"  dataset CORRECTED OK (audit_status present, {n} fix-applied rows)")
+    else:
+        sys.stderr.write(
+            "\n  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+            f"  !! STALE DATA: audit_status={has}, fix-applied={n} (expect >=40).\n"
+            "  !! The pod has OLD/pre-audit SMILES -> do NOT run compute.\n"
+            "  !! Fix: cd into the repo, run `git lfs pull`, confirm\n"
+            "  !!      `git log --oneline -1` is on the corrected commit, re-run setup.\n"
+            "  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
+        sys.exit(3)
+except SystemExit:
+    raise
+except Exception as e:  # never block setup on the checker itself failing — warn only
+    sys.stderr.write(f"  [warn] corrected-data check could not run ({e}); verify manually.\n")
+PYEOF
 
 # 5) point the IAJD code at the cloud engines (gmx/xtb live in the conda env)
 GMXBIN="$MAMBA_ROOT_PREFIX/envs/iajd/bin"

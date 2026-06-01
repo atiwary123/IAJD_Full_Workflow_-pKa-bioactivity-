@@ -123,7 +123,14 @@ def main():
         if int(flagged.sum()):
             print(f"  skipping {int(flagged.sum())} audit-flagged rows")
         df_bio = df_bio[~flagged].reset_index(drop=True)
-    df_bio["SMILES_canonical"] = df_bio["SMILES_canonical"].fillna("").map(_canonical_smi)
+    # Key the cache off the audit-corrected SMILES column (the source of truth) rather than the
+    # derived SMILES_canonical, so a stale SMILES_canonical can never send xTB at the wrong
+    # structure (dataset audit, 2026-06-01). Fall back to SMILES_canonical only if SMILES blank.
+    _smiles = df_bio["SMILES"] if "SMILES" in df_bio.columns else df_bio["SMILES_canonical"]
+    if "SMILES" in df_bio.columns and "SMILES_canonical" in df_bio.columns:
+        _blank = _smiles.isna() | (_smiles.astype(str).str.strip().str.len() == 0)
+        _smiles = _smiles.mask(_blank, df_bio["SMILES_canonical"])
+    df_bio["SMILES_canonical"] = _smiles.fillna("").map(_canonical_smi)
     df_bio = df_bio[df_bio["SMILES_canonical"].str.len() > 0].reset_index(drop=True)
     print(f"  {len(df_bio)} rows with parseable SMILES")
 

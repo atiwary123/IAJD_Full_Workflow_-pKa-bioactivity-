@@ -226,7 +226,21 @@ def main():
               "values.", file=sys.stderr)
 
     df_bio = pd.read_excel(BIOACT_XLSX)
-    df_bio["SMILES_canonical"] = df_bio["SMILES_canonical"].fillna("").map(_canonical_smi)
+    # Skip audit-flagged rows (suspect/unresolved SMILES) so GROMACS never spends hours on a
+    # known-wrong structure (dataset audit §4d, 2026-06-01) — mirrors precompute_qm.py.
+    if "audit_status" in df_bio.columns:
+        flagged = df_bio["audit_status"].astype(str).str.contains("UNRESOLVED|FLAG", na=False)
+        if int(flagged.sum()):
+            print(f"  skipping {int(flagged.sum())} audit-flagged rows")
+        df_bio = df_bio[~flagged].reset_index(drop=True)
+    # Key the cache off the audit-corrected SMILES column (the source of truth) rather than the
+    # derived SMILES_canonical, so a stale SMILES_canonical can never make MD run on the wrong
+    # structure. Fall back to SMILES_canonical only where SMILES is blank.
+    _smiles = df_bio["SMILES"] if "SMILES" in df_bio.columns else df_bio["SMILES_canonical"]
+    if "SMILES" in df_bio.columns and "SMILES_canonical" in df_bio.columns:
+        _blank = _smiles.isna() | (_smiles.astype(str).str.strip().str.len() == 0)
+        _smiles = _smiles.mask(_blank, df_bio["SMILES_canonical"])
+    df_bio["SMILES_canonical"] = _smiles.fillna("").map(_canonical_smi)
     df_bio = df_bio[df_bio["SMILES_canonical"].str.len() > 0].reset_index(drop=True)
     print(f"Loaded {len(df_bio)} bioactivity rows with parseable SMILES")
 
