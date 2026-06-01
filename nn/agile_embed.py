@@ -22,15 +22,38 @@ import pandas as pd
 import torch
 
 ROOT = Path(__file__).resolve().parent.parent
-AGILE = ROOT / "agile_repo"
-CKPT = AGILE / "ckpt" / "pretrained_agile_60k" / "checkpoints" / "model.pth"
 
 
-def agile_embeddings(smiles, ckpt: Path = CKPT, batch_size: int = 64, device=None):
+def _find_agile() -> Path:
+    """Locate the AGILE repo: the local agile_repo/, or extern/AGILE (where nn/fetch_data.sh
+    clones it on the pod)."""
+    for cand in (ROOT / "agile_repo", ROOT / "extern" / "AGILE"):
+        if (cand / "models" / "agile_finetune.py").exists():
+            return cand
+    raise FileNotFoundError(
+        "AGILE repo not found. Run `bash nn/fetch_data.sh` (clones it to extern/AGILE) "
+        "or place it at agile_repo/.")
+
+
+def _find_ckpt(agile: Path) -> Path:
+    """Find the pretrained checkpoint; reject LFS-pointer stubs (<1 MB)."""
+    cands = [agile / "ckpt" / "pretrained_agile_60k" / "checkpoints" / "model.pth"]
+    cands += sorted(agile.glob("ckpt/**/model.pth"))
+    for p in cands:
+        if p.exists() and p.stat().st_size > 1_000_000:
+            return p
+    raise FileNotFoundError(
+        f"AGILE checkpoint missing or an LFS pointer under {agile}/ckpt. On the pod run: "
+        f"cd {agile} && git lfs pull")
+
+
+def agile_embeddings(smiles, ckpt: Path = None, batch_size: int = 64, device=None):
     """Return an (N, 512) array of frozen AGILE embeddings for `smiles` (order preserved)."""
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-    if str(AGILE) not in sys.path:
-        sys.path.insert(0, str(AGILE))
+    agile = _find_agile()
+    ckpt = ckpt or _find_ckpt(agile)
+    if str(agile) not in sys.path:
+        sys.path.insert(0, str(agile))
     from models.agile_finetune import AGILE as Model
     from dataset.dataset_test import MolTestDataset
     from torch_geometric.loader import DataLoader

@@ -17,6 +17,9 @@ clone() { [ -d "$2" ] || git clone --depth 1 "$1" "$2"; }
 clone https://github.com/evancollins1/LNPDB.git   LNPDB
 clone https://github.com/bowang-lab/AGILE.git      AGILE   || echo "[warn] AGILE clone failed (GNN-encoder upgrade only)"
 clone https://github.com/AsalMehradfar/LANTERN.git LANTERN || echo "[warn] LANTERN clone failed (cleaned-labels upgrade only)"
+# AGILE's pretrained checkpoint (model.pth) is git-LFS; pull it so agile_embed.py can load it.
+[ -d AGILE ] && ( cd AGILE && git lfs install --local 2>/dev/null
+  git lfs pull 2>&1 | tail -1 ) || echo "[warn] AGILE LFS pull skipped (checkpoint may be a pointer)"
 
 # Build the in-vivo subset (smiles, value, organ) — schema-robust column detection.
 python - "$REPO" <<'PY'
