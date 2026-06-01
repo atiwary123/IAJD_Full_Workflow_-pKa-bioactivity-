@@ -27,11 +27,18 @@ def find(cols, *keys, avoid=()):
         if all(k.upper() in u for k in keys) and not any(a.upper() in u for a in avoid):
             return c
     return None
-sm  = find(df.columns, 'SMILES', avoid=('PROT',)) or find(df.columns, 'SMILES')
-mt  = find(df.columns, 'MODEL', 'TYPE') or find(df.columns, 'IN_VIVO')
-val = find(df.columns, 'VALUE') or find(df.columns, 'EFFICACY') or find(df.columns, 'EXPERIMENT', 'VALUE')
-org = find(df.columns, 'TARGET') or find(df.columns, 'ORGAN')
-sub = df[df[mt].astype(str).str.contains('vivo', case=False, na=False)] if mt else df
+# the in-vivo FLAG is detected BY VALUE (the real LNPDB schema has a `Model` column with
+# in_vitro/in_vivo; `Model_type` is cell lines — name-based detection picks the wrong one).
+flag = None
+for c in df.columns:
+    v = set(df[c].astype(str).str.lower().unique())
+    if 'in_vivo' in v and 'in_vitro' in v:
+        flag = c; break
+sm  = find(df.columns, 'SMILES', avoid=('PROT', 'HEAD', 'LINKER', 'TAIL', 'HL_', 'CHL', 'PEG')) or 'IL_SMILES'
+val = find(df.columns, 'EXPERIMENT', 'VALUE') or find(df.columns, 'VALUE') or find(df.columns, 'EFFICACY')
+org = find(df.columns, 'MODEL', 'TARGET') or find(df.columns, 'TARGET') or find(df.columns, 'ORGAN')
+sub = df[df[flag].astype(str).str.lower() == 'in_vivo'] if flag else df
+print(f"  in-vivo flag column = {flag}; SMILES={sm}; value={val}; organ={org}")
 cols = {sm: 'smiles', val: 'value'}
 if org: cols[org] = 'organ'
 out = sub[list(cols)].rename(columns=cols).dropna(subset=['smiles', 'value'])

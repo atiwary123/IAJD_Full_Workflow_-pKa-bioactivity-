@@ -79,3 +79,4 @@ physics_cache/
 
 # pytest cache
 .pytest_cache/
+extern/
