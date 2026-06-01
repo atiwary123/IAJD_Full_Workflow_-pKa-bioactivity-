@@ -54,6 +54,55 @@ via Module E) and the endosomal-mimic host mix when extending.
 
 ---
 
+## FW-3 — panel ordering: compute the flux EXTREMES first (369 → lowest-flux GA-Tris)
+
+**Decision (user, 2026-05-31):** after 369 (the HIGHEST-flux GA-Tris member), the *second*
+IAJD to compute is the **lowest-flux GA-Tris member**, then compare the shifted coordinates
+and sanity-check whether c₀/H_II/CPP moved in the mechanistically-expected direction.
+
+**Why this is right:** it's the cheapest max-contrast **falsification** — same logic as the
+DOPE-vs-DOPC extremes that validated Module B. Two flux-extreme points give the *sign of the
+gradient* (does c₀ get more negative / H_II higher from low→high flux?) for ~2 molecules of
+compute, before committing weeks to the full panel. Especially valuable for spleen-tropic
+GA-Tris, where the mechanism is unsettled and the calibrator already found **no pKa lever**:
+if even the flux extremes don't separate on c₀/H_II, that's an honest "not designable on
+these axes" verdict we want for 2 molecules, not 20. It's also good GP/BO active-learning
+ordering (most-informative points first).
+
+**Third point = family MEDIAN-flux member (user, 2026-05-31).** High + low = a *line* (sign
+of the gradient). Adding the middle tests the **SHAPE** — does the mid-flux point lie ON the
+high–low line (monotone) or OFF it (curvature → a window/optimum)? This is the single most
+important question per the optimization protocol ("levers are optima, NOT monotones — find
+the peak, not the edge"), and 3 points is the minimum to fit a quadratic / see non-monotonicity.
+Use the member nearest the **median** flux (robust to outliers) and reliably measured.
+
+**Then quantile space-filling, then GP/BO (user, 2026-05-31).** After high/low/median it
+doesn't much matter which order — a sensible default is **bisection by flux quantile**:
+100th → 0th → 50th → 75th → 25th → 87.5th → 12.5th → … (progressively refines coverage of the
+flux range, exactly what the GAM wants for even x-coverage). Once ~5–7 points are in, hand off
+to the **GP/BO acquisition** (EI/UCB) to pick the most-informative next IAJD instead of the
+fixed sweep. (Minor refinement: quantiles on flux are a fine first proxy; ideally you fill the
+*descriptor* axis evenly — but you don't know c₀/H_II until you compute them, so flux-quantile
+first, then GP/BO fills descriptor gaps.)
+
+**Honest caveats / refinements:**
+- n=2 gives *direction*, n=3 gives a *hint of curvature* — NEITHER is the calibration (locating
+  a window precisely needs the panel + GAM). These are SANITY/SCREEN steps, not §4b.
+- **Window detection needs BOTH shoulders.** If the lever is an optimum, the high fluxer sits
+  near the peak and low fluxers are on *either* side of the physics axis. A single low fluxer +
+  a median may both fall on one shoulder → you'd see a "line" and miss the window. So if the
+  3-point screen hints at curvature, the 4th point should target the *opposite* physics-axis
+  shoulder (a low fluxer on the other side), not just more flux-spread.
+- With noisy flux, the mid-point being "off the line" can be measurement noise, not real
+  curvature — weight by reliability and don't over-read 3 points.
+- Pick the lowest-flux member that is **reliably measured** (low SEM, good replicate count —
+  Step 0 reliability weighting), not just the numerically smallest flux, to avoid a
+  detection-floor/measurement artifact masquerading as biophysics.
+- The extremes likely differ in *several* structural ways at once → multiple axes may shift
+  together; you can't isolate the single lever from 2 points (that's fine for a sanity check).
+  A near-analog-of-369 low fluxer would give cleaner attribution but less contrast — do the
+  max-contrast pair FIRST (see any shift at all), refine with near-analogs after.
+
 ## FW-2 (implied) — generalize the membrane-pKa builder to arbitrary IAJDs
 
 `build_membrane_pka.py` currently swaps one MC3 into a POPC bilayer. For 369 and the FW-1
