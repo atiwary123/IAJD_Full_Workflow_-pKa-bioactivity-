@@ -99,7 +99,8 @@ def fw3_order(sub: pd.DataFrame, flux_col: str):
 
 
 def run_one(iajd: int, args, gpu: bool):
-    out = DESIGN_DIR / f"IAJD{iajd}_neutral_T{int(args.temp)}_curvature.json"
+    tag = "host" if args.host else "neutral"
+    out = DESIGN_DIR / f"IAJD{iajd}_{tag}_T{int(args.temp)}_curvature.json"
     if out.exists() and not args.force:
         try:
             r = json.loads(out.read_text())
@@ -111,7 +112,11 @@ def run_one(iajd: int, args, gpu: bool):
     cmd = [PYBIN, str(ROOT / "compute_curvature.py"), "--iajd", str(iajd),
            "--prod-ns", str(args.prod_ns), "--eq2-ps", str(args.eq2_ps),
            "--temp", str(args.temp), "--threads", str(args.threads),
-           "--n-per-leaflet", str(args.n_per_leaflet), "--apl", str(args.apl)]
+           "--n-per-leaflet", str(args.n_per_leaflet)]
+    if args.host:
+        cmd += ["--host", "--n-iajd", str(args.n_iajd)]   # FW-4: stable POPC host
+    else:
+        cmd += ["--apl", str(args.apl)]
     if args.force_check:
         cmd.append("--force-check")
     if gpu:
@@ -146,6 +151,11 @@ def main():
     p.add_argument("--temp", type=float, default=300.0)
     p.add_argument("--n-per-leaflet", type=int, default=64)
     p.add_argument("--apl", type=float, default=1.2)
+    p.add_argument("--host", action="store_true",
+                   help="HOST method (recommended): IAJDs in a stable POPC bilayer (FW-4). "
+                        "Pure-bilayer (default) collapses for non-bilayer IAJDs.")
+    p.add_argument("--n-iajd", type=int, default=8,
+                   help="IAJDs per upper leaflet for the host method (higher = better c0 signal)")
     p.add_argument("--force-check", action="store_true", help="recommended: validate forces vs GROMACS")
     p.add_argument("--force", action="store_true", help="recompute even if cached")
     p.add_argument("--limit", type=int, default=0, help="only run the first N of the order")

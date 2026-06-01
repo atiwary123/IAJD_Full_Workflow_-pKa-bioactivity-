@@ -72,6 +72,15 @@ if [ "${BUILD_GPU_GMX:-0}" = "1" ]; then
   echo "  [warn] GPU GROMACS build failed; CPU gmx still works for the CG panel"
 fi
 
+# 7) optional: NN transfer deps for the AGILE GNN-encoder UPGRADE (chemprop + torch-geometric).
+#    The runnable Morgan+GP transfer path (nn/train_transfer.py --encoder morgan) needs NOTHING
+#    extra — rdkit + scikit-learn are already in the iajd env.
+if [ "${BUILD_NN:-0}" = "1" ]; then
+  echo "[7] installing NN GNN-encoder deps (chemprop, torch-geometric)"
+  "$MM" run -r "$MAMBA_ROOT_PREFIX" -n iajd pip install -q chemprop torch torch-geometric || \
+    echo "  [warn] GNN deps failed; the Morgan+GP transfer path still runs without them"
+fi
+
 cat <<EOF
 
 ================ SETUP DONE ================
