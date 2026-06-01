@@ -116,6 +116,13 @@ def main():
 
     print(f"Loading {BIOACT_XLSX.name}…")
     df_bio = pd.read_excel(BIOACT_XLSX)
+    # Skip audit-flagged rows (suspect/unresolved SMILES) so xTB never spends
+    # hours optimizing a known-wrong structure (dataset audit §4d, 2026-06-01).
+    if "audit_status" in df_bio.columns:
+        flagged = df_bio["audit_status"].astype(str).str.contains("UNRESOLVED|FLAG", na=False)
+        if int(flagged.sum()):
+            print(f"  skipping {int(flagged.sum())} audit-flagged rows")
+        df_bio = df_bio[~flagged].reset_index(drop=True)
     df_bio["SMILES_canonical"] = df_bio["SMILES_canonical"].fillna("").map(_canonical_smi)
     df_bio = df_bio[df_bio["SMILES_canonical"].str.len() > 0].reset_index(drop=True)
     print(f"  {len(df_bio)} rows with parseable SMILES")
