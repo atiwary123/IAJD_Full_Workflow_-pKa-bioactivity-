@@ -271,6 +271,131 @@ def characterize(lipid_name: str, *, n_per_leaflet: int, prod_ns: float,
 
 
 # ──────────────────────────────────────────────────────────────────────
+# Per-IAJD characterization (Module B on a real IAJD via the build_cg mapping)
+# ──────────────────────────────────────────────────────────────────────
+
+def characterize_iajd(iajd_num: int, *, protonated: bool = False,
+                      n_per_leaflet: int = 64, prod_ns: float = 80.0,
+                      eq2_ps: float = 4000.0, temp: float = 300.0, threads: int = 4,
+                      frame_ps: float = 100.0, last_frac: float = 0.7,
+                      do_force_check: bool = True, keep_traj: bool = False,
+                      contour: str = "ik", apl_nm2: float = 1.2,
+                      gpu: bool = False) -> Dict:
+    """Module B monolayer c0 for a real IAJD (CG-mapped via physics_design.iajd_cg).
+
+    NEUTRAL state by default (no counterions). Mirrors `characterize` but:
+      (a) builds the Lipid from build_cg (not lipid_library),
+      (b) orients the ionizable head at the water interface (head_idx),
+      (c) integrates at dt=10 fs — the stiffened constraint-bonds (k=50000) are
+          unstable at the lipid 20 fs step,
+      (d) references the head bead BY INDEX (build_cg bead names are not unique),
+      (e) marks the result PROVISIONAL: a tensionless, converged MD does NOT make
+          the number trusted — that requires Module E validating the CG mapping
+          against an atomistic reference (see iajd_cg / FUTURE_WORK FW-2). We report
+          c0_physics_converged (did the MD converge) SEPARATELY from c0_trusted
+          (converged AND mapping-validated).
+    """
+    from physics_design.iajd_cg import iajd_to_lipid
+    t0 = time.time()
+    gmx = _gmx_cmd()
+    lip = iajd_to_lipid(iajd_num, protonated=protonated)
+    head_idx = int(lip.head_bead)                 # type: ignore[attr-defined]
+    nb = lip.n_beads
+    state = "prot" if protonated else "neutral"
+    net_charge = float(getattr(lip, "net_charge_actual", 0.0))
+    ff = parse_ff(needed_types=set(lip.bead_types) | {"W", "NA", "CL"})
+    workdir = WORKROOT / f"IAJD{iajd_num}_{state}_T{int(temp)}"
+    shutil.rmtree(workdir, ignore_errors=True)
+    rec: Dict = {"iajd": iajd_num, "species": lip.name, "state": state,
+                 "temp_K": temp, "n_per_leaflet": n_per_leaflet, "prod_ns": prod_ns,
+                 "head_bead_idx": head_idx, "head_bead_name": lip.bead_names[head_idx],
+                 "net_charge": net_charge,
+                 "n_constraints_stiffened": int(getattr(lip, "n_constraints_stiffened", 0)),
+                 "cg_mapping_validated": bool(getattr(lip, "cg_mapping_validated", False)),
+                 "contour": contour, "dt_ps": 0.010, "c0_nm_inv": float("nan"),
+                 "error": None, "provisional": True}
+
+    # A protonated IAJD carries net charge -> needs neutralizing counterions (gmx
+    # genion), not yet wired. The neutral state is the tractable first c0.
+    if protonated and abs(net_charge) > 0.05:
+        rec["error"] = "charged_state_needs_counterions"
+        return rec
+
+    info = build_system(lip, workdir, gmx, n_per_leaflet=n_per_leaflet,
+                        apl_nm2=apl_nm2, head_idx=head_idx)
+    if info["status"] != "ok":
+        rec["error"] = f"build:{info['status']}"
+        rec["build_log"] = info.get("log", "")[-1500:]
+        return rec
+    n_lip = info["n_lipids"]
+    rec["n_lipids"] = n_lip; rec["n_water"] = info["n_water"]; rec["box_nm"] = info["box_nm"]
+
+    spec = BilayerRunSpec(workdir=workdir, gro=Path(info["gro"]), top=Path(info["top"]),
+                          gmx_cmd=gmx, temp_K=temp, eq2_ps=eq2_ps, prod_ns=prod_ns,
+                          frame_ps=frame_ps, n_threads=threads, dt_ps=0.010, gpu=gpu)
+    audit = run_bilayer(spec)
+    rec["md_status"] = audit.get("status")
+    if audit.get("status") != "ok":
+        rec["error"] = f"md:{audit.get('status')}"
+        rec["md_log"] = audit.get("log", "")[-1800:]
+        return rec
+
+    pos, names, resn, box = read_gro(workdir / "prod.gro")
+    pos = np.array(pos)
+    # head-bead z by INDEX: molecule m's head is global bead m*nb + head_idx (lipids
+    # are written first, contiguous per molecule; MD preserves atom order).
+    head_z = np.array([pos[m * nb + head_idx, 2] for m in range(n_lip)])
+    zc = float(head_z.mean())
+    apl = float(box[0] * box[1] * 2.0 / n_lip)
+    up = head_z[head_z > zc]; lo = head_z[head_z < zc]
+    thick = float(up.mean() - lo.mean()) if len(up) and len(lo) else float("nan")
+    rec["apl_nm2"] = apl; rec["thickness_HH_nm"] = thick
+    # bilayer sanity: heads split into two planes (~half per leaflet), sane spacing
+    rec["bilayer_intact"] = bool(len(up) > 0.3 * n_lip and len(lo) > 0.3 * n_lip
+                                 and np.isfinite(thick) and 1.5 < thick < 8.0)
+
+    if do_force_check:
+        try:
+            rec["force_check"] = energy_cross_check(workdir, gmx, lip, n_lip, ff)
+        except Exception as exc:
+            rec["force_check"] = {"status": f"exception:{type(exc).__name__}:{exc}"}
+
+    sysarr = build_atom_arrays(lip, n_lip, len(pos), ff)
+    prof = compute_profile(workdir / "prod.xtc", workdir / "prod.gro", sysarr,
+                           last_frac=last_frac, contour=contour)
+    zmax = (thick / 2.0 + 1.5) if np.isfinite(thick) else 3.0
+    cr = spontaneous_curvature(prof, lip.name, zmax=zmax)   # _default kappa (flagged)
+    rec["surface_tension_mNm"] = prof.surface_tension_mNm
+    rec["n_frames"] = prof.n_frames
+    rec["tau_moment_bar_nm2"] = cr.tau_moment_bar_nm2
+    rec["kappa_mono_J"] = cr.kappa_mono_J
+    rec["c0_nm_inv"] = cr.c0_nm_inv
+    rec["R0_nm"] = cr.R0_nm
+    rec["moment_curve_bar_nm2"] = cr.moment_curve
+    rec["water_baseline_bar"] = cr.water_baseline_bar
+    rec["tensionless"] = bool(abs(prof.surface_tension_mNm) < 4.0)
+    rec["water_flat"] = bool(np.isfinite(cr.water_baseline_bar)
+                             and cr.water_baseline_bar < 25.0)
+    # PHYSICS convergence: MD reached a tensionless, flat-bulk-water, intact bilayer.
+    rec["c0_physics_converged"] = bool(rec["tensionless"] and rec["water_flat"]
+                                       and rec["bilayer_intact"])
+    # TRUSTED requires ALSO the CG mapping validated vs an atomistic reference (Module
+    # E). Until then the number is provisional regardless of MD convergence.
+    rec["c0_trusted"] = bool(rec["c0_physics_converged"] and rec["cg_mapping_validated"])
+
+    DESIGN_DIR.mkdir(parents=True, exist_ok=True)
+    np.savez(DESIGN_DIR / f"IAJD{iajd_num}_{state}_T{int(temp)}_profile.npz",
+             z=prof.z, dP=prof.dP, dP_nb=prof.dP_nb, dP_bond=prof.dP_bond,
+             dP_angle=prof.dP_angle)
+    rec["profile_npz"] = str(DESIGN_DIR / f"IAJD{iajd_num}_{state}_T{int(temp)}_profile.npz")
+    rec["elapsed_min"] = round((time.time() - t0) / 60, 1)
+    _purge(workdir, keep_traj)
+    (DESIGN_DIR / f"IAJD{iajd_num}_{state}_T{int(temp)}_curvature.json").write_text(
+        json.dumps(rec, indent=2, default=str))
+    return rec
+
+
+# ──────────────────────────────────────────────────────────────────────
 # Validation gate
 # ──────────────────────────────────────────────────────────────────────
 
@@ -352,6 +477,15 @@ def aggregate_validation(temps=(300,)) -> Dict:
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--lipid", help="lipid species name (DOPC/DOPE/POPC/...)")
+    p.add_argument("--iajd", type=int, help="IAJD number: Module B on a real IAJD "
+                   "(CG-mapped via build_cg); result is PROVISIONAL until Module E")
+    p.add_argument("--protonated", action="store_true",
+                   help="protonated IAJD state (needs counterions; not yet wired)")
+    p.add_argument("--apl", type=float, default=1.2,
+                   help="initial area-per-molecule for the IAJD build (nm^2); the "
+                        "tensionless NPT relaxes it to the equilibrium area")
+    p.add_argument("--gpu", action="store_true",
+                   help="offload MD nonbonded+bonded to GPU (gmx -nb gpu)")
     p.add_argument("--n-per-leaflet", type=int, default=72)
     p.add_argument("--prod-ns", type=float, default=100.0)
     p.add_argument("--eq2-ps", type=float, default=4000.0)
@@ -370,8 +504,20 @@ def main():
         print(json.dumps(rep.get("gate", {}), indent=2, default=str))
         return 0
 
+    if args.iajd:
+        rec = characterize_iajd(args.iajd, protonated=args.protonated,
+                                n_per_leaflet=args.n_per_leaflet, prod_ns=args.prod_ns,
+                                eq2_ps=args.eq2_ps, temp=args.temp, threads=args.threads,
+                                frame_ps=args.frame_ps, last_frac=args.last_frac,
+                                do_force_check=args.force_check, keep_traj=args.keep_traj,
+                                contour=args.contour, apl_nm2=args.apl, gpu=args.gpu)
+        print(json.dumps({k: v for k, v in rec.items()
+                          if k not in ("md_log", "build_log", "moment_curve_bar_nm2")},
+                         indent=2, default=str))
+        return 0
+
     if not args.lipid:
-        p.error("need --lipid NAME or --validate")
+        p.error("need --lipid NAME, --iajd NUM, or --validate")
     rec = characterize(args.lipid, n_per_leaflet=args.n_per_leaflet,
                        prod_ns=args.prod_ns, eq2_ps=args.eq2_ps, temp=args.temp,
                        threads=args.threads, frame_ps=args.frame_ps,

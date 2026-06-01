@@ -72,7 +72,7 @@ refcoord-scaling = all
 
 EQ2_MDP = """; Martini 3 NPT equilibration
 integrator   = md
-dt           = 0.020
+dt           = {dt}
 nsteps       = {nsteps}
 nstxout-compressed = 0
 nstenergy    = 1000
@@ -84,7 +84,7 @@ gen-vel      = no
 
 PROD_MDP = """; Martini 3 production (tensionless bilayer, frames for pressure profile)
 integrator   = md
-dt           = 0.020
+dt           = {dt}
 nsteps       = {nsteps}
 nstxout-compressed = {nstxout}
 nstenergy    = 5000
@@ -104,11 +104,14 @@ class BilayerRunSpec:
     temp_K: float = 300.0
     seed: int = 1
     eq1_ps: float = 500.0       # gentle dt=10fs
-    eq2_ps: float = 3000.0      # dt=20fs, let APL converge
+    eq2_ps: float = 3000.0      # let APL converge (dt below)
     prod_ns: float = 60.0       # production for pressure profile
     frame_ps: float = 100.0     # save a frame every frame_ps
     n_threads: int = 4
     nice: int = 10
+    dt_ps: float = 0.020        # eq2/prod timestep; IAJDs with stiffened constraint-
+                                # bonds (k=50000) REQUIRE dt<=0.010 or the MD explodes
+    gpu: bool = False           # offload nonbonded (+bonded) to GPU (gmx -nb gpu)
 
 
 def _make_index(spec: BilayerRunSpec) -> Optional[Path]:
@@ -144,6 +147,12 @@ def _grompp_mdrun(spec: BilayerRunSpec, mdp_text: str, gro_in: Path, step: str,
     md = (["nice", "-n", str(spec.nice)] + spec.gmx_cmd +
           ["mdrun", "-s", str(tpr), "-deffnm", str(wd / step),
            "-ntmpi", "1", "-ntomp", str(spec.n_threads), "-pin", "on"])
+    if spec.gpu:
+        # Martini uses reaction-field (no PME), so the GPU win is the nonbonded +
+        # bonded kernels; integration/PME stay on CPU. Many small CG jobs in parallel
+        # still out-throughput one GPU job — GPU mainly pays off on the atomistic
+        # Module E (PME) and on larger CG patches.
+        md += ["-nb", "gpu", "-bonded", "gpu"]
     r2 = subprocess.run(md, cwd=str(wd), capture_output=True, text=True, timeout=timeout_s)
     ok = r2.returncode == 0 and (wd / f"{step}.gro").exists()
     return ok, (r2.stdout + r2.stderr)[-4000:]
@@ -172,16 +181,17 @@ def run_bilayer(spec: BilayerRunSpec) -> Dict:
         audit.update(status="eq1_failed", log=log)
         return audit
 
-    eq2 = EQ2_MDP.format(nsteps=int(spec.eq2_ps / 0.020), temp=spec.temp_K)
+    eq2 = EQ2_MDP.format(nsteps=int(spec.eq2_ps / spec.dt_ps), temp=spec.temp_K,
+                         dt=spec.dt_ps)
     ok, log = _grompp_mdrun(spec, eq2, spec.workdir / "eq1.gro", "eq2", ndx,
                             timeout_s=14400)
     if not ok:
         audit.update(status="eq2_failed", log=log)
         return audit
 
-    nstxout = int(spec.frame_ps / 0.020)
-    prod = PROD_MDP.format(nsteps=int(spec.prod_ns * 1000 / 0.020),
-                           nstxout=nstxout, temp=spec.temp_K)
+    nstxout = int(spec.frame_ps / spec.dt_ps)
+    prod = PROD_MDP.format(nsteps=int(spec.prod_ns * 1000 / spec.dt_ps),
+                           nstxout=nstxout, temp=spec.temp_K, dt=spec.dt_ps)
     ok, log = _grompp_mdrun(spec, prod, spec.workdir / "eq2.gro", "prod", ndx,
                             timeout_s=172800)
     if not ok:

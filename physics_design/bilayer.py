@@ -46,16 +46,21 @@ def _adjacency(lip: Lipid) -> Dict[int, List[int]]:
     return adj
 
 
-def lipid_template(lip: Lipid, *, dz: float = 0.27, splay: float = 0.13
-                   ) -> np.ndarray:
+def lipid_template(lip: Lipid, *, dz: float = 0.27, splay: float = 0.13,
+                   head_idx: int = 0) -> np.ndarray:
     """Return Nx3 local coords with the head bead at the top (z=0) and tails
-    descending to negative z. Tails are splayed in x by branch."""
+    descending to negative z. Tails are splayed in x by branch.
+
+    `head_idx` is the bead placed at the interface (z=0); graph depth from it sets
+    z. Standard lipids store the head as bead 0 (default); IAJDs from build_cg order
+    beads core-first, so their ionizable head (Lipid.head_bead) must be passed here
+    or the bilayer is built upside-down (tails at the water interface)."""
     adj = _adjacency(lip)
     n = lip.n_beads
     depth = [-1] * n
     parent = [-1] * n
-    depth[0] = 0
-    q = deque([0])
+    depth[head_idx] = 0
+    q = deque([head_idx])
     order: List[int] = []
     while q:
         u = q.popleft()
@@ -103,12 +108,12 @@ def lipid_template(lip: Lipid, *, dz: float = 0.27, splay: float = 0.13
 
 def build_bilayer_coords(lip: Lipid, n_per_leaflet: int, *,
                          apl_nm2: float = 0.66, midgap_nm: float = 0.35,
-                         water_pad_nm: float = 4.0
+                         water_pad_nm: float = 4.0, head_idx: int = 0
                          ) -> Tuple[np.ndarray, List[str], List[str], Tuple[float, float, float], float]:
     """Build bilayer bead coordinates (lipids only).
 
     Returns (positions[M,3] nm, atom_names[M], res_names[M], box(nm), z_mid)."""
-    templ = lipid_template(lip)
+    templ = lipid_template(lip, head_idx=head_idx)
     span_z = float(templ[:, 2].max() - templ[:, 2].min())  # leaflet height (nm)
     s = float(np.sqrt(apl_nm2))                              # grid spacing (nm)
     ncol = int(np.ceil(np.sqrt(n_per_leaflet)))
@@ -235,16 +240,19 @@ def read_gro(path: Path) -> Tuple[np.ndarray, List[str], List[str], Tuple[float,
 def build_system(lip: Lipid, workdir: Path, gmx_cmd: List[str], *,
                  n_per_leaflet: int = 64, apl_nm2: float = 0.66,
                  water_per_lipid: float = 45.0, seed: int = 1,
-                 strip_core_waters: bool = True) -> Dict:
+                 strip_core_waters: bool = True, head_idx: int = 0) -> Dict:
     """Build the solvated flat bilayer in `workdir`. Returns an info dict with the
-    final .gro/.top paths and counts. Uses gmx solvate for water."""
+    final .gro/.top paths and counts. Uses gmx solvate for water.
+
+    `head_idx` = the bead placed at the water interface (0 for standard lipids;
+    Lipid.head_bead for core-first IAJD topologies from build_cg)."""
     workdir.mkdir(parents=True, exist_ok=True)
     _link_ff(workdir)
     itp_name = f"{lip.name}.itp"
     write_single_itp(lip, workdir / itp_name)
 
     pos, names, resn, box, z_mid = build_bilayer_coords(
-        lip, n_per_leaflet, apl_nm2=apl_nm2)
+        lip, n_per_leaflet, apl_nm2=apl_nm2, head_idx=head_idx)
     n_lipids = 2 * n_per_leaflet
     lipids_gro = workdir / "lipids.gro"
     write_gro(pos, names, resn, box, lipids_gro, title=f"{lip.name} bilayer")
@@ -266,7 +274,7 @@ def build_system(lip: Lipid, workdir: Path, gmx_cmd: List[str], *,
     # Read back, optionally strip waters inside the hydrophobic slab.
     pos2, names2, resn2, box2 = read_gro(solv_gro)
     if strip_core_waters:
-        templ = lipid_template(lip)
+        templ = lipid_template(lip, head_idx=head_idx)
         span_z = float(templ[:, 2].max() - templ[:, 2].min())
         # hydrophobic half-thickness ~ leaflet span minus head beads (~2 beads)
         hydro_half = max(0.8, span_z - 0.6)
