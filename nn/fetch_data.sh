@@ -10,9 +10,13 @@ REPO="${REPO:-$WORK/IAJD}"
 cd "$WORK"; mkdir -p extern; cd extern
 
 clone() { [ -d "$2" ] || git clone --depth 1 "$1" "$2"; }
+# LNPDB is REQUIRED (the in-vivo corpus); AGILE/LANTERN are only for the GNN-encoder /
+# cleaned-label UPGRADES, so their clone failing must NOT abort the LNPDB build.
+# (Also: nn/lnpdb_invivo.csv is already committed in the repo, so the Morgan transfer path
+#  runs even without this script.)
 clone https://github.com/evancollins1/LNPDB.git   LNPDB
-clone https://github.com/bowang-lab/AGILE.git      AGILE
-clone https://github.com/AsalMehradfar/LANTERN.git LANTERN
+clone https://github.com/bowang-lab/AGILE.git      AGILE   || echo "[warn] AGILE clone failed (GNN-encoder upgrade only)"
+clone https://github.com/AsalMehradfar/LANTERN.git LANTERN || echo "[warn] LANTERN clone failed (cleaned-labels upgrade only)"
 
 # Build the in-vivo subset (smiles, value, organ) — schema-robust column detection.
 python - "$REPO" <<'PY'

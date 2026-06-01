@@ -24,8 +24,10 @@ The pure-IAJD bilayer collapses for membrane-active IAJDs (FW-4), so the panel u
 locally on 369: bilayer stays intact, mixed-system forces exact to 0.00008%.
 
 ```bash
-# whole GA-Tris family, FW-3 order, host method, parallel across cores (CPU)
-python run_iajd_panel.py --family GA-Tris --host --n-iajd 8 \
+# whole GA-Tris family, FW-3 order, host method, parallel across cores (CPU).
+# n-per-leaflet 48 + n-iajd 8 => x=0.167, the validated config (369 converged: c0=+1.27,
+# tensionless, exact forces). Lower x noisens the 1/x curvature extraction, so keep these.
+python run_iajd_panel.py --family GA-Tris --host --n-iajd 8 --n-per-leaflet 48 \
        --jobs 6 --threads 4 --gpu-jobs 0 --prod-ns 80 --force-check
 ```
 - `--jobs N` concurrent IAJDs, `--threads K` cores each → size to `N*K ≈ vCPUs`.
