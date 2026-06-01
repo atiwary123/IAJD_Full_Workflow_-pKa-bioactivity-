@@ -75,12 +75,13 @@ def load_labels() -> pd.DataFrame:
 
 
 def f_morgan(smis, radius=3, nbits=1024):
-    gen = AllChem.GetMorganGenerator(radius=radius, fpSize=nbits)
+    # RDKit 2022.09 API (GetMorganGenerator was added later)
     X = np.zeros((len(smis), nbits))
     for i, s in enumerate(smis):
         m = Chem.MolFromSmiles(s)
         if m is not None:
-            X[i] = np.frombuffer(gen.GetFingerprint(m).ToBitString().encode(), "u1") - ord("0")
+            fp = AllChem.GetMorganFingerprintAsBitVect(m, radius, nBits=nbits)
+            X[i] = np.frombuffer(fp.ToBitString().encode(), "u1") - ord("0")
     return X
 
 
