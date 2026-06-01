@@ -109,7 +109,11 @@ def _bioact_stacker_predict(X_full_row, analog_pred, smiles=None, max_tanimoto=N
         return None
     x = np.asarray(X_full_row, dtype=float).reshape(1, -1)
     bl_a, bl_b = sb["block_lion"]; bc_a, bc_b = sb["block_admet"]
-    direct = float(sb["direct_head"].predict(x)[0])
+    # Match each head's feature dim. Legacy stacker bundles were trained on
+    # 92 cols (no Block D'); the new 106-col pipeline must slice for those.
+    direct_head = sb["direct_head"]
+    direct_n = getattr(direct_head, "n_features_in_", x.shape[1])
+    direct = float(direct_head.predict(x[:, :direct_n])[0])
     lion = float(sb["lion_head"].predict(x[:, bl_a:bl_b])[0])
     admet = float(sb["admet_head"].predict(x[:, bc_a:bc_b])[0])
 
@@ -129,12 +133,23 @@ def _bioact_stacker_predict(X_full_row, analog_pred, smiles=None, max_tanimoto=N
         except Exception:
             cpp_val = None
 
+    # QM/MD physics head (Block D' — W-A/W-B/W-C). Real physics descriptors
+    # from xTB + MARTINI MD; designed to extrapolate so it grows with novelty.
+    qmmd_val = None
+    if "qmmd_head" in sb and sb.get("qmmd_head") is not None and smiles:
+        try:
+            qmmd_val = _qmmd_predict_single(smiles, sb)
+        except Exception:
+            qmmd_val = None
+
     head_preds = {"direct": direct, "analog": float(analog_pred),
                   "lion": lion, "admet": admet}
     if agile_val is not None:
         head_preds["agile"] = agile_val
     if cpp_val is not None:
         head_preds["cpp"] = cpp_val
+    if qmmd_val is not None:
+        head_preds["qmmd"] = qmmd_val
 
     # Adaptive weighting if params available
     adaptive = sb.get("adaptive_params")
@@ -145,7 +160,8 @@ def _bioact_stacker_predict(X_full_row, analog_pred, smiles=None, max_tanimoto=N
         k_grow = adaptive["k_grow"]
 
         HEAD_TYPES = {'direct':'stable','analog':'similarity','lion':'gnn',
-                      'admet':'gnn','agile':'physics','cpp':'physics'}
+                      'admet':'gnn','agile':'physics','cpp':'physics',
+                      'qmmd':'physics'}
         raw_w = {}
         for h in head_preds:
             bw = base_w.get(h, 0.01)
@@ -174,6 +190,8 @@ def _bioact_stacker_predict(X_full_row, analog_pred, smiles=None, max_tanimoto=N
                 feats_list.append(agile_val)
             if cpp_val is not None and "cpp" in sb.get("stack_features", []):
                 feats_list.append(cpp_val)
+            if qmmd_val is not None and "qmmd" in sb.get("stack_features", []):
+                feats_list.append(qmmd_val)
             feats = np.asarray([feats_list])
             try:
                 point = float(sb["stacker"].predict(feats)[0])
@@ -247,6 +265,64 @@ def _cpp_predict_single(smiles, sb):
                       dtype=float)
         val = float(sb["cpp_head"].predict(x)[0])
         _CPP_CACHE[smiles] = val
+        return val
+    except Exception:
+        return None
+
+
+_QMMD_CACHE = {}
+_QMMD_STANDALONE = None
+
+def _load_qmmd_standalone():
+    """Lazy-load the standalone qmmd_head.joblib (trained against the current
+    Block D' cache snapshot). Used as a fallback when the loaded stacker
+    doesn't have a qmmd head yet (e.g. shipped legacy stacker).
+    """
+    global _QMMD_STANDALONE
+    if _QMMD_STANDALONE is not None:
+        return _QMMD_STANDALONE if _QMMD_STANDALONE is not False else None
+    try:
+        import joblib
+        p = CACHE_DIR / "physics" / "qmmd_head.joblib"
+        if p.exists():
+            _QMMD_STANDALONE = joblib.load(p)
+            return _QMMD_STANDALONE
+    except (OSError, ImportError, ValueError):
+        pass
+    _QMMD_STANDALONE = False
+    return None
+
+
+def _qmmd_predict_single(smiles, sb, *, head_group=None, pka=None):
+    """Compute the QM/MD Block D' feature vector and predict via qmmd head.
+
+    Resolution order:
+      1. sb["qmmd_head"] (stacker bundle has the head built in)
+      2. qmmd_head.joblib standalone (W-D head trained outside the stacker)
+      3. None
+
+    Real values flow through physics_cache_io.load_physics (cache → emulator
+    → NaN). NaN-passthrough — XGBoost's default branch handles the missing
+    columns honestly.
+    """
+    if smiles in _QMMD_CACHE:
+        return _QMMD_CACHE[smiles]
+    import numpy as np
+    try:
+        from physics_cache_io import load_physics, BLOCK_DPRIME_KEYS
+        rec = load_physics(smiles, head_group=head_group, pka=pka)
+        flat = rec.as_block_dprime()
+        x = np.array([[flat.get(k, float("nan")) for k in BLOCK_DPRIME_KEYS]],
+                      dtype=float)
+        model = sb.get("qmmd_head") if isinstance(sb, dict) else None
+        if model is None:
+            standalone = _load_qmmd_standalone()
+            if standalone is not None:
+                model = standalone.get("model")
+        if model is None:
+            return None
+        val = float(model.predict(x)[0])
+        _QMMD_CACHE[smiles] = val
         return val
     except Exception:
         return None

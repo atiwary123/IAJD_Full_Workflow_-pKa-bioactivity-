@@ -118,23 +118,27 @@ def run_one_pH(workdir: Path, pH: float, start_gro: Path, top_template: Path,
 
 
 def analyze_pH(d: Path, sel: str, ref: str, gmx: List[str], start_frac: float = 0.4) -> float:
-    """Average degree of protonation <q> at one pH via degree_of_deprot.py."""
+    """Average degree of protonation <q> at one pH via degree_of_deprot.py.
+
+    Uses a .gro topology (not the .tpr): GROMACS-2026 tpr (tpx v138) is too new for
+    MDAnalysis' TPR parser, but a .gro is version-independent and carries the bead
+    names the distance scheme selects on. Runs under THIS interpreter (venv MDAnalysis).
+    """
     prod = d / "prod"
     traj = prod / "traj_comp.xtc"
-    tpr = prod / "topol.tpr"
-    if not traj.exists() or not tpr.exists():
+    topo = prod / "confout.gro"          # version-independent topology
+    if not traj.exists() or not topo.exists():
         return float("nan")
-    # number of frames -> start frame
     import MDAnalysis as mda
     try:
-        n = len(mda.Universe(str(tpr), str(traj)).trajectory)
+        n = len(mda.Universe(str(topo), str(traj)).trajectory)
     except Exception:
         n = 0
     b = int(n * start_frac)
     out = prod / "dop.xvg"
     log = d / "analyze.log"
-    ok = _run(["python3", str(SCRIPTS / "degree_of_deprot.py"), "-f", str(traj),
-               "-s", str(tpr), "-o", str(out), "-b", str(b), "-ref", ref, "-sel", sel],
+    ok = _run([sys.executable, str(SCRIPTS / "degree_of_deprot.py"), "-f", str(traj),
+               "-s", str(topo), "-o", str(out), "-b", str(b), "-ref", ref, "-sel", sel],
               prod, log, 1800)
     if not ok or not out.exists():
         return float("nan")
@@ -154,21 +158,25 @@ def analyze_pH(d: Path, sel: str, ref: str, gmx: List[str], start_frac: float = 
 
 def henderson_hasselbalch(pH: np.ndarray, q: np.ndarray, is_base: bool = True
                           ) -> Tuple[float, float, float]:
-    """Fit <q>(pH) to q = 1/(1 + 10^(s*(pH - pKa))) ; s=+1 base, -1 acid.
-    Returns (pKa, hill_n, rmse)."""
+    """Fit the DEGREE OF DEPROTONATION <q>(pH) (the degree_of_deprot.py observable:
+    0=fully protonated, 1=fully deprotonated, monotonically increasing with pH) to a
+    Hill / Henderson-Hasselbalch curve:
+        deprot(pH) = 1 / (1 + 10^(n*(pKa - pH)))
+    The apparent pKa is the midpoint (deprot = 0.5). This holds for both acids and
+    bases since deprotonation always rises with pH; `is_base` is accepted for API
+    symmetry but unused. Returns (pKa, hill_n, rmse)."""
     from scipy.optimize import curve_fit
-    s = 1.0 if is_base else -1.0
 
     def model(x, pKa, n):
-        return 1.0 / (1.0 + 10.0 ** (s * n * (x - pKa)))
+        return 1.0 / (1.0 + 10.0 ** (n * (pKa - x)))
 
     m = np.isfinite(q)
     if m.sum() < 3:
         return float("nan"), float("nan"), float("nan")
     try:
         p0 = [float(pH[m][np.argmin(np.abs(q[m] - 0.5))]), 1.0]
-        popt, _ = curve_fit(model, pH[m], q[m], p0=p0, maxfev=10000,
-                            bounds=([2.0, 0.2], [12.0, 5.0]))
+        popt, _ = curve_fit(model, pH[m], q[m], p0=p0, maxfev=20000,
+                            bounds=([2.0, 0.2], [12.0, 6.0]))
         rmse = float(np.sqrt(np.mean((model(pH[m], *popt) - q[m]) ** 2)))
         return float(popt[0]), float(popt[1]), rmse
     except Exception:

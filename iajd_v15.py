@@ -682,10 +682,14 @@ def predict_bioactivity_v15(smiles: str, bundle: V15Bundle,
         _extend([canonical])
     except Exception:
         pass
+    # Match the v15 bundle's stage feature dimensionality.
+    stage_n_features = bundle.bioact.X.shape[1]
+    include_dprime = stage_n_features >= 100
     X_q, lion_modes = assemble_X(
         df_q, [mol], [_mfp2], [canonical],
         lion_cache_path=str(lion_path) if lion_path.exists() else None,
         admet_cache_path=str(admet_path) if admet_path.exists() else None,
+        include_dprime=include_dprime,
     )
     x_full = X_q[0]
     lion_real = (lion_modes[0] == "cached") if lion_modes else False

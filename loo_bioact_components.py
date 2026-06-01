@@ -29,6 +29,7 @@ BUNDLE = HERE / "IAJD_master" / "bundles_caches" / "bioact_v14_bundle.pkl"
 # Block ranges from the bundle's block_slices
 BLOCK_LION_SLICE = slice(50, 64)
 BLOCK_ADMET_SLICE = slice(64, 74)
+BLOCK_DPRIME_SLICE = slice(92, 106)
 
 # XGBoost hyperparameters: chosen modest to keep LOO fast.
 DIRECT_HP = dict(n_estimators=400, max_depth=4, learning_rate=0.05,
@@ -76,6 +77,8 @@ def main():
 
     direct = np.zeros(n); analog = np.zeros(n); lion = np.zeros(n)
     admet = np.zeros(n); max_sim = np.zeros(n)
+    has_dprime = X.shape[1] >= 106
+    qmmd = np.zeros(n) if has_dprime else None
     t0 = time.time()
     for i in range(n):
         keep = np.array([j for j in range(n) if j != i])
@@ -89,6 +92,10 @@ def main():
         # ADMET-only head
         X_tr_a = X_tr[:, BLOCK_ADMET_SLICE]
         admet[i] = _fit_predict(X_tr_a, y_tr, X[i, BLOCK_ADMET_SLICE], BLOCK_HP)
+        # QM/MD physics head (Block D')
+        if qmmd is not None:
+            X_tr_p = X_tr[:, BLOCK_DPRIME_SLICE]
+            qmmd[i] = _fit_predict(X_tr_p, y_tr, X[i, BLOCK_DPRIME_SLICE], BLOCK_HP)
         # Analog-delta path
         analog[i], max_sim[i] = _analog_pred(i, X, y, fps)
 
@@ -98,14 +105,19 @@ def main():
                   flush=True)
 
     out_path = HERE / "bioact_loo_components.npz"
-    np.savez(out_path, direct=direct, analog=analog, lion=lion, admet=admet,
-             max_sim=max_sim, y_true=y, families=families)
+    save_kwargs = dict(direct=direct, analog=analog, lion=lion, admet=admet,
+                        max_sim=max_sim, y_true=y, families=families)
+    if qmmd is not None:
+        save_kwargs["qmmd"] = qmmd
+    np.savez(out_path, **save_kwargs)
     mae = lambda p: float(np.mean(np.abs(p - y)))
     print()
     print(f"  pure direct      MAE = {mae(direct):.4f}")
     print(f"  pure analog      MAE = {mae(analog):.4f}")
     print(f"  pure lion-only   MAE = {mae(lion):.4f}")
     print(f"  pure admet-only  MAE = {mae(admet):.4f}")
+    if qmmd is not None:
+        print(f"  pure qmmd (D')   MAE = {mae(qmmd):.4f}")
     blend = 0.5 * direct + 0.5 * analog
     print(f"  naive 50/50      MAE = {mae(blend):.4f}")
     print(f"  Saved -> {out_path}")

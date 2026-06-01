@@ -10,39 +10,40 @@
     27182
   ],
   "bootstrap_sizes": [
-    209,
-    209,
-    209,
-    209,
-    209,
-    209,
-    209
+    200,
+    200,
+    200,
+    200,
+    200,
+    200,
+    200
   ],
-  "sigma_calibration": 2.584747583184033,
+  "sigma_calibration": 2.526856654187054,
   "per_family_sigma": {
-    "Dialkoxybenzyl": 0.42802518641577075,
-    "G1-Janus-Dendrimer": 0.643677988728502,
-    "GA-Tris": 0.43972114103708126,
-    "PE-Gallic": 0.9081812348882677,
-    "PE-Tris": 0.5930077443510766,
-    "sSS-Nonsym": 0.49652655406703505
+    "Dialkoxybenzyl": 0.47136343463974373,
+    "G1-Janus-Dendrimer": 0.6161514193497607,
+    "GA-Tris": 0.555836293759398,
+    "PE-Gallic": 0.7095248099150471,
+    "PE-Tris": 0.6119924284240271,
+    "sSS-Nonsym": 0.5137189002138404
   },
-  "global_sigma": 0.5450897063491394,
+  "global_sigma": 0.546458885286866,
   "block_slices": {
     "A": "slice(0, 50, None)",
     "B": "slice(50, 64, None)",
     "C": "slice(64, 74, None)",
     "D": "slice(74, 80, None)",
     "formulation": "slice(80, 88, None)",
-    "E_sampleprep": "slice(88, 92, None)"
+    "E_sampleprep": "slice(88, 92, None)",
+    "Dprime": "slice(92, 106, None)"
   },
-  "n_features": 92,
-  "training_size": 247,
+  "n_features": 106,
+  "training_size": 236,
   "metrics": {
-    "loo_mae_ensemble_mean": 0.44487434456532376,
-    "ensemble_mean_sigma_raw": 0.2108870165486984,
-    "actual_residual_std": 0.5450897063491394,
-    "calibration_factor": 2.584747583184033,
+    "loo_mae_ensemble_mean": 0.4406469827667539,
+    "ensemble_mean_sigma_raw": 0.2162603424224213,
+    "actual_residual_std": 0.546458885286866,
+    "calibration_factor": 2.526856654187054,
     "M": 7,
     "bootstrap_frac": 0.85
   }

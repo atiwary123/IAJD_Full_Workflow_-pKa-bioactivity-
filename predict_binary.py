@@ -159,8 +159,18 @@ def _extend_caches_live(canon_smis: List[str]) -> None:
 
 
 def _assemble_X(smiles_list: List[str], family_hint: str = "GA-Tris",
-                 sample_prep: dict | None = None):
-    """Build the 92-feature stack for one or more SMILES.
+                 sample_prep: dict | None = None,
+                 include_dprime: bool | None = None):
+    """Build the feature stack for one or more SMILES.
+
+    `include_dprime`:
+      None  (default) → return the full 106-col stack (Block A+B+C+D+form+E+D').
+      False           → legacy 92-col stack (skip Block D'), for compatibility
+                        with bundles trained before the W-A/W-B/W-C upgrade.
+
+    Callers loading a binary bundle can pass `include_dprime=False` if their
+    bundle was trained against the 92-feature layout, OR they can leave it as
+    None and the bioact_v14_pipeline auto-detects from the consumer model.
 
     `sample_prep` (optional): dict of {pH_sample, T_hours, inj_route} to
     populate Block E at inference. Missing keys → NaN (XGBoost's default
@@ -210,11 +220,15 @@ def _assemble_X(smiles_list: List[str], family_hint: str = "GA-Tris",
             row["inj_route"] = sp["inj_route"]
         rows.append(row)
     df_q = pd.DataFrame(rows)
+    # Default to the new (106-col) layout; callers can force legacy 92-col by
+    # passing include_dprime=False.
+    use_dp = True if include_dprime is None else bool(include_dprime)
     X, _modes = assemble_X(
         df_q, mols, fps_q, canons,
         lion_cache_path=str(OUT / "lion_cache_v13.json"),
         admet_cache_path=str(OUT / "admet_cache_v13.json"),
         lion_train_fps_path=str(OUT / "lion_train_fps.pkl"),
+        include_dprime=use_dp,
     )
     return X
 
@@ -224,7 +238,12 @@ def predict_p_above_batch(smiles_list: List[str], threshold: float,
                            family_hint: str = "GA-Tris") -> Tuple[np.ndarray, np.ndarray]:
     """Return (yhat, p_above) for each SMILES at the given threshold."""
     b = bundle or load_binary_bundle()
-    X = _assemble_X(smiles_list, family_hint=family_hint)
+    # Match the bundle's feature dimensionality: pre-Block-D' regressors were
+    # trained on 92 cols. Post-W-D bundles expect 106 (with Block D').
+    reg_in = getattr(b["regressor"], "n_features_in_", 92)
+    include_dp = reg_in >= 100
+    X = _assemble_X(smiles_list, family_hint=family_hint,
+                     include_dprime=include_dp)
     yhat = b["regressor"].predict(X)
     # Pick nearest grid threshold
     grid = sorted(float(g) for g in b["threshold_calibrators"].keys())

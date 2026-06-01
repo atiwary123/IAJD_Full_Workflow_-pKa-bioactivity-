@@ -1,0 +1,733 @@
+                                                                                                          pubs.acs.org/JACS                                                                                                                               Article
+
+
+
+                                                                                                          One-Component Multifunctional Sequence-Deﬁned Ionizable
+                                                                                                          Amphiphilic Janus Dendrimer Delivery Systems for mRNA
+                                                                                                          Dapeng Zhang,⧫ Elena N. Atochina-Vasserman,⧫ Devendra S. Maurya, Ning Huang, Qi Xiao,
+                                                                                                          Nathan Ona, Matthew Liu, Hamna Shahnawaz, Houping Ni, Kyunghee Kim, Margaret M. Billingsley,
+                                                                                                          Darrin J. Pochan, Michael J. Mitchell, Drew Weissman,* and Virgil Percec*
+                                                                                                                Cite This: https://doi.org/10.1021/jacs.1c05813                               Read Online
+
+
+                                                                                                          ACCESS                                                                                                       * Supporting Information
+
+
+
+
+         Downloaded via UNIV OF PENNSYLVANIA on July 29, 2021 at 23:17:53 (UTC).
+                                                                                                                                         Metrics & More                            Article Recommendations              sı
+
+
+                                                                                                          ABSTRACT: Eﬃcient viral or nonviral delivery of nucleic acids is
+                                                                                                          the key step of genetic nanomedicine. Both viral and synthetic
+                                                                                                          vectors have been successfully employed for genetic delivery with
+                                                                                                          recent examples being DNA, adenoviral, and mRNA-based Covid-
+                                                                                                          19 vaccines. Viral vectors can be target speciﬁc and very eﬃcient
+                                                                                                          but can also mediate severe immune response, cell toxicity, and
+                                                                                                          mutations. Four-component lipid nanoparticles (LNPs) containing
+                                                                                                          ionizable lipids, phospholipids, cholesterol for mechanical proper-
+                                                                                                          ties, and PEG-conjugated lipid for stability represent the current
+                                                                                                          leading nonviral vectors for mRNA. However, the segregation of
+                                                                                                          the neutral ionizable lipid as droplets in the core of the LNP, the
+                                                                                                          “PEG dilemma”, and the stability at only very low temperatures
+                                                                                                          limit their eﬃciency. Here, we report the development of a one-
+                                                                                                          component multifunctional ionizable amphiphilic Janus dendrimer (IAJD) delivery system for mRNA that exhibits high activity at a
+
+
+
+
+See https://pubs.acs.org/sharingguidelines for options on how to legitimately share published articles.
+                                                                                                          low concentration of ionizable amines organized in a sequence-deﬁned arrangement. Six libraries containing 54 sequence-deﬁned
+                                                                                                          IAJDs were synthesized by an accelerated modular-orthogonal methodology and coassembled with mRNA into dendrimersome
+                                                                                                          nanoparticles (DNPs) by a simple injection method rather than by the complex microﬂuidic technology often used for LNPs. Forty
+                                                                                                          four (81%) showed activity in vitro and 31 (57%) in vivo. Some, exhibiting organ speciﬁcity, are stable at 5 °C and demonstrated
+                                                                                                          higher transfection eﬃciency than positive control experiments in vitro and in vivo. Aside from practical applications, this proof of
+                                                                                                          concept will help elucidate the mechanisms of packaging and release of mRNA from DNPs as a function of ionizable amine
+                                                                                                          concentration, their sequence, and constitutional isomerism of IAJDs.
+
+
+                                                                                                          ■    INTRODUCTION
+                                                                                                          The delivery of exogenously produced nucleic acids into cells
+                                                                                                                                                                                         PEG-conjugated lipid that provides stability represents the
+                                                                                                                                                                                         current leading nonviral vector for the delivery of mRNA.
+                                                                                                          and/or their nucleus to modify protein expression by viral and                 Shortcomings of LNP production and stability are exempliﬁed
+                                                                                                                                                                                         by a T-tube of a microﬂuidic device required for their
+                                                                                                          nonviral vectors represents one of the most fundamental
+                                                                                                                                                                                         assembly6 and the need for long-term storage at extremely low
+                                                                                                          concepts of nanomedicine.1 Both viral and nonviral delivery
+                                                                                                                                                                                         temperatures (−70 °C).1k Their design, synthesis, and
+                                                                                                          systems exhibit advantages and disadvantages. Viral vectors
+                                                                                                                                                                                         assembly were inspired from that of stealth liposomes
+                                                                                                          have high transfection eﬃciency (95%)1a and higher speciﬁcity
+                                                                                                                                                                                         developed to deliver low molar mass drugs.5 Since RNA is
+                                                                                                          for cell targeting including for unnatural cells.1g Some
+                                                                                                                                                                                         less stable than DNA due to enzymatic degradation, it must be
+                                                                                                          drawbacks of viral gene delivery include immunogenicity,2a
+                                                                                                                                                                                         protected by encapsulation before being released in the cell. At
+                                                                                                          cytotoxicity,2b diﬃculty of assembly,2c inﬂammatory responses
+                                                                                                                                                                                         acidic pH (pH 3 to 5) LNPs can encapsulate large quantities of
+                                                                                                          to repeated administration,1h and the potential for insertional
+                                                                                                                                                                                         mRNA when the pKa of the ionizable amine is less than 7.1i,7
+                                                                                                          mutagenesis.1f Nonviral delivery has higher biosafety and
+                                                                                                                                                                                         At physiological pH (7.4)7 LNPs have a nearly neutral surface
+                                                                                                          exhibits lower toxicity and immunogenicity, but it is less
+                                                                                                          transfection eﬃcient (1−2%)1f and the vectors are less stable
+                                                                                                          than the viral ones.1h Covalent3a−f and supramolecular                         Received: June 4, 2021
+                                                                                                          dendrimers3g−i complexed on their cationic periphery groups
+                                                                                                          with the nucleic acid have been employed as nonviral vectors
+                                                                                                          for cell transfection of DNA. Four-component lipid nano-
+                                                                                                          particles (LNPs)1e,4 containing ionizable lipids,4a,b phospholi-
+                                                                                                          pids, cholesterol for improved mechanical properties, and a
+
+                                                                                                                                                © XXXX American Chemical Society                                                  https://doi.org/10.1021/jacs.1c05813
+                                                                                                                                                                                     A                                        J. Am. Chem. Soc. XXXX, XXX, XXX−XXX
+Journal of the American Chemical Society                                        pubs.acs.org/JACS                                         Article
+
+charge and a high positive charge at the endosomal pH. In
+endosomal membranes the electrostatic interaction between
+the cationically charged LNPs and the naturally occurring
+anionic lipids was suggested to be responsible for the release of
+the RNA.7 One of the major limitations of the four-component
+vector is the unknown distribution of its four components in
+the LNP. The segregation of the neutral ionizable lipid as an
+oil phase in the core of the LNPs is considered to be
+responsible for their very low transfection eﬃciency (1−2%).7
+The second deﬁciency of the LNP originating from the PEG-
+conjugated lipid is known as the “PEG dilemma”.8 The PEG
+conjugated to LNP increases their circulation time in the blood
+after intravenous injection. However, the same PEG-LNP is
+known to decrease gene expression by up to 4 orders of
+magnitude by reducing intracellular traﬃcking of cellular
+uptake and endosomal escape.8
+   A charge-altering releasable transporter concept for the
+delivery of mRNA was recently elaborated by the Waymouth
+laboratory.9 This new delivery protocol is unrelated to the viral
+and nonviral LNP-based methodologies discussed above.
+Artiﬁcial and synthetic vesicles, such as liposomes10 and
+polymersomes,11 have been elaborated for both drug delivery
+and also as mimics of natural cells. Our laboratory developed a
+new class of synthetic vesicles with excellent mechanical
+properties and stability including in serum, named dendri-
+mersomes (DSs), which are assembled from amphiphilic Janus
+dendrimers (JDs).12 Amphiphilic JDs with sugars conjugated
+on their hydrophilic region, denoted Janus glycodendrimers              Figure 1. Schematic representation of (a) four-component LNPs for
+(JGDs), self-assemble into glycodendrimersomes (GDSs),                  mRNA delivery; (b) one-component DNPs for mRNA delivery; (c)
+which mimic the glycans of biological membranes and bind                cell-entry and release process of the LNP or DNP.
+sugar-binding proteins.12 Both JDs and JGDs self-assemble
+into monodisperse DSs and GDSs with unilamellar or                      This ethanol solution is mixed with a microﬂuidic device or T-
+multilamellar structures by simple injection rather than by             tube with a pH 3 to 5 buﬀer solution and with an aqueous
+the microﬂuidic technology, and their dimensions can be                 solution of mRNA. The mRNA used in the acidic buﬀer
+predicted.12a−e,13a−c Sequence-deﬁned JGDs13b−f self-assemble           solution is produced and stored in neutral water. The resulting
+by simple injection into GDSs. It has been demonstrated that a          nanoparticles containing mRNA are analyzed by dynamic light
+lower sugar density in a deﬁned sequence elicits higher                 scattering (DLS) to determine the diameter (D, nm) and the
+bioactivity to sugar-binding proteins.13b−d,f This concept              polydispersity index (PDI) of the LNPs, dialyzed to pH 7.4,
+informs a design principle for active soft and living matter            analyzed by DLS again, and stored at −70 °C before the in
+with potential applications in cellular biology12f−k,d and gene         vitro or in vivo experiments were performed.
+delivery.12i The goal of this publication is to report the design          Figure 1b illustrates the same process for the one-
+of a one-component multifunctional sequence-deﬁned ioniz-               component DNPs. The IAJD containing an ionizable amine
+able amphiphilic Janus dendrimer (IAJD) delivery system that            incorporated in a precise sequence is dissolved in ethanol. The
+coassembles with mRNA by simple injection into dendrimer-               ethanol solution is injected into an acidic buﬀer solution
+some nanoparticles (DNPs) using principles elaborated with              containing mRNA (pH 3 to 5.2). Depending on the original
+JDs and JGDs.12,13 Screening experiments with six libraries             pH of the buﬀer, the resulting DNPs containing mRNA already
+containing 54 IAJDs were performed both in vitro and in vivo.           have a pH between 4.5 and 7.3 and after DLS analysis can be
+They demonstrated the proof of concept of DNPs, their                   used for in vitro and in vivo experiments before or after dialysis.
+potential applications, and utility as a model to elucidate             Long-term storage of DNPs is at 5 °C. Figure 1c illustrates the
+fundamental aspects of the complex nonviral delivery systems            schematic transition from the extracellular to the intracellular
+and as future delivery systems for mRNA-based therapeutics.
+
+■
+                                                                        process for both LNPs and DNPs. Once injected, both the
+                                                                        LNP and DNP approach the corresponding cells and get
+     RESULTS AND DISCUSSION                                             encapsulated via endocytosis. The extracellular pH is 7.4, and
+   A Brief Comparison of the Four-Component LNPs                        therefore, LNPs and DNPs enter the cell with an almost
+with One-Component DNPs. One of the major advantages                    neutral surface. Subsequently, the endocytosis of LNPs or
+of the synthetic vectors used for the delivery of mRNA consists         DNPs deposits them into endosomes, the pH of which
+in their unlimited synthetic capabilities. The transformation of        decreases from 6.8 to 4.5 during their maturation into
+the four-component LNP into a one-component DNP                         lysosomes due to ATP-dependent proton pumps on the
+represents a demonstration of this synthetic capability (Figure         endosomal membrane.15 Therefore, both LNPs and DNPs get
+1). Figure 1a illustrates the process involved in the assembly of       reprotonated, interact with the naturally occurring anionic
+one-component LNPs. The four-component composition                      lipids, and release the mRNA into the cytoplasm, which allows
+containing various ratios of the ionizable lipid, phospholipid,         the ribosome to generate the new proteins.4 When the
+PEG-lipid, and cholesterol is prepared as a solution in ethanol.        ionizable amines from LNPs are segregated in their center,
+                                                                    B                                             https://doi.org/10.1021/jacs.1c05813
+                                                                                                              J. Am. Chem. Soc. XXXX, XXX, XXX−XXX
+Journal of the American Chemical Society                                            pubs.acs.org/JACS                                          Article
+
+
+
+
+Figure 2. Schematic representation of the six libraries of 54 sequence-deﬁned IAJDs (c). Structures of all their modules (a, b). The accelerated
+modular-orthogonal synthesis of IAJDs is outlined in (c).
+
+reprotonation of their periphery cannot occur, and as a result,            protective groups, 4-methoxybenzyl ether and benzyl ether,
+the release of mRNA in the cell has reduced eﬃciency (1−                   were employed in the new methodology.16 The six libraries
+2%).4                                                                      synthesized are schematically shown in Figure 2c. Four of these
+   Accelerated Modular-Orthogonal Synthesis of the                         libraries are based on single−single IAJDs. Nine IAJDs are
+Six Libraries of IAJDs. Modular-orthogonal methodologies                   available in library 1, seven in library 2, six in library 3, and
+for the synthesis of sequence-deﬁned amphiphilic Janus                     three in library 4. Library 5 is based on the twin−twin IAJDs
+glycodendrimers were elaborated by our laboratory.12,13                    generated from IAJD1 to IAJD9 of library 1 and IAJD33 of
+Accelerated modular-orthogonal methodologies (Figure 2)                    library 3. Library 6 contains 19 hybrid twin-mix IAJDs selected
+for the synthesis of single−single (a single hydrophobic                   from all libraries. The selection process was determined by the
+combined with a single hydrophilic dendron),12d,e,j twin−                  activity in vivo and in vitro of their single−single components,
+twin (two identical hydrophobic and two identical hydrophilic              and the number associated with the corresponding IAJD
+dendrons),12a,a and hybrid twin-mix (two identical hydro-                  illustrates the design process driven by DNP activity. The
+phobic and two diﬀerent hydrophilic dendrons)13b−f rely on                 hydrophilic parts of these IAJDs contain sequence-deﬁned
+related but improved and accelerated synthetic principles                  compositions based on the dimethylaminobutanoate (DMBA),
+originally developed and employed for the synthesis of                     dimethylaminopropanoate (DMPA), dimethylaminoacetate
+sequence-deﬁned JGDs.12b,13b−f Two diﬀerent orthogonal                     (DMA), piperidinebutanoate (PIP), and methylpiperazinebu-
+                                                                       C                                               https://doi.org/10.1021/jacs.1c05813
+                                                                                                                   J. Am. Chem. Soc. XXXX, XXX, XXX−XXX
+Journal of the American Chemical Society                                           pubs.acs.org/JACS                                         Article
+
+                                                                           groups such as benzyl ethers are known to interact as
+                                                                           hydrogen-bond acceptors in molecular recognition with
+                                                                           cations including ammonium groups both in biology and in
+                                                                           synthetic supramolecular chemistry.17 This cation−π inter-
+                                                                           action is weaker than the traditional H-bond (about 3 kcal/
+                                                                           mol)17a and, therefore, can mediate a dynamic control of the
+                                                                           pKa of the ionizable amines. In the protonated state of the
+                                                                           amine, the cation−π interaction can increase its pKa17 while in
+                                                                           the nonprotonated state it may facilitate an interaction of the
+                                                                           benzyl ether with the nucleic bases of the mRNA to enhance
+                                                                           coassembly or segregate in the hydrophobic part of the DNPs
+                                                                           to stabilize the assembly. To our knowledge, this cation−π
+Figure 3. Cryo-TEM images of DNP vesicles self-assembled from              interaction was not employed before in the design of nonviral
+IAJD9 (a) and from IAJD27 (b) in the absence of mRNA in TRIS               delivery vectors for mRNA. The hydrophobic parts of the
+buﬀer (4.0 mg/mL, pH = 7.4). Their dimensions determined by DLS            IAJDs contain both linear and branched alkyl groups of
+(D = 92 nm, PDI = 0.238 for IAJD9 assemblies and D = 75 nm, PDI            diﬀerent length (Figure 2b, modules C, D, E, Figure 2c,
+= 0.201 for IAJD27 assemblies) match very well the data from the
+cryo-TEM experiments. Vesicles of IAJD27 contain n-undecyl groups          Scheme S3). The hydrophilic acid components of these IAJDs
+in their hydrophobic part and seem more fragile12m than the vesicles       are shown in Figure 2a (module A) and Figure S1, while their
+of IAJD9 containing n-dodecyl groups.                                      synthesis is described in Scheme S1. The structures of the
+                                                                           hydrophobic benzyl amines are shown in Figure 2b (module
+tanoate (MPRZ) ionizable amines (Figure 2a module A,                       C). Their synthesis is shown in Scheme S2. Combining all
+module B, and the box from the bottom part of Figure 2c).                  these modules in an orthogonal way, as illustrated in Figure 2c,
+  They were selected based on the pKa of their corresponding               provides, in an accelerated manner, the six libraries of IAJDs.
+ionizable lipids available in the literature.4a,14 The symbols             The synthesis of the twin−twin part of the hydrophobic IAJDs
+employed in the schematic representation of these sequence-                is illustrated in Scheme S4. The synthesis of library 1 is shown
+deﬁned IAJDs are shown in the square from the bottom part of               in Scheme S5, of library 2 in Scheme S6, of library 3 in Scheme
+Figure 2c. A benzyl ether group, marked in red, was employed               S7, of library 4 in Scheme S8, of library 5 in Scheme S9, and of
+to isolate the ionizable amines and construct diﬀerent                     library 6 in Schemes S10, S11, and S12. The detailed structures
+sequences in the hydrophilic part of the IAJDs. Aromatic                   of all libraries of IAJDs together with their pKa values and short
+
+
+
+
+Figure 4. Luciferase expression in HEK293T cells with DNPs encapsulating luciferase-mRNA. Color codes for the self-assembly conditions of
+DNPs are in the top left corner. The two left-side insets show luminescence vs concentration dependences for IAJD33- and IAJD34-based DNPs.
+The top right-side insets show luminescence vs concentration and pH dependences for IAJD9- and IAJD22-based DNPs. Data have been calculated
+and represented as mean ± SD (standard deviation). Each experiment was performed at least three times.
+
+                                                                       D                                             https://doi.org/10.1021/jacs.1c05813
+                                                                                                                 J. Am. Chem. Soc. XXXX, XXX, XXX−XXX
+Journal of the American Chemical Society                                              pubs.acs.org/JACS                                           Article
+
+
+
+
+Figure 5. In vivo transfection results of DNPs. Details of these experiments are available in Table S7. Diameters and polydispersities of DNPs (both
+in black) and pKa values of IAJDs (in blue) are shown under the number of the IAJD molecule. All these data are printed on top of each mouse
+image. The scale of luminescence values is also shown.
+
+names are presented in Figures S3 (libraries 1, 2, 3, 4), S4                 More detailed cryo-TEM data of DNPs without and with
+(library 5), and S5 (library 6).                                             mRNA and their analysis will be reported soon.
+   Self-Assembly of DNP Vesicles from IAJDs and of                              In Vitro Transfection Activity of DNPs in Human
+DNPs by Coassembly of IAJDs with mRNA by Simple                              Embryonic Kidney (HEK) 293T Cells. HEK293T cells were
+Injection. The simple injection methodology employed                         seeded into 96-well plates (20 000 cells/well/200 μL) and
+previously for the self-assembly of uniform12a,c DSs from                    cultured for 18−20 h at 37 °C in 5% CO2 complete cell culture
+JDs12a,c,13d and of GDSs from JGDs13a with predictable                       media. Screening experiments were performed with non-
+dimensions and narrow PDI was adapted to the self-assembly                   optimized DNPs containing naked nucleoside-modiﬁed
+by injection of a solution of IAJDs and coassembly of IAJDs                  mRNA18 of molar mass 664 341 encoding ﬁreﬂy luciferase
+together with mRNA. Simple injection of an ethanol solution                  (Luc-mRNA). A constant concentration of Luc-mRNA of 125
+of IAJDs into a neutral buﬀer such as TRIS produces uniform                  ng/well was used. The transIT (TransIT-mRNA transfection
+DNPs with dimensions that are, as in the case of DSs12a,c,d and              kit from Mirus Bio) and MC3-based LNPs (MC3: DLin-MC3-
+                                                                             DMA, which is an FDA-approved LNP for siRNA delivery)4a
+GDSs,13a concentration dependent. However, these DNPs are
+                                                                             were used as positive controls for cell transfection at a
+not stable in PBS buﬀer. Injection of an ethanol solution of
+                                                                             concentration of Luc-mRNA of 125 ng/well, identical to that
+IAJD into an acidic citrate or acetate buﬀer solution of pH 3 to             of the tested DNPs. Subsequently cells were cultured for 18−
+5.2 containing mRNA resulted in coassembly of IAJD with                      20 h, the medium was aspirated under reduced pressure by a
+mRNA into uniform DNPs (Tables S1 to S7, Figures S7 to                       glass pipet, and cells were lysed with 30 μL/well of cell culture
+S19). More than 98% of mRNA is coassembled within the                        lysis reagent (Promega). The luminescence intensity corre-
+interior of the DNPs (Table S8). These DNPs can be used for                  sponding to the luciferase protein expressed was characterized
+in vitro and in vivo transfection experiments before or after                and analyzed.
+dialysis to pH 7.4. Most of these DNPs are stable at 5 °C for                   All 54 IAJDs from Figure 2 were coassembled by injection
+more than 135 days (Table S10, Figure S20) including in                      with mRNA18 in DNPs and were used in these experiments
+serum (Table S11). Analysis of the DNPs without mRNA by                      without dialysis. Tables S1, S2, S3, S4, and S5 summarize the
+cryo-TEM demonstrated that they are vesicles with dimensions                 conditions employed for the preparation of the DNPs, their
+and PDIs similar to those determined by DLS (Figure 3).                      diameter (in nm), and PDI as obtained by DLS experiments
+                                                                         E                                                https://doi.org/10.1021/jacs.1c05813
+                                                                                                                      J. Am. Chem. Soc. XXXX, XXX, XXX−XXX
+Journal of the American Chemical Society                                           pubs.acs.org/JACS                                       Article
+
+
+
+
+Figure 6. Quantiﬁcation of luciferase signal from in vivo images of Figure 5 and Table S7.
+
+and the luminescence results. Each experiment was performed                  The results from Figures 4 and 5 provide a proof of concept
+at least three times. The results from Tables S1 to S5 were               for the one-component multifunctional sequence-deﬁned
+combined together with some optimization experiments for                  ionizable amphiphilic Janus dendrimer delivery systems for
+IAJD33, IAJD34, IAJD9, and IAJD22 and plotted in the insets               mRNA even if optimized results are not yet available. The
+in Figure 4. Out of 54 DNPs, 44 (81%) showed activity in vitro            summary of the results from Figure 5 indicates that there seem
+(Figure 4). Without optimization, two of them, DNP9- and                  to be no correlation between the activity of the DNPs in vivo
+DNP22-based DNPs, display higher activity than the positive               and the same experiments in vitro (Figure 4). We are not able
+controls LNP based on MC3 and TransIT, while four of them,                yet to explain this lack of correlation between in vitro and in
+DNP8, DNP9, DNP21, and DNP22, show higher activity than                   vivo experiments. Although more experiments are required to
+the most commonly used positive control LNP based on                      clarify the dependence between pKa and activity in vitro and in
+MC3.4                                                                     vivo, the results from Figure 5 show that the most active IAJD
+   In Vivo mRNA Delivery in Mice with DNPs. Six- to 8-                    33, 34, and 31 based DNPs do not have the lowest pKa values.
+week-old female or male mice were used in these experiments.              The results from Figure 5 also demonstrate that there is quite a
+Four to 7 h after injection with a 100 μL solution of DNP                 tolerance of the activity of DNPs to their diameters and
+encapsulated with 10 μg of Luc-mRNA the mice were imaged                  polydispersity. Larger than 100 nm diameter DNPs appear to
+10 min after intraperitoneal injection with D-luciferin, 15 mg/           be as active as lower than 100 nm diameter DNPs (Figure 5).
+mL at 10 μL/g of body weight. The exposure time was 15 s to               However, quantitative correlations for the dependences of
+1 min. For imaging of the organs, mice were sacriﬁced, the                activity with pKa and DNP dimensions must be studied. The
+organs were immediately collected, and bioluminescence                    stability of the dimension of 40 DNPs was investigated as a
+imaging was performed. Table S7 summarizes all DNP                        function of time at 5 °C. Unoptimized experiments showed
+injection assembly data including D in nm and PDI determined              that the dimensions of 19 out of 40 DNPs were very stable
+by DLS together with the results obtained in vivo. Figure 5               after being stored at 5 °C for up to 135 days (Figure 7).
+shows all mice experiments including the D in nm and PDI of               Almost all these DNPs were assembled from IAJDs containing
+DNPs (both in black on top of the mouse image) and the pKa                a benzyl ether in their hydrophilic part (Table S9). A very
+values of the corresponding IAJDs (in blue also on top of the             interesting series of activity trends is observed when the data
+mouse image) of all compounds used for delivery experiments.              from Figures 5 and 6 are compared. IAJD9, IAJD22, IAJD33,
+                                                                      F                                            https://doi.org/10.1021/jacs.1c05813
+                                                                                                               J. Am. Chem. Soc. XXXX, XXX, XXX−XXX
+Journal of the American Chemical Society                                          pubs.acs.org/JACS                                         Article
+
+
+
+
+Figure 7. Examples of excellent stability of DNPs assembled from (a) IAJD9; (b) IAJD22; (c) IAJD33; (d) IAJD34; (e) IAJD32; (f)
+IAJD33+IAJD32 (2%); (g) IAJD46; and (h) IAJD47.
+
+                                                                          comparison of single−single IAJD9 with the hybrid twin-mix
+                                                                          IAJD32 (Figures 6 and 7).
+                                                                             Figure 6 plots the results from Figure 5. Without any
+                                                                          optimization, out of the 54 DNPs investigated, 31 (57%) show
+                                                                          activity in vivo. Two of them, DNP33 and DNP34,
+                                                                          demonstrated very high activity in the lung. Single−single
+                                                                          IAJD9-derived DNP9 exhibits good activity (Figure 6) and
+                                                                          stability (Figure 7). At the same time the corresponding hybrid
+                                                                          twin-mix IAJD32-based DNP32 derived from IAJD9 and a
+                                                                          single PEG of degree of polymerization 45 (Figure 2) also
+                                                                          exhibits excellent stability (Figure 7) but is completely inactive
+                                                                          in mice (Figure 6). In order to clarify this result, we prepared
+                                                                          several coassembled DNPs based on very active IAJDs and a
+                                                                          small concentration of IAJD32. One example is the DNP
+                                                                          assembled from IAJD33 and 2% IAJD32 (compare Figure 7f
+                                                                          with Figure 6). The stability of this combined DNP is excellent
+                                                                          (Figure 7f) and is comparable with that of DNP32 assembled
+                                                                          from IAJD32 alone. However, the in vivo activity of DNP
+                                                                          coassembled from IAJD33 with 2% IAJD32 is only a small
+                                                                          fraction of the activity of the DNP33 (Figure 6). This trend
+                                                                          conﬁrms the reports on the PEG interfering with cellular
+                                                                          uptake known as the “PEG dilemma”.8 Therefore, while the
+                                                                          insertion of a small fraction of PEG conjugated to an IAJD can
+                                                                          dramatically increase the stability of the resulting DNP, it also
+Figure 8. Comparison of the concentration and sequence of the
+                                                                          decreases even more dramatically its activity in vivo.
+ionizable amines of IAJDs on activity of DNPs in vitro and in vivo.       Incorporation of short groups of oligooxyethylene with
+                                                                          diﬀerent degrees of polymerization (DP) and chain ends12 or
+                                                                          carbohydrate13 fragments in the structure of single−single,
+and IAJD34 single−single compounds form remarkably stable                 twin−twin, or even hybrid twin-mix IAJDs could provide a
+DNPs that also show high in vitro or in vivo activity (Figure 6).         solution to this problem. Research along this line with PEG of
+IAJD46 is the twin−twin of IAJD33. On the other hand, the                 DP = 3, 4, 8, 12, 18, 22, and 45 and with lactose13a,d is in
+activity of the DNP46 is about half that of DNP33 (Figures 6              progress. Some preliminary data performed with DNP9,
+and 7). The hybrid twin-mix IAJD47 is also based on the                   DNP43 (DP = 3), DNP52 (DP = 4), DNP53 (DP = 8),
+structure of IAJD33 or half of the structure of IAJD46.                   and DNP32 (DP = 45) (Figure 2) indicate, before
+However, the activity of the DNP47 is much lower than that of             optimization, a decrease followed by an increase and
+both DNP33 and DNP46. Even more interesting is the                        subsequently another decrease of the in vivo activity when
+                                                                      G                                             https://doi.org/10.1021/jacs.1c05813
+                                                                                                                J. Am. Chem. Soc. XXXX, XXX, XXX−XXX
+Journal of the American Chemical Society                                          pubs.acs.org/JACS                                         Article
+
+
+
+
+Figure 9. Images of the mice organs from the in vivo experiments presented in Figure 5.
+
+                                                                         concentrations of ionizable amines in the structure of the
+                                                                         IAJD, and extremely high activities were observed at lower
+                                                                         ionizable amine concentration in very speciﬁc sequences.
+                                                                         Without discussing in great detail, the results from Figure 8
+                                                                         provide a mechanism to engineer the activity of DNPs via the
+                                                                         sequence and concentration of their ionizable amines. The
+                                                                         change in activity observed in Figure 8 is much higher than
+                                                                         that observed in the case of sequence-deﬁned dendrimersomes
+                                                                         (Figure 2 from ref 13d shown in Figure S33).12d
+                                                                            Some Comments on Potential Targeted Delivery of
+                                                                         mRNA and Reproducibility of in Vitro and in Vivo
+                                                                         Transfection Experiments. Figures 9 and 10 summarize
+                                                                         representative organ delivery data selected from the experi-
+                                                                         ments reported in Figure 5. They illustrate the luminescence
+                                                                         intensity reﬂecting delivery activity in the heart, lung, liver, and
+                                                                         spleen as a function of the structure of the IAJD employed in
+                                                                         the design of the structure of the DNP used in the delivery of
+                                                                         mRNA. The highest luminescence is exhibited by single−single
+                                                                         IAJD33 and IAJD34 forming DNPs (108) in the lung. The next
+                                                                         highest is based on the IAJD31, IAJD46, and IAJD27 (107)
+Figure 10. Representative images of mRNA delivery to diﬀerent            DNPs and is also in the lung.
+organs by one-component DNPs.                                               These lung activities are higher than the activity in the lung
+                                                                         of the control experiment with LNP based on the FDA-
+DP of PEG increases in the hybrid twin-mix architecture of               approved MC3 (Figure 10). It is important to realize that
+IADSs (Figure 2).                                                        organ activities from Figure 10 are much higher than overall
+   The Role of Ionizable Amine Concentration and                         mouse activities from Figures 6 and 9. The next higher activity
+Sequence on the Activity of the Corresponding DNPs.                      is in the liver (Figures 9 and 10). Without optimization, the
+We demonstrated that the binding activity of sugars located on           luminescence in the liver is 106 for IAJD31- and IAJD34-based
+the surface of the GDSs assembled from amphiphilic JGDs                  DNPs and 105 for IAJD30-, IAJD33-, and IAJD46-based
+toward sugar-binding proteins increases by decreasing the                DNPs. They are smaller than the values of the MC3-based
+concentration of the sugar in a sequence-deﬁned process.12b−f            control experiment, which is 108. The highest activity in the
+This unexpected trend was explained by self-organization, on             spleen is for IAJD29-, IAJD30-, and IAJD37-based DNPs (105)
+the periphery of the GDSs, leading to a morphology that                  and IAJD27-based DNP (104). The control experiment with
+facilitated higher binding activity between the sugar and the            MC3-based LNP is 107 in the spleen. Notably, dendrimersome
+proteins at lower concentrations of sugar (Figure S33).13d,f             nanoparticles self-organized from twin−twin and single−single
+   Figure 8 plots representative activity data for the sequence-         JDs without ionizable amines, and mRNA and IAJD1 and
+deﬁned IAJD-derived DNPs for both in vitro and in vivo                   IAJD9 are distributed in vivo to all organs with higher
+experiments. Low or no activity was observed at high                     distribution in the liver especially for twin−twin JD and IAJD9
+                                                                     H                                              https://doi.org/10.1021/jacs.1c05813
+                                                                                                                J. Am. Chem. Soc. XXXX, XXX, XXX−XXX
+Journal of the American Chemical Society                                           pubs.acs.org/JACS                                         Article
+
+(Figure S34). The most active DNPs were tested both in vitro                    Philadelphia, Pennsylvania 19104-6323, United States;
+(Figure 4) and in vivo (Figure 6) up to six times. Excellent                      orcid.org/0000-0001-5926-0489; Email: percec@
+reproducibility was obtained in all cases except for DNP9,                      sas.upenn.edu
+which shows very good reproducibility in vitro but poor
+reproducibility in vivo. Experiments are in progress to elucidate        Authors
+this issue. The results reported here indicate that one-
+component IAJDs could also provide a potential strategy to                    Dapeng Zhang − Roy & Diana Vagelos Laboratories,
+target diﬀerent organs.                                                         Department of Chemistry, University of Pennsylvania,
+
+■
+                                                                                Philadelphia, Pennsylvania 19104-6323, United States;
+     CONCLUSIONS                                                                  orcid.org/0000-0003-4222-6107
+                                                                              Elena N. Atochina-Vasserman − Department of Medicine,
+The design and accelerated modular-orthogonal synthesis of                      Perelman School of Medicine, University of Pennsylvania,
+six libraries containing 54 multifunctional sequence-deﬁned                     Philadelphia, Pennsylvania 19104, United States
+ionizable amphiphilic Janus dendrimers are reported. All 54                   Devendra S. Maurya − Roy & Diana Vagelos Laboratories,
+IAJDs coassemble with mRNA by simple injection in acidic                        Department of Chemistry, University of Pennsylvania,
+buﬀers to generate dendrimersome nanoparticles with                             Philadelphia, Pennsylvania 19104-6323, United States;
+predictable dimensions and narrow polydispersity. The                             orcid.org/0000-0002-4488-9927
+dimensions of these DNPs are stable for over 135 days at 5                    Ning Huang − Roy & Diana Vagelos Laboratories,
+°C. Among the 54 DNPs encapsulating Luciferase-mRNA, 44                         Department of Chemistry, University of Pennsylvania,
+(81%) showed activity in vitro and four of them showed higher                   Philadelphia, Pennsylvania 19104-6323, United States;
+activity than the four-component lipid nanoparticles obtained                     orcid.org/0000-0001-8874-3439
+from the FDA-approved MC3 control experiment. Thirty one                      Qi Xiao − Roy & Diana Vagelos Laboratories, Department of
+(57%) DNPs displayed activity in vivo, with two of them                         Chemistry, University of Pennsylvania, Philadelphia,
+exhibiting higher activity than the MC3 control experiment in                   Pennsylvania 19104-6323, United States; orcid.org/
+the lung. This lung activity is exceptional for synthetic delivery              0000-0002-6470-0407
+of mRNA and could be, according to our knowledge, one of                      Nathan Ona − Department of Medicine, Perelman School of
+the highest demonstrated thus far.19 These unoptimized                          Medicine, University of Pennsylvania, Philadelphia,
+preliminary experiments provide proof of concept for the                        Pennsylvania 19104, United States; orcid.org/0000-
+one-component multifunctional sequence-deﬁned amphiphilic                       0002-8729-2223
+Janus dendrimer as an eﬃcient delivery system for mRNA. Just                  Matthew Liu − Roy & Diana Vagelos Laboratories,
+like in the case of sequence-deﬁned GDSs (Figure S33), this                     Department of Chemistry, University of Pennsylvania,
+one-component delivery platform is more active at low                           Philadelphia, Pennsylvania 19104-6323, United States;
+ionizable amine concentration incorporated in a suitable                          orcid.org/0000-0002-5004-9182
+sequence-deﬁned arrangement (Figure 8). These sequence-                       Hamna Shahnawaz − Department of Medicine, Perelman
+deﬁned IAJDs and DNPs will be employed to elucidate the                         School of Medicine, University of Pennsylvania, Philadelphia,
+mechanisms of encapsulation and release of mRNA from                            Pennsylvania 19104, United States
+supramolecular virus-like assemblies and for the production of                Houping Ni − Department of Medicine, Perelman School of
+vaccines and drugs. It is expected that their ionizable amine                   Medicine, University of Pennsylvania, Philadelphia,
+fragments may not be able to segregate in the center of their                   Pennsylvania 19104, United States
+DNPs, as they do in the case of LNPs. Finally but importantly,                Kyunghee Kim − Department of Materials Science &
+the DNPs reported here represent some of the most interesting                   Engineering, University of Delaware, Newark, Delaware
+and challenging hybrid natural−synthetic complex systems20                      19716, United States; orcid.org/0000-0002-4549-0686
+with numerous potential applications in health sciences.                      Margaret M. Billingsley − Department of Bioengineering,
+
+■      ASSOCIATED CONTENT
+* Supporting Information
+ sı
+                                                                                University of Pennsylvania, Philadelphia, Pennsylvania
+                                                                                19104-6321, United States; orcid.org/0000-0003-4499-
+                                                                                9066
+The Supporting Information is available free of charge at                     Darrin J. Pochan − Department of Materials Science &
+https://pubs.acs.org/doi/10.1021/jacs.1c05813.                                  Engineering, University of Delaware, Newark, Delaware
+      Experimental methods, synthesis, and characterization of                  19716, United States; orcid.org/0000-0002-0454-2339
+      all 54 IAJDs, dimensions and polydispersities, in vitro                 Michael J. Mitchell − Department of Bioengineering,
+      and in vivo transfection data of DNPs, DLS curves of                      University of Pennsylvania, Philadelphia, Pennsylvania
+      DNPs, stability characterization of DNPs, pKa measure-                    19104-6321, United States; orcid.org/0000-0002-3628-
+      ments, and supplemental references (PDF)                                  2244
+
+
+■      AUTHOR INFORMATION
+Corresponding Authors
+                                                                         Complete contact information is available at:
+                                                                         https://pubs.acs.org/10.1021/jacs.1c05813
+
+      Drew Weissman − Department of Medicine, Perelman School            Author Contributions
+        of Medicine, University of Pennsylvania, Philadelphia,
+        Pennsylvania 19104, United States; orcid.org/0000-               ⧫
+                                                                             D.Z. and E.N.A.-V. contributed equally to this work.
+        0002-1501-6510; Email: dreww@
+        pennmedicine.upenn.edu                                           Notes
+      Virgil Percec − Roy & Diana Vagelos Laboratories,
+        Department of Chemistry, University of Pennsylvania,             The authors declare no competing ﬁnancial interest.
+                                                                     I                                               https://doi.org/10.1021/jacs.1c05813
+                                                                                                                 J. Am. Chem. Soc. XXXX, XXX, XXX−XXX
+Journal of the American Chemical Society
+
+■
+                                                                                         pubs.acs.org/JACS                                             Article
+
+    ACKNOWLEDGMENTS                                                             538−559. (u) Heredia, K. L.; Nguyen, T. H.; Chang, C.-W.; Bulmus,
+                                                                                V.; Davis, T. P.; Maynard, H. D. Reversible siRNA-Polymer
+This work was supported by National Science Foundation                          Conjugates by RAFT Polymerization. Chem. Commun. 2008, 3245−
+Grants DMR-1807127, DMR-1720530, and DMR-2104554,                               3247. (v) Deng, Z. J.; Morton, S. W.; Ben-Akiva, E.; Dreaden, E. C.;
+the P. Roy Vagelos Chair at the University of Pennsylvania,                     Shopsowitz, K. E.; Hammond, P. T. Layer-by-Layer Nanoparticles for
+and the Alexander von Humboldt Foundation (all to V.P.).                        Systemic Codelivery of an Anticancer Drug and siRNA for Potential
+NMR Instrumentation (NEO400) was supported by the NSF                           Triple-Negative Breast Cancer Treatment. ACS Nano 2013, 7, 9571−
+Major Research Instrumentation Program (award NSF CHE-                          9584. (w) Lacroix, A.; Sleiman, H. F. DNA Nanostructures: Current
+1827457) and Vagelos Institute for Energy Science and                           Challenges and Opportunities for Cellular Delivery. ACS Nano 2021,
+Technology. M.J.M. acknowledges support from a Burroughs                        15, 3631−3645. (x) Billingsley, M. M.; Singh, N.; Ravikumar, P.;
+Wellcome Fund Career Award at the Scientiﬁc Interface                           Zhang, R.; June, C. H.; Mitchell, M. J. Ionizable Lipid Nanoparticle-
+(CASI) and a U.S. National Institutes of Health (NIH)                           Mediated mRNA Delivery for Human CAR T Cell Engineering. Nano
+                                                                                Lett. 2020, 20, 1578−1589. (y) Riley, R. S.; Kashyap, M. V.;
+Director’s New Innovator Award (DP2 TR002776). D.W. and                         Billingsley, M. M.; White, B.; Alameh, M.-G.; Bose, S. K.; Zoltick, P.
+E.A.N.-V. were funded by NIH grants (AI124429 and 1UM1-                         W.; Li, H.; Zhang, R.; Cheng, A. Y.; Weissman, D.; Peranteau, W. H.;
+AI144371). The authors also thank the Professor Karen I.                        Mitchell, M. J. Ionizable Lipid Nanoparticles for in Utero mRNA
+Goldberg laboratory at Penn for access to pH instrumentation.                   Delivery. Sci. Adv. 2021, 7, No. eaba1028. (z) Chahal, J. S.; Khan, O.
+
+■    REFERENCES
+  (1) (a) Luo, D.; Saltzman, W. M. Synthetic DNA Delivery Systems.
+                                                                                F.; Cooper, C. L.; McPartlan, J. S.; Tsosie, J. K.; Tilley, L. D.; Sidik, S.
+                                                                                M.; Lourido, S.; Langer, R.; Bavari, S.; Ploegh, H. L.; Anderson, D. G.
+                                                                                Dendrimer-RNA Nanoparticles Generate Protective Immunity
+                                                                                Against Lethal Ebola, H1N1 Influenza, and Toxoplasma Gondii
+Nat. Biotechnol. 2000, 18, 33−37. (b) Thomas, C. E.; Ehrhardt, A.;
+Kay, M. A. Progress and Problems with the Use of Viral Vectors for              Challenges with a Single Dose. Proc. Natl. Acad. Sci. U. S. A. 2016,
+Gene Therapy. Nat. Rev. Genet. 2003, 4, 346−358. (c) Peer, D.; Karp,            113, E4133−E4142.
+J. M.; Hong, S.; Farokhzad, O. C.; Margalit, R.; Langer, R.                      (2) (a) Baum, C.; Kustikova, O.; Modlich, U.; Li, Z.; Fehse, B.
+Nanocarriers as an Emerging Platform for Cancer Therapy. Nat.                   Mutagenesis and Oncogenesis by Chromosomal Insertion of Gene
+Nanotechnol. 2007, 2, 751−760. (d) Whitehead, K. A.; Langer, R.;                Transfer Vectors. Hum. Gene Ther. 2006, 17, 253−263. (b) Bessis, N.;
+Anderson, D. G. Knocking down Barriers: Advances in SiRNA                       GarciaCozar, F. J.; Boissier, M.-C. Immune Responses to Gene
+Delivery. Nat. Rev. Drug Discovery 2009, 8, 129−138. (e) Cullis, P. R.;         Therapy Vectors: Influence on Vector Function and Effector
+Hope, M. J. Lipid Nanoparticle Systems for Enabling Gene Therapies.             Mechanisms. Gene Ther. 2004, 11, S10−S17. (c) Bouard, D.;
+Mol. Ther. 2017, 25, 1467−1475. (f) Ramamoorth, M.; Narvekar, A.                Alazard-Dany, D.; Cosset, F.-L. Viral Vectors: From Virology to
+Non Viral Vectors in Gene Therapy- an Overview. J. Clin. Diagn. Res.            Transgene Expression. Br. J. Pharmacol. 2009, 157, 153−165.
+2015, 9, GE01−06. (g) Wickham, T. J. Ligand-Directed Targeting of                (3) (a) Esfand, R.; Tomalia, D. A. Poly(Amidoamine) (PAMAM)
+Genes to the Site of Disease. Nat. Med. 2003, 9, 135−139. (h) Hajj,             Dendrimers: From Biomimicry to Drug Delivery and Biomedical
+K. A.; Whitehead, K. A. Tools for Translation: Non-Viral Materials for          Applications. Drug Discovery Today 2001, 6, 427−436. (b) Svenson,
+Therapeutic mRNA Delivery. Nat. Rev. Mater. 2017, 2, 1−17.                      S.; Tomalia, D. A. Dendrimers in Biomedical Applications–
+(i) Reichmuth, A. M.; Oberli, M. A.; Jaklenec, A.; Langer, R.;                  Reflections on the Field. Adv. Drug Delivery Rev. 2005, 57, 2106−
+Blankschtein, D. mRNA Vaccine Delivery Using Lipid Nanoparticles.               2129. (c) Kukowska-Latallo, J. F.; Bielinska, A. U.; Johnson, J.;
+Ther. Delivery 2016, 7, 319−334. (j) Kauffman, K. J.; Webber, M. J.;            Spindler, R.; Tomalia, D. A.; Baker, J. R. Efficient Transfer of Genetic
+Anderson, D. G. Materials for Non-Viral Intracellular Delivery of               Material into Mammalian Cells Using Starburst Polyamidoamine
+Messenger RNA Therapeutics. J. Controlled Release 2016, 240, 227−               Dendrimers. Proc. Natl. Acad. Sci. U. S. A. 1996, 93, 4897−4902.
+234. (k) Pardi, N.; Hogan, M. J.; Porter, F. W.; Weissman, D. mRNA              (d) Mintzer, M. A.; Simanek, E. E. Nonviral Vectors for Gene
+Vaccines  a New Era in Vaccinology. Nat. Rev. Drug Discovery 2018,             Delivery. Chem. Rev. 2009, 109, 259−302. (e) Palmerston Mendes,
+17, 261−279. (l) Buschmann, M. D.; Carrasco, M. J.; Alishetty, S.;              L.; Pan, J.; Torchilin, V. P. Dendrimers as Nanocarriers for Nucleic
+Paige, M.; Alameh, M. G.; Weissman, D. Nanomaterial Delivery                    Acid and Drug Delivery in Cancer Therapy. Molecules 2017, 22, 1401.
+Systems for mRNA Vaccines. Vaccines 2021, 9, 65. (m) Wilson, J. M.              (f) Khan, O. F.; Zaia, E. W.; Jhunjhunwala, S.; Xue, W.; Cai, W.; Yun,
+Genetic Diseases, Immunology, Viruses, and Gene Therapy. Hum.                   D. S.; Barnes, C. M.; Dahlman, J. E.; Dong, Y.; Pelet, J. M.; Webber,
+Gene Ther. 2014, 25, 257−261. (n) Cross, R. The Redemption of                   M. J.; Tsosie, J. K.; Jacks, T. E.; Langer, R.; Anderson, D. G.
+James Wilson, Gene Therapy Pioneer. C&EN 2019, 97, 26.                          Dendrimer-Inspired Nanomaterials for the in Vivo Delivery of siRNA
+(o) Nguyen, J.; Szoka, F. C. Nucleic Acid Delivery: The Missing                 to Lung Vasculature. Nano Lett. 2015, 15, 3008−3016. (g) Khan, O.
+Pieces of the Puzzle? Acc. Chem. Res. 2012, 45, 1152−1162.                      F.; Zaia, E. W.; Yin, H.; Bogorad, R. L.; Pelet, J. M.; Webber, M. J.;
+(p) Reinhard, K.; Rengstl, B.; Oehm, P.; Michel, K.; Billmeier, A.;             Zhuang, I.; Dahlman, J. E.; Langer, R.; Anderson, D. G. Ionizable
+Hayduk, N.; Klein, O.; Kuna, K.; Ouchan, Y.; Wöll, S.; Christ, E.;              Amphiphilic Dendrimer-Based Nanomaterials with Alkyl-Chain-
+Weber, D.; Suchan, M.; Bukur, T.; Birtel, M.; Jahndel, V.; Mroz, K.;            Substituted Amines for Tunable siRNA Delivery to the Liver
+Hobohm, K.; Kranz, L.; Diken, M.; Kühlcke, K.; Türeci, Ö .; Sahin, U.        Endothelium In Vivo. Angew. Chem., Int. Ed. 2014, 53, 14397−
+An RNA Vaccine Drives Expansion and Efficacy of Claudin-CAR-T                   14401. (h) Guillot-Nieckowski, M.; Eisler, S.; Diederich, F. Dendritic
+Cells Against Solid Tumors. Science 2020, 367, 446−453. (q) Sabnis,             Vectors for Gene Transfection. New J. Chem. 2007, 31, 1111−1127.
+S.; Kumarasinghe, E. S.; Salerno, T.; Mihai, C.; Ketova, T.; Senn, J. J.;       (i) Guillot, M.; Eisler, S.; Weller, K.; Merkle, H. P.; Gallani, J.-L.;
+Lynn, A.; Bulychev, A.; McFadyen, I.; Chan, J.; Almarsson, Ö .;                Diederich, F. Effects of Structural Modification on Gene Transfection
+Stanton, M. G.; Benenato, K. E. A Novel Amino Lipid Series for                  and Self-Assembling Properties of Amphiphilic Dendrimers. Org.
+mRNA Delivery: Improved Endosomal Escape and Sustained                          Biomol. Chem. 2006, 4, 766−769. (j) Meyer, E. A.; Castellano, R. K.;
+Pharmacology and Safety in Non-human Primates. Mol. Ther. 2018,                 Diederich, F. Interactions with Aromatic Rings in Chemical and
+26, 1509−1519. (r) Miyata, K.; Nishiyama, N.; Kataoka, K. Rational              Biological Recognition. Angew. Chem., Int. Ed. 2003, 42, 1210−1250.
+Design of Smart Supramolecular Assemblies for Gene Delivery:                    (k) Liu, X.; Zhou, J.; Yu, T.; Chen, C.; Cheng, Q.; Sengupta, K.;
+Chemical Challenges in the Creation of Artificial Viruses. Chem. Soc.           Huang, Y.; Li, H.; Liu, C.; Wang, Y.; Posocco, P.; Wang, M.; Cui, Q.;
+Rev. 2012, 41, 2562−2574. (s) Cabral, H.; Kinoh, H.; Kataoka, K.                Giorgio, S.; Fermeglia, M.; Qu, F.; Pricl, S.; Shi, X.; Liang, Z.; Rocchi,
+Tumor-Targeted Nanomedicine for Immunotherapy. Acc. Chem. Res.                  P.; Rossi, J. J.; Peng, L. Adaptive Amphiphilic Dendrimer-Based
+2020, 53, 2765−2776. (t) Li, J.; Kataoka, K. Chemo-Physical                     Nanoassemblies as Robust and Versatile siRNA Delivery Systems.
+Strategies to Advance the in Vivo Functionality of Targeted                     Angew. Chem., Int. Ed. 2014, 53, 11822−11827. (l) Dong, Y.; Yu, T.;
+Nanomedicine: The Next Generation. J. Am. Chem. Soc. 2021, 143,                 Ding, L.; Laurini, E.; Huang, Y.; Zhang, M.; Weng, Y.; Lin, S.; Chen,
+
+                                                                            J                                                  https://doi.org/10.1021/jacs.1c05813
+                                                                                                                           J. Am. Chem. Soc. XXXX, XXX, XXX−XXX
+Journal of the American Chemical Society                                               pubs.acs.org/JACS                                           Article
+
+P.; Marson, D.; Jiang, Y.; Giorgio, S.; Pricl, S.; Liu, X.; Rocchi, P.;       8421. (d) Blake, T. R.; Ho, W. C.; Turlington, C. R.; Zang, X.;
+Peng, L. A Dual Targeting Dendrimer-Mediated siRNA Delivery                   Huttner, M. A.; Wender, P. A.; Waymouth, R. M. Synthesis and
+System for Effective Gene Silencing in Cancer Therapy. J. Am. Chem.           Mechanistic Investigations of pH-Responsive Cationic Poly-
+Soc. 2018, 140, 16264−16274.                                                  (Aminoester)s. Chem. Sci. 2020, 11, 2951−2966. (e) Gillies, E. R.;
+  (4) (a) Jayaraman, M.; Ansell, S. M.; Mui, B. L.; Tam, Y. K.; Chen,         Fréchet, J. M. J. Dendrimers and Dendritic Polymers in Drug
+J.; Du, X.; Butler, D.; Eltepu, L.; Matsuda, S.; Narayanannair, J. K.;        Delivery. Drug Discovery Today 2005, 10, 35−43.
+Rajeev, K. G.; Hafez, I. M.; Akinc, A.; Maier, M. A.; Tracy, M. A.;             (10) (a) Bangham, A. D.; Standish, M. M.; Watkins, J. C. Diffusion
+Cullis, P. R.; Madden, T. D.; Manoharan, M.; Hope, M. J. Maximizing           of Univalent Ions across the Lamellae of Swollen Phospholipids. J.
+the Potency of siRNA Lipid Nanoparticles for Hepatic Gene Silencing           Mol. Biol. 1965, 13, 238−252. (b) Guo, X.; Szoka, F. C., Jr. Chemical
+In Vivo. Angew. Chem., Int. Ed. 2012, 51, 8529−8533. (b) Kulkarni, J.         Approaches to Triggerable Lipid Vesicles for Drug and Gene Delivery.
+A.; Witzigmann, D.; Chen, S.; Cullis, P. R.; van der Meel, R. Lipid           Acc. Chem. Res. 2003, 36, 335−341. (c) Ringsdorf, H.; Schlarb, B.;
+Nanoparticle Technology for Clinical Translation of siRNA                     Venzmer, J. Molecular Architecture and Function of Polymeric
+Therapeutics. Acc. Chem. Res. 2019, 52, 2435−2444.                            Oriented Systems: Models for the Study of Organization, Surface
+  (5) Allen, T. M.; Cullis, P. R. Drug Delivery Systems: Entering the         Recognition, and Dynamics of Biomembranes. Angew. Chem., Int. Ed.
+Mainstream. Science 2004, 303, 1818−1822.                                     Engl. 1988, 27, 113−158. (d) Brea, R. J.; Hardy, M. D.; Devaraj, N. K.
+  (6) (a) Chen, D.; Love, K. T.; Chen, Y.; Eltoukhy, A. A.; Kastrup,          Towards Self-Assembled Hybrid Artificial Cells: Novel Bottom-Up
+C.; Sahay, G.; Jeon, A.; Dong, Y.; Whitehead, K. A.; Anderson, D. G.          Approaches to Functional Synthetic Membranes. Chem. - Eur. J. 2015,
+Rapid Discovery of Potent Sirna-Containing Lipid Nanoparticles                21, 12564−12570. (e) Thomas, J. L.; Tirrell, D. A. Polyelectrolyte-
+Enabled by Controlled Microfluidic Formulation. J. Am. Chem. Soc.             Sensitized Phospholipid Vesicles. Acc. Chem. Res. 1992, 25, 336−342.
+2012, 134, 6948−6951. (b) Zhigaltsev, I. V.; Belliveau, N.; Hafez, I.;        (f) Kunitake, T.; Okahata, Y. A Totally Synthetic Bilayer Membrane.
+Leung, A. K.; Huft, J.; Hansen, C.; Cullis, P. R. Bottom-up Design and        J. Am. Chem. Soc. 1977, 99, 3860−3861. (g) Kunitake, T. Synthetic
+Synthesis of Limit Size Lipid Nanoparticle Systems with Aqueous and           Bilayer Membranes: Molecular Design, Self-Organization, and
+Triglyceride Cores Using Millisecond Microfluidic Mixing. Langmuir            Application. Angew. Chem., Int. Ed. Engl. 1992, 31, 709−726.
+2012, 28, 3633−3640. (c) Leung, A. K.; Hafez, I. M.; Baoukina, S.;            (h) Khanal, S.; Brea, R. J.; Burkart, M. D.; Devaraj, N. K.
+Belliveau, N. M.; Zhigaltsev, I. V.; Afshinmanesh, E.; Tieleman, D. P.;       Chemoenzymatic Generation of Phospholipid Membranes Mediated
+Hansen, C. L.; Hope, M. J.; Cullis, P. R. Lipid Nanoparticles                 by Type I Fatty Acid Synthase. J. Am. Chem. Soc. 2021, 143, 8533−
+Containing Sirna Synthesized by Microfluidic Mixing Exhibit an                8537. (i) Tu, Y.; Peng, F.; Adawy, A.; Men, Y.; Abdelmohsen, L. K. E.
+Electron-Dense Nanostructured Core. J. Phys. Chem. C 2012, 116,               A.; Wilson, D. A. Mimicking the Cell: Bio-Inspired Functions of
+18440−18450. (d) Leung, A. K.; Tam, Y. Y.; Chen, S.; Hafez, I. M.;            Supramolecular Assemblies. Chem. Rev. 2016, 116, 2023−2078.
+Cullis, P. R. Microfluidic Mixing: A General Method for                       (j) Thota, B. N. S.; Urner, L. H.; Haag, R. Supramolecular
+Encapsulating Macromolecules in Lipid Nanoparticle Systems. J.
+                                                                              Architectures of Dendritic Amphiphiles in Water. Chem. Rev. 2016,
+Phys. Chem. B 2015, 119, 8698−8706.
+                                                                              116, 2079−2102. (k) Weiss, M.; Frohnmayer, J. P.; Benk, L. T.;
+  (7) (a) Ramezanpour, M.; Schmidt, M. L.; Bodnariuc, I.; Kulkarni, J.
+                                                                              Haller, B.; Janiesch, J.-W.; Heitkamp, T.; Börsch, M.; Lira, R. B.;
+A.; Leung, S. S. W.; Cullis, P. R.; Thewalt, J. L.; Tieleman, D. P.
+                                                                              Dimova, R.; Lipowsky, R.; Bodenschatz, E.; Baret, J.-C.; Vidakovic-
+Ionizable Amino Lipid Interactions with POPC: Implications for
+                                                                              Koch, T.; Sundmacher, K.; Platzman, I.; Spatz, J. P. Sequential
+Lipid Nanoparticle Function. Nanoscale 2019, 11, 14141−14146.
+                                                                              Bottom-up Assembly of Mechanically Stabilized Synthetic Cells by
+(b) Kulkarni, J. A.; Darjuan, M. M.; Mercer, J. E.; Chen, S.; van der
+                                                                              Microfluidics. Nat. Mater. 2018, 17, 89−96. (l) Zou, Y.; Henry, W. S.;
+Meel, R.; Thewalt, J. L.; Tam, Y. Y. C.; Cullis, P. R. On the Formation
+and Morphology of Lipid Nanoparticles Containing Ionizable                    Ricq, E. L.; Graham, E. T.; Phadnis, V. V.; Maretich, P.; Paradkar, S.;
+Cationic Lipids and siRNA. ACS Nano 2018, 12, 4787−4795.                      Boehnke, N.; Deik, A. A.; Reinhardt, F.; Eaton, J. K.; Ferguson, B.;
+  (8) (a) Hatakeyama, H.; Akita, H.; Harashima, H. A Multifunctional          Wang, W.; Fairman, J.; Keys, H. R.; Danck, V.; Clish, C. B.; Clemons,
+Envelope Type Nano Device (MEND) for Gene Delivery to Tumours                 P. A.; Hammond, P. T.; Boyer, L. A.; Weinberg, R. A.; Schreiber, S. L.
+Based on the EPR Effect: A Strategy for Overcoming the PEG                    Plasticity of Ether Lipids Promotes Ferroptosis Susceptibility and
+Dilemma. Adv. Drug Delivery Rev. 2011, 63, 152−160. (b) Sato, Y.;             Evasion. Nature 2020, 585, 603−608. (m) Martin, B.; Vigneron, J. P.;
+Hatakeyama, H.; Sakurai, Y.; Hyodo, M.; Akita, H.; Harashima, H. A            Oudrhiri, N.; Fauquet, M.; Vergely, L.; Bradley, J. C.; Basseville, M.;
+pH-Sensitive Cationic Lipid Facilitates the Delivery of Liposomal             Lehn, P.; Lehn, J. M. Guanidinium-Cholesterol Cationic Lipids:
+siRNA and Gene Silencing Activity in Vitro and in Vivo. J. Controlled         Efficient Vectors for the Transfection of Eukaryotic Cells. Proc. Natl.
+Release 2012, 163, 267−276. (c) Choi, J. S.; MacKay, J. A.; Szoka, F.         Acad. Sci. U. S. A. 1996, 93, 9682−9686. (n) Sainlos, M.; Aissaoui, A.;
+C. Low-pH-Sensitive PEG-Stabilized Plasmid-Lipid Nanoparticles:               Oudrhiri, N.; Hauchecorne, M.; Vigneron, J. P.; Lehn, J. M.; Lehn, P.
+Preparation and Characterization. Bioconjugate Chem. 2003, 14, 420−           The Design of Cationic Lipids for Gene Delivery. Curr. Pharm. Des.
+429. (d) Pelegri-O’Day, E. M.; Lin, E.-W.; Maynard, H. D.                     2005, 11, 375−394. (o) Haluska, C. K.; Riske, K. A.; Marchi-Artzner,
+Therapeutic Protein-Polymer Conjugates: Advancing Beyond PEGy-                V.; Lehn, J.-M.; Lipowsky, R.; Dimova, R. Time Scales of Membrane
+lation. J. Am. Chem. Soc. 2014, 136, 14323−14332. (e) Whitfield, C.           Fusion Revealed by Direct Imaging of Vesicle Fusion with High
+J.; Zhang, M.; Winterwerber, P.; Wu, Y.; Ng, D. Y. W.; Weil, T.               Temporal Resolution. Proc. Natl. Acad. Sci. U. S. A. 2006, 103,
+Functional DNA-Polymer Conjugates. Chem. Rev. 2021,                           15841−15846. (p) Kohata, A.; Hashim, P. K.; Okuro, K.; Aida, T.
+DOI: 10.1021/acs.chemrev.0c01074.                                             Transferrin Appended Nanocaplet for Transcellular siRNA Delivery
+  (9) (a) McKinlay, C. J.; Vargas, J. R.; Blake, T. R.; Hardy, J. W.;         into Deep Tissues. J. Am. Chem. Soc. 2019, 141, 2862−2866.
+Kanada, M.; Contag, C. H.; Wender, P. A.; Waymouth, R. M. Charge-               (11) (a) Discher, B. M.; Won, Y.-Y.; Ege, D. S.; Lee, J. C. M.; Bates,
+Altering Releasable Transporters (CARTs) for the Delivery and                 F. S.; Discher, D. E.; Hammer, D. A. Polymersomes: Tough Vesicles
+Release of mRNA in Living Animals. Proc. Natl. Acad. Sci. U. S. A.            Made from Diblock Copolymers. Science 1999, 284, 1143−1146.
+2017, 114, E448−E456. (b) McKinlay, C. J.; Benner, N. L.; Haabeth,            (b) Discher, D. E.; Ortiz, V.; Srinivas, G.; Klein, M. L.; Kim, Y.;
+O. A.; Waymouth, R. M.; Wender, P. A. Enhanced mRNA Delivery                  Christian, D.; Cai, S.; Photos, P.; Ahmed, F. Emerging Applications of
+into Lymphocytes Enabled by Lipid-Varied Libraries of Charge-                 Polymersomes in Delivery: From Molecular Dynamics to Shrinkage of
+Altering Releasable Transporters. Proc. Natl. Acad. Sci. U. S. A. 2018,       Tumors. Prog. Polym. Sci. 2007, 32, 838−857. (c) Bellomo, E. G.;
+115, E5859−E5866. (c) Benner, N. L.; McClellan, R. L.; Turlington,            Wyrsta, M. D.; Pakstis, L.; Pochan, D. J.; Deming, T. J. Stimuli-
+C. R.; Haabeth, O. A. W.; Waymouth, R. M.; Wender, P. A.                      Responsive Polypeptide Vesicles by Conformation-Specific Assembly.
+Oligo(Serine Ester) Charge-Altering Releasable Transporters: Orga-            Nat. Mater. 2004, 3, 244−248. (d) Elsabahy, M.; Heo, G. S.; Lim, S.
+nocatalytic Ring-Opening Polymerization and Their Use for in Vitro            M.; Sun, G.; Wooley, K. L. Polymeric Nanostructures for Imaging and
+and in Vivo mRNA Delivery. J. Am. Chem. Soc. 2019, 141, 8416−                 Therapy. Chem. Rev. 2015, 115, 10967−11011.
+
+                                                                          K                                                https://doi.org/10.1021/jacs.1c05813
+                                                                                                                       J. Am. Chem. Soc. XXXX, XXX, XXX−XXX
+Journal of the American Chemical Society                                                 pubs.acs.org/JACS                                            Article
+
+ (12) (a) Percec, V.; Wilson, D. A.; Leowanawat, P.; Wilson, C. J.;             Architectures with Bioactivity to Biomedically Relevant Lectins. J.
+Hughes, A. D.; Kaucher, M. S.; Hammer, D. A.; Levine, D. H.; Kim,               Am. Chem. Soc. 2013, 135, 9055−9077. (b) Zhang, S.; Xiao, Q.;
+A. J.; Bates, F. S.; Davis, K. P.; Lodge, T. P.; Klein, M. L.; DeVane, R.       Sherman, S. E.; Muncan, A.; Ramos Vicente, A. D. M.; Wang, Z.;
+H.; Aqad, E.; Rosen, B. M.; Argintaru, A. O.; Sienkowska, M. J.;                Hammer, D. A.; Williams, D.; Chen, Y.; Pochan, D. J.; Vértesy, S.;
+Rissanen, K.; Nummelin, S. Self-Assembly of Janus Dendrimers into               André, S.; Klein, M. L.; Gabius, H.-J.; Percec, V. Glycodendrimer-
+Uniform Dendrimersomes and Other Complex Architectures. Science                 somes from Sequence-Defined Janus Glycodendrimers Reveal High
+2010, 328, 1009−1014. (b) Sherman, S. E.; Xiao, Q.; Percec, V.                  Activity and Sensor Capacity for the Agglutination by Natural
+Mimicking Complex Biological Membranes and Their Programmable                   Variants of Human Lectins. J. Am. Chem. Soc. 2015, 137, 13334−
+Glycan Ligands with Dendrimersomes and Glycodendrimersomes.                     13344. (c) Xiao, Q.; Zhang, S.; Wang, Z.; Sherman, S. E.; Moussodia,
+Chem. Rev. 2017, 117, 6538−6631. (c) Peterca, M.; Percec, V.;                   R.-O.; Peterca, M.; Muncan, A.; Williams, D. R.; Hammer, D. A.;
+Leowanawat, P.; Bertin, A. Predicting the Size and Properties of                Vértesy, S.; André, S.; Gabius, H.-J.; Klein, M. L.; Percec, V. Onion-
+Dendrimersomes from the Lamellar Structure of Their Amphiphilic                 like Glycodendrimersomes from Sequence-Defined Janus Glycoden-
+Janus Dendrimers. J. Am. Chem. Soc. 2011, 133, 20507−20520.                     drimers and Influence of Architecture on Reactivity to a Lectin. Proc.
+(d) Zhang, S.; Sun, H.-J.; Hughes, A. D.; Draghici, B.; Lejnieks, J.;           Natl. Acad. Sci. U. S. A. 2016, 113, 1162−1167. (d) Rodriguez-
+Leowanawat, P.; Bertin, A.; Otero De Leon, L.; Kulikov, O. V.; Chen,            Emmenegger, C.; Xiao, Q.; Kostina, N. Y.; Sherman, S. E.; Rahimi, K.;
+Y.; Pochan, D. J.; Heiney, P. A.; Percec, V. Single-Single” Amphiphilic         Partridge, B. E.; Li, S.; Sahoo, D.; Perez, A. M. R.; Buzzacchera, I.;
+Janus Dendrimers Self-Assemble into Uniform Dendrimersomes with                 Han, H.; Kerzner, M.; Malhotra, I.; Möller, M.; Wilson, C. J.; Good,
+Predictable Size. ACS Nano 2014, 8, 1554−1565. (e) Zhang, S.; Sun,              M. C.; Goulian, M.; Baumgart, T.; Klein, M. L.; Virgil Percec, V.
+H.-J.; Hughes, A. D.; Moussodia, R.-O.; Bertin, A.; Chen, Y.; Pochan,           Encoding Biological Recognition in a Bicomponent Cell-Membrane
+D. J.; Heiney, P. A.; Klein, M. L.; Percec, V. Self-Assembly of                 Mimic. Proc. Natl. Acad. Sci. U. S. A. 2019, 116, 5376−5382. (e) Xiao,
+Amphiphilic Janus Dendrimers into Uniform Onion-Like Dendri-                    Q.; Delbianco, M.; Sherman, S. E.; Perez, A. M. R.; Bharate, P.;
+mersomes with Predictable Size and Number of Bilayers. Proc. Natl.              Pardo-Vargas, A.; Rodriguez-Emmenegger, C.; Kostina, N. Y.; Rahimi,
+Acad. Sci. U. S. A. 2014, 111, 9058−9063. (f) Xiao, Q.; Yadavalli, S. S.;       K.; Söder, D.; Möller, M.; Klein, M. L.; Seeberger, P. H.; Percec, V.
+Zhang, S.; Sherman, S. E.; Fiorin, E.; Silva, L. d.; Wilson, D. A.;             Nanovesicles Displaying Functional Linear and Branched Oligoman-
+Hammer, D. A.; André, S.; Gabius, H.-J.; Klein, M. L.; Goulian, M.;             nose Self-Assembled from Sequence-Defined Janus Glycodendrimers.
+Percec, V. Bioactive Cell-Like Hybrids Coassembled from (Glyco)-                Proc. Natl. Acad. Sci. U. S. A. 2020, 117, 11931−11939. (f) Kostina, N.
+Dendrimersomes with Bacterial Membranes. Proc. Natl. Acad. Sci. U.              Y.; Söder, D.; Haraszti, T.; Xiao, Q.; Rahimi, K.; Partridge, B. E.;
+S. A. 2016, 113, E1134−E1141. (g) Yadavalli, S. S.; Xiao, Q.;                   Klein, M. L.; Percec, V.; Rodriguez-Emmenegger, C. Enhanced
+Sherman, S. E.; Hasley, W. D.; Klein, M. L.; Goulian, M.; Percec, V.            Concanavalin A Binding to Preorganized Mannose Nanoarrays in
+Bioactive Cell-Like Hybrids from Dendrimersomes with a Human                    Glycodendrimersomes Revealed Multivalent Interactions. Angew.
+Cell Membrane and Its Components. Proc. Natl. Acad. Sci. U. S. A.               Chem., Int. Ed. 2021, 60, 8352−8360.
+2019, 116, 744−752. (h) Xiao, Q.; Sherman, S. E.; Wilner, S. E.;                  (14) (a) Ramishetti, S.; Hazan-Halevy, I.; Palakuri, R.; Chatterjee,
+Zhou, X.; Dazen, C.; Baumgart, T.; Reed, E. H.; Hammer, D. A.;                  S.; Gonna, S. N.; Dammes, N.; Freilich, I.; Shmuel, L. K.; Danino, D.;
+Shinoda, W.; Klein, M. L.; Percec, V. Janus Dendrimersomes                      Peer, D. A Combinatorial Library of Lipid Nanoparticles for RNA
+Coassembled from Fluorinated, Hydrogenated, and Hybrid Janus                    Delivery to Leukocytes. Adv. Mater. 2020, 32, 1906128. (b) Kim, M.;
+Dendrimers as Models for Cell Fusion and Fission. Proc. Natl. Acad.             Jeong, M.; Hur, S.; Cho, Y.; Park, J.; Jung, H.; Seo, Y.; Woo, H. A.;
+Sci. U. S. A. 2017, 114, E7045−E7053. (i) Torre, P.; Xiao, Q.;                  Nam, K. T.; Lee, K.; Lee, H. Engineered Ionizable Lipid Nano-
+Buzzacchera, I.; Sherman, S. E.; Rahimi, K.; Kostina, N. Y.;                    particles for Targeted Delivery of RNA Therapeutics into Different
+Rodriguez-Emmenegger, C.; Möller, M.; Wilson, C. J.; Klein, M. L.;              Types of Cells in the Liver. Sci. Adv. 2021, 7, No. eabf4398.
+Good, M. C.; Percec, V. Encapsulation of Hydrophobic Components                   (15) Huotari, J.; Helenius, A. Endosome Maturation. EMBO J. 2011,
+in Dendrimersomes and Decoration of Their Surface with Proteins                 30, 3481−3500.
+and Nucleic Acids. Proc. Natl. Acad. Sci. U. S. A. 2019, 116, 15378−              (16) Horita, K.; Yoshioka, T.; Tanaka, T.; Oikawa, Y.; Yonemitsu, O.
+15385. (j) Li, S.; Xia, B.; Javed, B.; Hasley, W. D.; Melendez-Davila,          On the Selectivity of Deprotection of Benzyl, MPM (4-Methox-
+A.; Liu, M.; Kerzner, M.; Agarwal, S.; Xiao, Q.; Torre, P.; Bermudez, J.        ybenzyl) and DMPM (3,4-Dimethoxybenzyl) Protecting Groups for
+G.; Rahimi, K.; Kostina, N. Yu.; Möller, M.; Rodriguez-Emmenegger,              Hydroxy Functions. Tetrahedron 1986, 42, 3021−3028.
+C.; Klein, M. L.; Percec, V.; Good, M. C. Direct Visualization of                 (17) (a) Levitt, M.; Perutz, M. F. Aromatic Rings Act as Hydrogen
+Vesicle Disassembly and Reassembly Using Photocleavable Den-                    Bond Acceptors. J. Mol. Biol. 1988, 201, 751−754. (b) Perutz, M. F.;
+drimers Elucidates Cargo Release Mechanisms. ACS Nano 2020, 14,                 Kirby, A. J.; Williams, D. H. The Role of Aromatic Rings as
+7398−7411. (k) Kostina, N. Y.; Wagner, A. M.; Haraszti, T.; Rahimi,             Hydrogen-Bond Acceptors in Molecular Recognition. Philos. Trans. R.
+K.; Xiao, Q.; Klein, M. L.; Percec, V.; Rodriguez-Emmenegger, C.                Soc., A 1993, 345, 105−112. (c) Perutz, M. F.; Fermi, G.; Abraham,
+Unraveling Topology-Induced Shape Transformations in Dendrimer-                 D. J.; Poyart, C.; Bursaux, E. Hemoglobin as a Receptor of Drugs and
+somes. Soft Matter 2021, 17, 254−267. (l) Kostina, N. Yu.; Rahimi,              Peptides: X-Ray Studies of the Stereochemistry of Binding. J. Am.
+K.; Xiao, Q.; Haraszti, T.; Dedisch, S.; Spatz, J. P.; Schwaneberg, U.;         Chem. Soc. 1986, 108, 1064−1078. (d) Loewenthal, R.; Sancho, J.;
+Klein, M. L.; Percec, V.; Möller, M.; Rodriguez-Emmenegger, C.                  Fersht, A. R. Histidine-Aromatic Interactions in Barnase: Elevation of
+Membrane-Mimetic Dendrimersomes Engulf Living Bacteria via                      Histidine PKa and Contribution to Protein Stability. J. Mol. Biol.
+Endocytosis. Nano Lett. 2019, 19, 5732−5738. (m) Buzzacchera, I.;               1992, 224, 759−770. (e) Zacharias, N.; Dougherty, D. A. Cation-π
+Xiao, Q.; Han, H.; Rahimi, K.; Li, S.; Kostina, N. Y.; Toebes, B. J.;           Interactions in Ligand Recognition and Catalysis. Trends Pharmacol.
+Wilner, S. E.; Möller, M.; Rodriguez-Emmenegger, C.; Baumgart, T.;              Sci. 2002, 23, 281−287. (f) Gallivan, J. P.; Dougherty, D. A. Cation-π
+Wilson, D. A.; Wilson, C. J.; Klein, M. L.; Percec, V. Screening                Interactions in Structural Biology. Proc. Natl. Acad. Sci. U. S. A. 1999,
+Libraries of Amphiphilic Janus Dendrimers based on Natural Phenolic             96, 9459−9464. (g) Dougherty, D. A. Cation-π Interactions in
+Acids to Discover Monodisperse Unilamellar Dendrimersomes.                      Chemistry and Biology: A New View of Benzene, Phe, Tyr, and Trp.
+Biomacromolecules 2019, 20, 712−727.                                            Science 1996, 271, 163−168. (h) Dougherty, D. A. The Cation-π
+ (13) (a) Percec, V.; Leowanawat, P.; Sun, H.-J.; Kulikov, O.;                  Interaction. Acc. Chem. Res. 2013, 46, 885−893. (i) Ma, J. C.;
+Nusbaum, C. D.; Tran, T. M.; Bertin, A.; Wilson, D. A.; Peterca, M.;            Dougherty, D. A. The Cation-π Interaction. Chem. Rev. 1997, 97,
+Zhang, S.; Kamat, N. P.; Vargo, K.; Moock, D.; Johnston, E. D.;                 1303−1324. (j) Dougherty, D. A.; Stauffer, D. A. Acetylcholine
+Hammer, D. A.; Pochan, D. J.; Chen, Y.; Chabre, Y. M.; Shiao, T. C.;            Binding by a Synthetic Receptor: Implications for Biological
+Bergeron-Brlek, M.; Andre, S.; Roy, R.; Gabius, H.-J.; Heiney, P. A.            Recognition. Science 1990, 250, 1558−1560.
+Modular Synthesis of Amphiphilic Janus Glycodendrimers and Their                  (18) (a) Karikó, K.; Buckstein, M.; Ni, H.; Weissman, D.
+Self-Assembly into Glycodendrimersomes and Other Complex                        Suppression of RNA Recognition by Toll-like Receptors: The Impact
+
+                                                                            L                                                 https://doi.org/10.1021/jacs.1c05813
+                                                                                                                          J. Am. Chem. Soc. XXXX, XXX, XXX−XXX
+Journal of the American Chemical Society                                        pubs.acs.org/JACS                               Article
+
+of Nucleoside Modification and the Evolutionary Origin of RNA.
+Immunity 2005, 23, 165−175. (b) Pardi, N.; Muramatsu, H.;
+Weissman, D.; Kariko, K. In Vitro Transcription of Long RNA
+Containing Modified Nucleosides. Methods Mol. Biol. 2013, 969, 29−
+42.
+ (19) (a) Khan, O. F.; Zaia, E. W.; Jhunjhunwala, S.; Xue, W.; Cai, W.
+X.; Yun, D. S.; Barnes, C. M.; Dahlman, J. E.; Dong, Y. Z.; Pelet, J. M.;
+Webber, M. J.; Tsosie, J. K.; Jacks, T. E.; Langer, R.; Anderson, D. G.
+Dendrimer-Inspired Nanomaterials for the in Vivo Delivery of siRNA
+to Lung Vasculature. Nano Lett. 2015, 15, 3008−3016. (b) Patel, A.
+K.; Kaczmarek, J. C.; Bose, S.; Kauffman, K. J.; Mir, F.; Heartlein, M.
+W.; DeRosa, F.; Langer, R.; Anderson, D. G. Inhaled Nanoformulated
+mRNA Polyplexes for Protein Production in Lung Epithelium. Adv.
+Mater. 2019, 31, 1805116.
+ (20) (a) Lehn, J. M. Toward Self-Organization and Complex Matter.
+Science 2002, 295, 2400−2403. (b) Rosen, B. M.; Wilson, C. J.;
+Wilson, D. A.; Peterca, M.; Imam, M. R.; Percec, V. Dendron-
+Mediated Self-Assembly, Disassembly, and Self-Organization of
+Complex Systems. Chem. Rev. 2009, 109, 6275−6540.
+
+
+
+
+                                                                            M                           https://doi.org/10.1021/jacs.1c05813
+                                                                                                    J. Am. Chem. Soc. XXXX, XXX, XXX−XXX
+

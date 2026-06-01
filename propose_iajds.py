@@ -288,14 +288,45 @@ def _physics_quality_quick(smiles: str, seed: "Seed | None" = None,
     n_chains = 3 if ("Tris" in family or family == "PE-Gallic") else 2
     # No proxy: compute actual mean tail carbon count from the SMILES.
     chain_avg = _avg_tail_carbons_from_smiles(smiles, n_chains)
+    # Pull MD/QM physics from cache (real, NaN-passthrough) — this is what
+    # turns on the Helfrich escape form when MD data exists.
+    md_c0 = md_t = md_a_p = float("nan")
+    qm_cache = {}
+    try:
+        from physics_cache_io import load_physics
+        pr = load_physics(smiles, head_group=head_group,
+                           pka=pka if (pka is not None and np.isfinite(pka)) else None)
+        md_c0  = pr.md.get("md_c0_spontaneous", float("nan"))
+        md_t   = pr.md.get("md_bilayer_thick_nm", float("nan"))
+        md_a_p = pr.md.get("md_a_head_prot_nm2", float("nan"))
+        qm_cache = pr.qm
+        md_extras = {k: pr.md.get(k, float("nan")) for k in (
+            "md_a_head_prot_nm2", "md_delta_a_head_nm2",
+            "md_cpp_prot", "md_delta_cpp",
+            "md_bilayer_thick_nm", "md_order_param",
+        )}
+        helfrich_dG = pr.dG_escape_helfrich
+    except Exception:
+        md_extras = {}
+        helfrich_dG = float("nan")
     try:
         feats = compute_all_physics_features(
             smiles, pka=pka, linker_length=linker_n,
             n_tail_chains=n_chains, chain_avg_carbons=chain_avg,
             head_group=head_group,
+            md_c0_spontaneous=md_c0,
+            md_bilayer_thick_nm=md_t,
+            md_a_head_prot_nm2=md_a_p,
         )
     except Exception:
         feats = {}
+    # Merge the W-A/W-B columns so the v15 physics Ridge sees the extended
+    # PHYSICS_COLS schema when the bundle was retrained against it.
+    feats.update(md_extras)
+    feats.update({k: qm_cache.get(k, float("nan")) for k in (
+        "qm_q_ionizableN", "qm_dipole_D", "qm_dGsolv_kJmol", "qm_homo_lumo_eV",
+    )})
+    feats["dG_escape_helfrich"] = helfrich_dG
 
     # No-proxy component scoring: NaN inputs → NaN scores → q_physics excludes them.
     cpp = feats.get("cpp_geometric", float("nan"))

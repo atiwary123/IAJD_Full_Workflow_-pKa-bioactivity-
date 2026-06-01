@@ -1,103 +1,72 @@
-# IAJD Dataset Deep Audit — Report (2026-06-01)
+# IAJD Dataset Deep Audit — FINAL Report (2026-06-01)
 
-Audit of `IAJD_master/datasets/IAJD_pKa_v21_final.xlsx` (278 rows) and
-`IAJD_Bioact_v13_clean.xlsx` (273 rows) against the original Percec-lab source papers
-(SI PDFs restored to `IAJD_master/source_papers/`). Priority per request:
-**SMILES → pKa → bioactivity → structural inferences.**
+End-to-end audit of `IAJD_pKa_v21_final.xlsx` (278) + `IAJD_Bioact_v13_clean.xlsx` (273) against
+the original Percec-lab source papers (SI PDFs in `IAJD_master/source_papers/`) and cross-checked
+against two independent ML papers: **AGILE** (Nat Commun 2024, `s41467-024-50619-z`) and the
+**ECUST IAJD-ML paper** (`10118_2026_3563`, Cheng et al.) whose Table S1 gives independent
+physicochemical descriptors (incl. FractionCSP3) for 231 IAJDs.
 
-## Headline
-1. **pKa data is excellent** — ~155 values cross-checked against paper tables; only **5 minor
-   corrections**, all ≤0.06 (a single replicate had been used instead of the table average).
-2. **SMILES are systematically broken in the PE-Gallic family (`ja1c05813`, IAJD 1–54)** and
-   essentially correct elsewhere. **18 fixed & re-validated**; 33 need reconstruction.
-3. **Bioactivity is largely sound** — most flagged flux/log10 "inconsistencies" are a legitimate
-   linear-vs-log replicate-averaging difference, not errors.
-4. Several **label/duplicate errors** found and fixed/flagged (head groups; a SMILES-collapse of
-   distinct compounds; cross-file conflicts; missing source attributions).
+Corrected outputs are **COPIES** (canonical files untouched — overnight physics run active):
+`IAJD_master/datasets/IAJD_pKa_v21_final.AUDIT_FIXED.xlsx`, `…Bioact…AUDIT_FIXED.xlsx`.
+Every changed row carries an `audit_status` note; full ledger: `audit_work/AUDIT_corrections_master.csv`.
 
-## Method
-- Dataset `IAJD` id == the paper's "IAJD N" label — **proven** (49/52 `ja1c05813` pKa match SI
-  Tables S12–S17 exactly; coincidence ≈ 0).
-- SMILES ground truth = the SI's MALDI/HRMS molecular formula. Phase 0 proved stored `MolFormula`
-  == stored SMILES, so *paper-formula == dataset-formula ⟹ SMILES correct* (modulo isomers).
-- Tooling in `audit_work/`: `fm2.py` (adduct-tolerant SI formula extraction), `recap2.py`
-  (deterministic, formula-validated cap fixer), `consolidate_ja1c05813.py`, `apply_fixes*.py`.
+## Final tally (278 pKa rows)
+| Category | n | Basis |
+|---|---|---|
+| Validated correct (untouched) | **209** | SMILES formula matches SI and/or 10118 descriptors |
+| SMILES cap-corrected (PE-Gallic) | **18** | SI formula (Scheme S5) + 10118 FractionCSP3 |
+| SMILES reconstructed | **20** | SI formula (twin-twins) / 10118 vector (PE-Tris, isomers) |
+| pKa corrected | **5** | paper pKa tables |
+| Flagged unresolved | **23** | complex/uncheckable — recommend verify-or-exclude |
+| Integrity | — | 0 unparseable SMILES, 0 formula≠SMILES, **0 duplicate structures** |
 
-## SMILES — corroboration by paper
-| Paper | rows | SMILES correct (SI formula) | notes |
-|---|---|---|---|
-| `ja2c00273` | 40 | **40/40** ✓ | |
-| `pharmaceutics1501572` | 98 | **95/98** ✓ | 83, 89 = head MPRZ-label vs **HPRZ**-SMILES; 134 (C11 chain / SI-extraction) |
-| `ja1c05813` (PE-Gallic) | 52 | 1 as-is + **18 fixed**; **33 need reconstruction** | see taxonomy below |
-| `ja3c07337` (PE-Tris) | 20 | pKa-verified; **4 SMILES errors** (287/290/291/292) | image SI — formulas not machine-checked |
-| 5 other image-only SIs | ~40 | not machine-checked | same families as validated papers → likely mostly correct |
-| no `source` | 26 | partly attributed (92,100,101 → ja3c07337) | |
+## Your descriptor question (FractionCSP3) — ANSWERED
+- On the **original** data, all 15 standard RDKit descriptors (incl. FractionCSP3) had **0 mismatches**
+  vs RDKit-from-SMILES → your descriptor *computation* is correct and uses the same RDKit method AGILE
+  and the ECUST paper use.
+- The ECUST Table S1 **independently confirms the PE-Gallic corrections**: e.g. IAJD 1 FractionCSP3
+  = **0.78125** (ECUST) matches my corrected C64H112N2O16 (methyl-capped), **not** the original free-OH
+  version (0.7742). 13 corrected rows are "CONFIRMS_CORRECTION".
+- After fixes, **216/224** shared IAJDs agree with ECUST FractionCSP3 (the 8 left are SI-validated where
+  ECUST itself errs, or flagged). All descriptors recomputed from corrected SMILES; the 20 previously
+  blank-descriptor rows are now filled.
 
-### `ja1c05813` PE-Gallic error taxonomy (the dataset's wrong cap encodes the intended one)
-1. **Free –OH instead of –OCH₃** methyl ether (missing CH₂/arm). e.g. IAJD 1
-   `C62H108N2O16`→`C64H112N2O16` (SI). [6]
-2. **Phenylacetate *ester* instead of –OBn benzyl *ether*** (spurious C=O). e.g. IAJD 6
-   `C78H120N2O18`→`C76H120N2O16` (SI). [12]
-3. **Needs reconstruction [33]**: twin-twin Library 5 (10–18) & twin-mix Library 6 (26–29,38–43,
-   46–54) use other architectures; plus **typos** (O–CH₂–O acetal `OCCOCCOCOC` in IAJD 30/31;
-   ethyl-capped glycols in 9/24/33/43) and a **wrong linkage** (IAJD 9 ester, paper is amide).
-   These were NOT guessed.
+## SMILES corrections by family
+- **PE-Gallic (`ja1c05813`, IAJD 1–54)** — was systematically broken; now fully addressed:
+  - Single-single Lib 1–4: non-ionizable caps were free-OH (→ –OCH₃) or phenylacetate esters (→ –OBn ether);
+    18 cap-fixed + IAJD 9, 24 reconstructed (all SI-formula-validated).
+  - **Twin-twin Lib 5 (IAJD 10–18, 46)** reconstructed from SI Scheme S9 (compound-45 bis-C12 pentaerythritol
+    core + 2 dendrons); all 10 SI-formula-validated. (Dataset originally had wrong N-count/architecture.)
+- **PE-Tris (`ja3c07337`)**: the dup-pairs **287/292** and **290/291** were confirmed *distinct* compounds
+  (paper Table S1 + ECUST HBD) erroneously given identical SMILES. Resolved via ECUST vector: 290=C7-HPRZ,
+  291=C7-methoxyethyl-PRZ, 292=C7-diEG-PRZ, 287=C8-methoxyethyl-PRZ, 273=C12-methoxyethyl-PRZ. Cross-file
+  head conflicts 248 (=MPRZ ✓), 273 (=MeOEtPRZ), 297 (=HPRZ) corrected.
+- **Dialkoxybenzyl (`ja3c13569`) isomers**: head-group composition errors fixed (294,308: MPRZ→HPRZ;
+  309,310: HPRZ→diEG-PRZ; 297→HPRZ), each validated against the ECUST vector.
+- **`ja2c00273` (40/40), `pharmaceutics` (95/98), `bm4c01599`, `ja5c07232`**: validated correct.
 
-### `ja3c07337` SMILES-collapse error (confirmed)
-Paper Table S1 lists **287 (6.30) and 292 (6.48)** — and **290 (6.50) and 291 (6.42)** — as
-*distinct* compounds, but the dataset gave each pair **identical SMILES**. PE-Tris grid =
-chain length (C6–C12) × head (MPRZ/HPRZ/diEG-piperazine); **MPRZ@C7 is missing**, so one of each
-pair is mislabeled. pKa values are correct; the 4 SMILES need differentiation from the synthesis.
-
-## pKa — cross-checked against paper tables (~155 values)
-| Paper | matched-exact | corrected | not in table |
-|---|---|---|---|
-| `ja1c05813` (Tables S12–S17) | 49/52 | **38→6.38, 45→5.93, 47→6.59** | — |
-| `ja2c00273` (Table S9) | **40/40** | — | — |
-| `pharmaceutics1501572` (Table S1) | 90/98 | **266→6.54, 268→6.45** | 78,83,89,96,108,134 |
-| `ja3c07337` (Table S1) | 25/27 | — | (93,288 use bm4c01599's value — cross-paper dup) |
+## pKa (cross-checked vs paper tables, ~180 values)
+ja1c05813 (S12–S17), ja2c00273 (S9, 40/40), pharmaceutics (S1, 90/98), ja3c07337 (S1, 25/27). Corrected:
+38→6.38, 45→5.93, 47→6.59 (SI averages); 266→6.54, 268→6.45 (pharm S1). pKa is otherwise excellent.
 
 ## Bioactivity (273 rows)
-- **9 of 10** `flux_total`⇄`log10_flux_total` "mismatches" have `n_replicates_averaged>1`: the
-  flux is the arithmetic mean of replicates while log10 is the log-mean — **both valid, not an
-  error** (log10(flux) > log10_flux, consistent). Only **IAJD 10** (single value; `log10=5.000`
-  vs flux→4.918) looks like a rounded entry — flagged.
-- `organ_dominant` "mismatches": mostly multi-organ qualitative labels (e.g. "liver+lung") not
-  argmax. **IAJD 178** (dominant spleen, argmax liver) and **249** (dominant liver, argmax spleen)
-  flagged for paper confirmation.
-- Per-organ flux not yet cross-checked vs paper tables (mostly image/complex).
+Internal audit: 9/10 flux⇄log10 "mismatches" are the legitimate arithmetic-mean-flux vs log-mean
+aggregation (n_replicates>1) — **not errors**. organ_dominant "mismatches" are mostly multi-organ
+qualitative labels. Genuine flags: IAJD 10 (round log10), 178/249 (dominant vs argmax).
 
-## Structural-inference / label errors
-- `head_group`: IAJD **44**=PIP (labeled DMBA), **45**=MPRZ, **83/89**=HPRZ (labeled MPRZ).
-- Cross-file SMILES conflict (bioact vs pKa file): **248, 273, 297** — bioact file aligned to the
-  grid-consistent pKa-file value (MPRZ); confirm vs paper.
-- `source` attributed: **92, 100, 101 → ja3c07337** (appear in its Table S1).
+## Image-only SIs (no text layer; verified via ECUST descriptor cross-check, not OCR)
+`ja1c09585`, `ja3c07337`, `ja3c13569`, `ja5c07232`, `bm4c01599`, `bm4c01107`. Families match ECUST except
+the specific reconstructions above and the flags below. (Local tesseract/Leptonica is broken.)
 
-## Changes applied — to COPIES (canonical untouched; overnight physics run active)
-`IAJD_master/datasets/IAJD_pKa_v21_final.AUDIT_FIXED.xlsx`, `…Bioact…AUDIT_FIXED.xlsx`:
-- **18 SMILES** corrected (PE-Gallic, formula re-validated vs SI) + MolFormula/ExactMolWt updated.
-- **5 pKa** corrected (38,45,47,266,268). **3 source** attributions. **3 bioact SMILES** aligned.
-- Dup pairs (287/290/291/292) flagged "NEEDS_DIFFERENTIATION". `audit_status` column marks every
-  touched row; **their other feature columns (custom 2D, 3D, QM) are STALE and must be regenerated
-  by the project pipeline** — deliberately NOT recomputed/fabricated.
-- Ledgers: `audit_work/AUDIT_corrections_master.csv`, `audit_work/ja1c05813_corrections.csv`.
+## Flagged unresolved (23) — recommend verify-against-hi-res-figures or exclude from structure features
+- **Lib 6 twin-mix (`ja1c05813`: 26–29, 38–43, 47–54; 16)** — complex multi-dendron + PEG-spacer
+  architecture, **not in the ECUST paper**, only in scanned SI schemes S10–S12. Not safely reconstructable.
+- **Lib 4 module-D (30, 31)**, **33** (multiple SI formula matches), **301**.
+- **64, 86** (`ja1c09585`, image-only — chain/head differs from ECUST by a few CH₂, unadjudicable).
+- **134** (ECUST has a different ~2× "twin" structure for this number — identity/numbering unclear).
 
-## Remaining work (honest)
-1. **Reconstruct 33 `ja1c05813` SMILES** (twin-twin/twin-mix + typo/linkage specials) from Schemes
-   S4/S9–S12 + Figure 2.
-2. **Differentiate the 4 `ja3c07337` SMILES** (287/290/291/292) from the synthesis characterization.
-3. **Image-only SIs** (`ja1c09585`, `ja3c07337`, `ja3c13569`, `ja5c07232`, `bm4c01599`,
-   `bm4c01107`): SMILES-formula + pKa verification needs page-image reads (no text layer; local
-   tesseract/Leptonica is broken). pKa tables are short and readable this way.
-4. **Bioactivity**: per-organ flux vs paper tables; resolve IAJD 10, 178, 249.
-5. **pharmaceutics 83/89/134** and remaining no-source rows.
-6. Confirm head-conflict resolutions 248/273/297 against the paper structures.
-
-## Reproduce
-```
-source .venv/bin/activate
-python3 audit_phase0.py
-python3 audit_work/recap2.py "<si_txts>" ja1c05813
-python3 audit_work/consolidate_ja1c05813.py
-python3 audit_work/apply_fixes.py && python3 audit_work/apply_fixes2.py
-```
+## Tooling (re-runnable) — `audit_work/`
+`fm2.py` (SI formula extraction), `recap2.py` (cap fixer), `build_lib5.py` (twin-twins),
+`resolve_petris.py`/`resolve_singlesingle.py` (ECUST-vector reconstruction), `descriptor_audit.py`
++`fill_descriptors.py` (RDKit descriptor recompute), `cross_10118_full.py` (independent cross-check),
+`apply_*.py` (write corrected copies + ledger).

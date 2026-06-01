@@ -1,0 +1,27 @@
+{
+  "pka_smiles_issues": [],
+  "bioact_smiles_issues": [],
+  "linker_mismatch_count": 0,
+  "dup_canonical": {
+    "CCCCCCCOCC(COCCCCCCC)(COCCCCCCC)COC(=O)CCCN1CCN(CCOCCO)CC1": [
+      [
+        287.0,
+        6.3
+      ],
+      [
+        292.0,
+        6.48
+      ]
+    ],
+    "CCCCCCCOCC(COCCCCCCC)(COCCCCCCC)COC(=O)CCCN1CCN(CCO)CC1": [
+      [
+        290.0,
+        6.5
+      ],
+      [
+        291.0,
+        6.42
+      ]
+    ]
+  }
+}

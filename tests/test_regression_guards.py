@@ -27,12 +27,18 @@ sys.path.insert(0, str(ROOT / "IAJD_master/code"))
 # Bundle-level invariants
 # ──────────────────────────────────────────────────────────────────────
 
-def test_v14_bundle_has_92_features():
-    """v14 bundle should now include Block E (sample-prep covariates)."""
+def test_v14_bundle_has_92_or_106_features():
+    """v14 bundle should be 92 (legacy) or 106 (with Block D' = MD/QM physics).
+
+    The 106-feature variant comes from the 2026-05-30 W-A/W-B/W-C upgrade:
+    Block A(50) + B(14) + C(10) + D(6) + form(8) + E(4) + D'(14) = 106.
+    """
     with open(ROOT / "IAJD_master/bundles_caches/bioact_v14_bundle.pkl", "rb") as f:
         b = pickle.load(f)
     n_features = b["X_train"].shape[1] if hasattr(b["X_train"], "shape") else len(b["X_train"][0])
-    assert n_features == 92, f"v14 should have 92 features, got {n_features}"
+    assert n_features in (92, 106), (
+        f"v14 should have 92 (legacy) or 106 (with Block D'), got {n_features}"
+    )
 
 
 def test_v14_bundle_block_slices_consistent():
@@ -42,6 +48,12 @@ def test_v14_bundle_block_slices_consistent():
     assert "E_sampleprep" in slices, "Block E_sampleprep missing from block_slices"
     s = slices["E_sampleprep"]
     assert s.start == 88 and s.stop == 92, f"E_sampleprep slice should be 88:92, got {s}"
+    # If the bundle has Block D', verify its slice is the canonical [92:106).
+    if "Dprime" in slices:
+        d = slices["Dprime"]
+        assert d.start == 92 and d.stop == 106, (
+            f"Dprime slice should be 92:106 (14 cols), got {d}"
+        )
 
 
 def test_pka_v92_bundle_has_per_family_weights():

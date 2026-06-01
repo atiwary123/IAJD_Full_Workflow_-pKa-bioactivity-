@@ -81,3 +81,19 @@ physics_cache/
 .pytest_cache/
 extern/
 nn/transfer_results.json
+
+# Vendored third-party model repo (257 MB incl. LFS checkpoints) — fetched/vendored per
+# machine like agile_repo/. The LiON *cache* (work product) is committed; the repo is not.
+lion_repo/
+
+# Source/SI journal PDFs — copyrighted, large (~123 MB); kept local, not redistributed in git
+IAJD_master/source_papers/
+
+# Pre-audit dataset backups — old/false SMILES, kept local only (recoverable from git history)
+IAJD_master/datasets/*.PRE_AUDIT.xlsx
+
+# Physics run logs (transient)
+physics_logs/
+
+# Heavy pre-regen backup bundles (regenerable; recoverable from history)
+audit_work/pre_regen_backup_*/

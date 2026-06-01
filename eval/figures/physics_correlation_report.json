@@ -1,0 +1,115 @@
+{
+  "qm_q_ionizableN": {
+    "n": 4,
+    "pearson_r": 0.6014902575116108,
+    "pearson_p": 0.3985097424883892,
+    "spearman_rho": 0.39999999999999997,
+    "spearman_p": 0.6
+  },
+  "qm_dipole_D": {
+    "n": 4,
+    "pearson_r": -0.8857413111262942,
+    "pearson_p": 0.11425868887370583,
+    "spearman_rho": -0.7999999999999999,
+    "spearman_p": 0.2000000000000001
+  },
+  "qm_polarizability": {
+    "n": 4,
+    "pearson_r": -0.8303118085618221,
+    "pearson_p": 0.16968819143817804,
+    "spearman_rho": -1.0,
+    "spearman_p": 0.0
+  },
+  "qm_homo_lumo_eV": {
+    "n": 4,
+    "pearson_r": 0.8611395146947836,
+    "pearson_p": 0.13886048530521644,
+    "spearman_rho": 0.7999999999999999,
+    "spearman_p": 0.2000000000000001
+  },
+  "qm_dGsolv_kJmol": {
+    "n": 4,
+    "pearson_r": 0.7099707222905572,
+    "pearson_p": 0.29002927770944265,
+    "spearman_rho": 0.19999999999999998,
+    "spearman_p": 0.8
+  },
+  "qm_dGsolv_head": {
+    "n": 2,
+    "skip_reason": "<3 finite values"
+  },
+  "qm_dGsolv_tail": {
+    "n": 3,
+    "pearson_r": 0.4916266903932996,
+    "pearson_p": 0.6728049400263718,
+    "spearman_rho": 0.5,
+    "spearman_p": 0.6666666666666666
+  },
+  "qm_Ehedup": {
+    "n": 4,
+    "pearson_r": -0.5494788769145287,
+    "pearson_p": 0.4505211230854713,
+    "spearman_rho": -0.19999999999999998,
+    "spearman_p": 0.8
+  },
+  "md_assembles": {
+    "n": 2,
+    "skip_reason": "<3 finite values"
+  },
+  "md_n_agg": {
+    "n": 2,
+    "skip_reason": "<3 finite values"
+  },
+  "md_a_head_neutral_nm2": {
+    "n": 0,
+    "skip_reason": "<3 finite values"
+  },
+  "md_a_head_prot_nm2": {
+    "n": 0,
+    "skip_reason": "<3 finite values"
+  },
+  "md_delta_a_head_nm2": {
+    "n": 0,
+    "skip_reason": "<3 finite values"
+  },
+  "md_bilayer_thick_nm": {
+    "n": 0,
+    "skip_reason": "<3 finite values"
+  },
+  "md_order_param": {
+    "n": 0,
+    "skip_reason": "<3 finite values"
+  },
+  "md_radius_gyration_nm": {
+    "n": 2,
+    "skip_reason": "<3 finite values"
+  },
+  "md_water_penetration": {
+    "n": 0,
+    "skip_reason": "<3 finite values"
+  },
+  "md_cpp_neutral": {
+    "n": 0,
+    "skip_reason": "<3 finite values"
+  },
+  "md_cpp_prot": {
+    "n": 0,
+    "skip_reason": "<3 finite values"
+  },
+  "md_delta_cpp": {
+    "n": 0,
+    "skip_reason": "<3 finite values"
+  },
+  "md_c0_spontaneous": {
+    "n": 0,
+    "skip_reason": "<3 finite values"
+  },
+  "smiles_canonical_md": {
+    "n": 0,
+    "skip_reason": "<3 finite values"
+  },
+  "md_error": {
+    "n": 0,
+    "skip_reason": "<3 finite values"
+  }
+}
