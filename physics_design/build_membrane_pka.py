@@ -112,8 +112,12 @@ def build(ionizable: str, workdir: Path, gmx: List[str], *,
     n_popc = n_lip - 1
     top = workdir / "system.top"
     top.write_text(_system_top(ion_res, n_popc, n_water))
+    # Analysis selections for compute_apparent_pka.py. NOTE: gmx grompp/mdrun write
+    # confout.gro with the TOPOLOGY bead names, so the titratable water is "WN" (the WNA
+    # molecule's bead), NOT the pre-grompp "W" in start.gro -> use -ref "name WN".
     return {"status": "ok", "start_gro": str(start), "top": str(top),
-            "n_popc": n_popc, "n_water": n_water, "ion": ion_res, "box_nm": list(box2)}
+            "n_popc": n_popc, "n_water": n_water, "ion": ion_res, "box_nm": list(box2),
+            "analysis_sel": "name P2", "analysis_ref": "name WN"}
 
 
 def _system_top(ion_res: str, n_popc: int, n_water: int) -> str:
