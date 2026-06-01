@@ -59,6 +59,14 @@ def load_family(family: str, flux_col: str):
     else:
         sub = df.copy()
     sub = sub.dropna(subset=[flux_col, "IAJD_num"])
+    # audit §4d: exclude rows whose SMILES are still flagged-unreliable (UNRESOLVED/FLAG_10118)
+    # from this structure-based c0 panel. They keep valid flux/pKa LABELS for label-only work,
+    # but their SMILES are wrong/unverifiable so the CG c0 would be meaningless.
+    if "audit_status" in sub.columns:
+        flagged = sub["audit_status"].astype(str).str.contains("UNRESOLVED|FLAG_10118", na=False)
+        if flagged.any():
+            print(f"  [load_family] excluding {int(flagged.sum())} flagged-unreliable SMILES (audit §4d)")
+            sub = sub[~flagged].copy()
     return sub
 
 

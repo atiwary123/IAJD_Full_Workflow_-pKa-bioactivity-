@@ -116,6 +116,12 @@ def main():
     if (~valid).any():
         print(f"  dropping {int((~valid).sum())} unparseable SMILES")
     iajd = iajd[valid].reset_index(drop=True)
+    # audit §4d: drop rows whose SMILES are still flagged-unreliable (UNRESOLVED/FLAG_10118)
+    if "audit_status" in iajd.columns:
+        bad = iajd["audit_status"].astype(str).str.contains("UNRESOLVED|FLAG_10118", na=False)
+        if bad.any():
+            print(f"  excluding {int(bad.sum())} rows with flagged-unreliable SMILES (audit §4d)")
+            iajd = iajd[~bad].reset_index(drop=True)
     print(f"IAJDs with {args.target}: {len(iajd)}  ({iajd['family'].nunique()} families)")
     Xi = _featurize(iajd["smiles"].tolist(), args.encoder)
     y = iajd[args.target].to_numpy(float)
