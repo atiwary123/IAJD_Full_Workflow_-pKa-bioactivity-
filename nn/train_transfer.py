@@ -71,8 +71,13 @@ def gp_loo_family(X, y, families, label):
         pca = PCA(n_components=npc).fit(Xtr)
         Ztr, Zte = pca.transform(Xtr), pca.transform(Xte)
         k = ConstantKernel(1.0) * Matern(length_scale=1.0, nu=2.5) + WhiteKernel(1e-2)
+        # random_state pins the optimizer restart for reproducibility. NOTE: the pooled
+        # leave-one-family-out Spearman is still noisy at n~tens / 6 families — for a
+        # trustworthy verdict, repeat over several random_states/CV folds and average
+        # (a single run's baseline has swung +-0.2 between runs). Do that before believing
+        # any "transfer helps" claim for design use.
         gp = GaussianProcessRegressor(kernel=k, normalize_y=True, alpha=1e-6,
-                                      n_restarts_optimizer=1)
+                                      n_restarts_optimizer=2, random_state=0)
         gp.fit(Ztr, y[tr])
         preds[te] = gp.predict(Zte)
     m = ~np.isnan(preds)
@@ -119,6 +124,20 @@ def main():
     if not args.no_lnpdb and args.lnpdb and Path(args.lnpdb).exists():
         print("\n== TRANSFER (LNPDB in-vivo delivery prior as an extra feature) ==")
         ln = pd.read_csv(args.lnpdb).dropna(subset=["smiles", "value"])
+        # per-study z-normalization: LNPDB values span scales across ~18 papers, so a raw
+        # prior mixes incomparable units. Normalize within each study before training.
+        if "study" in ln.columns:
+            ln["value"] = ln.groupby("study")["value"].transform(
+                lambda v: (v - v.mean()) / (v.std() + 1e-9))
+            ln = ln.dropna(subset=["value"])
+        # organ-match: if the target names an organ, train the prior on THAT organ's rows
+        organ = next((o for o in ("spleen", "liver", "lung", "muscle", "heart", "kidney")
+                      if o in args.target), None)
+        if organ and "organ" in ln.columns and int((ln["organ"] == organ).sum()) >= 30:
+            ln = ln[ln["organ"] == organ]
+            print(f"  organ-matched prior: {organ} ({len(ln)} LNPDB rows)")
+        else:
+            print(f"  generic in-vivo prior ({len(ln)} LNPDB rows, per-study normalized)")
         Xl, okl = morgan_features(ln["smiles"])
         from sklearn.ensemble import HistGradientBoostingRegressor
         prior = HistGradientBoostingRegressor(max_iter=300).fit(Xl[okl], ln["value"].to_numpy(float)[okl])
