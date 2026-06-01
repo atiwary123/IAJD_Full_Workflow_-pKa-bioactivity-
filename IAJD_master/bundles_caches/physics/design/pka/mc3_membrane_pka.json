@@ -1,0 +1,26 @@
+{
+  "name": "mc3_membrane",
+  "sel": "name P2",
+  "ref": "name W",
+  "is_base": true,
+  "pH_values": [
+    3.0,
+    4.0,
+    5.0,
+    5.5,
+    6.0,
+    6.5,
+    7.0,
+    8.0
+  ],
+  "prod_ns": 20.0,
+  "points": [
+    {
+      "pH": 3.0,
+      "q": NaN,
+      "status": "ok"
+    }
+  ],
+  "apparent_pKa": NaN,
+  "error": null
+}
