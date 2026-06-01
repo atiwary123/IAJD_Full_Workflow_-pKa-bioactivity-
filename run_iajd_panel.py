@@ -36,7 +36,10 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent
-BIOACT = ROOT / "IAJD_master" / "datasets" / "IAJD_Bioact_v13_clean.xlsx"
+_DS = ROOT / "IAJD_master" / "datasets"
+BIOACT = (_DS / "IAJD_Bioact_v13_clean.AUDIT_FIXED.xlsx") if \
+    (_DS / "IAJD_Bioact_v13_clean.AUDIT_FIXED.xlsx").exists() else \
+    (_DS / "IAJD_Bioact_v13_clean.xlsx")   # audit-corrected SMILES (2026-06-01)
 DESIGN_DIR = ROOT / "IAJD_master" / "bundles_caches" / "physics" / "design"
 PYBIN = sys.executable
 

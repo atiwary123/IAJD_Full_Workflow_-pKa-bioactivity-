@@ -16,7 +16,12 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
-BIOACT = ROOT / "IAJD_master" / "datasets" / "IAJD_Bioact_v13_clean.xlsx"
+_DS = ROOT / "IAJD_master" / "datasets"
+# prefer the audit-corrected SMILES (2026-06-01: 18 PE-Gallic SMILES fixed vs SI). The NN
+# computes features fresh from SMILES, so the audit's "features stale" caveat doesn't apply.
+BIOACT = (_DS / "IAJD_Bioact_v13_clean.AUDIT_FIXED.xlsx") if \
+    (_DS / "IAJD_Bioact_v13_clean.AUDIT_FIXED.xlsx").exists() else \
+    (_DS / "IAJD_Bioact_v13_clean.xlsx")
 DESIGN = ROOT / "IAJD_master" / "bundles_caches" / "physics" / "design"
 OUT = Path(__file__).resolve().parent / "iajd_transfer_input.csv"
 
@@ -54,7 +59,8 @@ def main():
     fam = _col(df, "family", "Family", "architecture")
     keep = {"IAJD_num": "iajd_num", sm: "smiles"}
     for c in ("log10_flux_spleen", "log10_flux_liver", "log10_flux_total",
-              "flux_total_SEM", "n_replicates", "n_mice", "pKa", "pKa_paper", "pKa_sd"):
+              "flux_total_SEM", "n_replicates", "n_mice", "pKa", "pKa_paper", "pKa_sd",
+              "audit_status"):
         if c in df.columns:
             keep[c] = c
     if fam:

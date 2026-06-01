@@ -36,7 +36,12 @@ import pandas as pd
 from .lipid_library import Lipid
 
 ROOT = Path(__file__).resolve().parent.parent
-BIOACT = ROOT / "IAJD_master" / "datasets" / "IAJD_Bioact_v13_clean.xlsx"
+_DS = ROOT / "IAJD_master" / "datasets"
+# prefer audit-corrected SMILES (2026-06-01: 18 PE-Gallic fixed); the CG model is built
+# fresh from SMILES, so the audit's "cached features stale" caveat does not apply here.
+BIOACT = (_DS / "IAJD_Bioact_v13_clean.AUDIT_FIXED.xlsx") if \
+    (_DS / "IAJD_Bioact_v13_clean.AUDIT_FIXED.xlsx").exists() else \
+    (_DS / "IAJD_Bioact_v13_clean.xlsx")
 
 STIFF_BOND_K = 50000.0    # kJ/mol/nm^2 — stiff harmonic ~ a Martini constraint (needs dt<=10fs)
 
