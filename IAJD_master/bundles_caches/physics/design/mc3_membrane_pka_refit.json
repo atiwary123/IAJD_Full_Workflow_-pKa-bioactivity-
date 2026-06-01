@@ -1,0 +1,56 @@
+{
+  "name": "mc3_membrane",
+  "sel": "name P2",
+  "ref": "name WN",
+  "window_frac": 0.5,
+  "points": [
+    {
+      "pH": 3.0,
+      "q": 0.002,
+      "n_frames_used": 1001
+    },
+    {
+      "pH": 4.0,
+      "q": 0.004,
+      "n_frames_used": 1001
+    },
+    {
+      "pH": 5.0,
+      "q": 0.004,
+      "n_frames_used": 1001
+    },
+    {
+      "pH": 5.5,
+      "q": 0.01,
+      "n_frames_used": 1001
+    },
+    {
+      "pH": 6.0,
+      "q": 0.013,
+      "n_frames_used": 1001
+    },
+    {
+      "pH": 6.5,
+      "q": 0.632,
+      "n_frames_used": 1001
+    },
+    {
+      "pH": 7.0,
+      "q": 0.985,
+      "n_frames_used": 1001
+    },
+    {
+      "pH": 8.0,
+      "q": 0.961,
+      "n_frames_used": 1001
+    }
+  ],
+  "apparent_pKa": 6.441804815219199,
+  "hill_n": 4.021157847175231,
+  "fit_rmse": 0.01480304686611706,
+  "exp_pKa": 6.44,
+  "pKa_error": 0.00180481521919873,
+  "method": "titratable Martini 3 constant-pH MD (membrane-embedded), degree_of_deprot fixed, Henderson-Hasselbalch fit",
+  "provisional": false,
+  "note": "Module A METHOD validation on a known ionizable lipid (DLin-MC3-DMA). Recovers a known pKa => the apparent-pKa machinery is sound; absolute IAJD values still carry CG-mapping uncertainty (Module E)."
+}
