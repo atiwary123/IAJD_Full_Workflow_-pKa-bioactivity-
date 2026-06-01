@@ -35,6 +35,8 @@ if ! "$MM" run -r "$MAMBA_ROOT_PREFIX" -n iajd gmx --version >/dev/null 2>&1; th
     "numpy<2" scipy pandas mdanalysis rdkit scikit-learn xgboost pyarrow \
     matplotlib openpyxl joblib git git-lfs
 fi
+# put the env bin on PATH so `git` finds the `git-lfs` subcommand (else `git lfs` errors)
+export PATH="$MAMBA_ROOT_PREFIX/envs/iajd/bin:$PATH"
 GIT="$MAMBA_ROOT_PREFIX/envs/iajd/bin/git"   # git+git-lfs from the env
 # 3) pip-only deps
 echo "[3] pip deps (pygam, scikit-optimize, pymbar, vermouth, acpype, tqdm)"
