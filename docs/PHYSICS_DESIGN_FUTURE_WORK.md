@@ -131,8 +131,20 @@ Module B pressure profile, attribute the curvature shift to the IAJD. This gives
 members (likely lower-flux → pure-bilayer c₀ measurable) from collapsing ones (likely
 higher-flux → need the host method); the *bilayer-stability threshold itself* may track flux.
 For collapsing members, **Module C (H_II / self-assembly)** is the complementary, more natural
-characterization. (Diagnostic in progress: re-running 369 at a smaller start APL 0.65 to
-confirm the collapse is fundamental, not a barostat overshoot from the loose 1.2 start.)
+characterization.
+
+**Diagnostic result (start-APL sweep, 2026-06-01):** start APL 1.2 → final 0.265, thick 8.3,
+bilayer collapsed, c₀=+1.55; start APL 0.65 → final 0.353, thick 5.9, **bilayer intact**,
+c₀=+0.73. So the *total* collapse from 1.2 was largely a **barostat overshoot from a too-loose
+start**, not purely fundamental. BUT even the intact 0.65 run does **not converge** (final APL
+0.35 nm² is implausibly small for a 3-tail molecule — likely tail over-cohesion or
+interdigitation — and γ is still off), and c₀ stays **positive**. Positive c₀ is either a
+compression artifact OR a real inverted-cone geometry of 369's CG model (bulky dendritic head
++ short GA-Tris tails) — **a non-converged pure bilayer cannot distinguish these.** Verdict:
+pure-IAJD-bilayer Module B is too initial-condition-sensitive and non-convergent to trust for
+369; **do NOT chase it with more start-APL runs** — build the host method (and/or get a proper
+equilibrium APL from a longer, area-relaxed or surface-tension-scanned run). The host method
+also sidesteps the "what is the right area" question entirely (the host sets it).
 
 ## FW-2 (implied) — generalize the membrane-pKa builder to arbitrary IAJDs
 
