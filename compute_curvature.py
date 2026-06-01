@@ -46,9 +46,10 @@ from physics_design.lipid_library import load_lipid
 from physics_design.martini_ff import parse_ff
 from physics_design.bilayer import build_system, read_gro
 from physics_design.md_runner import BilayerRunSpec, run_bilayer
-from physics_design.pressure_profile import (build_atom_arrays, compute_profile,
-                                             _minimum_image, F_COULOMB)
-from physics_design.curvature import spontaneous_curvature, packing_parameter
+from physics_design.pressure_profile import (build_atom_arrays, build_atom_arrays_mixed,
+                                             compute_profile, _minimum_image, F_COULOMB)
+from physics_design.curvature import (spontaneous_curvature, packing_parameter,
+                                      first_moment, KAPPA_MONO_J, BARNM2_TO_N)
 
 DESIGN_DIR = ROOT / "IAJD_master" / "bundles_caches" / "physics" / "design"
 WORKROOT = ROOT / "physics_cache" / "curvature_runs"
@@ -76,10 +77,13 @@ def _gmx_cmd() -> List[str]:
 # ──────────────────────────────────────────────────────────────────────
 
 def energy_cross_check(workdir: Path, gmx: List[str], lip, n_lip: int,
-                       ff, rc: float = 1.1, eps_r: float = 15.0) -> Dict:
+                       ff, rc: float = 1.1, eps_r: float = 15.0, sysarr=None) -> Dict:
     """Dump the last production frame, recompute its GROMACS config energies via
     -rerun, and compare to our force-field recomputation. Returns max |%err| over
-    Bond/Angle/LJ/Coulomb — the proof the recomputed forces ARE GROMACS' forces."""
+    Bond/Angle/LJ/Coulomb — the proof the recomputed forces ARE GROMACS' forces.
+
+    `sysarr` overrides the per-atom arrays (for a MIXED system pass the
+    build_atom_arrays_mixed result; otherwise a single-species array is built)."""
     from MDAnalysis.lib import distances as mdadist
     out = {"status": "ok"}
     frame = workdir / "fcheck.gro"
@@ -118,7 +122,7 @@ def energy_cross_check(workdir: Path, gmx: List[str], lip, n_lip: int,
     pos, names, resn, box = read_gro(frame)
     pos = np.array(pos); box = np.array(box)
     n_total = len(pos)
-    s = build_atom_arrays(lip, n_lip, n_total, ff)
+    s = sysarr if sysarr is not None else build_atom_arrays(lip, n_lip, n_total, ff)
     q = s.charge; krf = 1 / (2 * rc ** 3); crf = 3 / (2 * rc); pre = F_COULOMB / eps_r
     pairs, dists = mdadist.self_capped_distance(
         pos, max_cutoff=rc, box=np.array([box[0], box[1], box[2], 90, 90, 90]))
@@ -395,6 +399,106 @@ def characterize_iajd(iajd_num: int, *, protonated: bool = False,
     return rec
 
 
+def characterize_iajd_host(iajd_num: int, *, n_iajd_upper: int = 6,
+                           n_per_leaflet: int = 48, prod_ns: float = 80.0,
+                           eq2_ps: float = 4000.0, temp: float = 300.0, threads: int = 4,
+                           frame_ps: float = 100.0, last_frac: float = 0.7,
+                           do_force_check: bool = True, keep_traj: bool = False,
+                           contour: str = "ik", apl_nm2: float = 0.64,
+                           gpu: bool = False, kappa_J: Optional[float] = None) -> Dict:
+    """HOST-METHOD Module B c0 for an IAJD (the FW-4 fix for non-bilayer IAJDs whose pure
+    bilayer collapses). Embed `n_iajd_upper` IAJDs in the UPPER leaflet of a stable POPC
+    bilayer, run tensionless Module B, and extract the IAJD spontaneous-curvature
+    contribution from the LEAFLET ASYMMETRY (lower leaflet = pure-POPC baseline):
+        tau_IAJD = tau_lower + (tau_upper - tau_lower)/x_upper
+        c0_IAJD  = (tau_IAJD * BARNM2_TO_N / kappa) * 1e-9
+    PROVISIONAL (Module E gates trust); assumes linear composition mixing, one mole
+    fraction, and a kappa value — all flagged."""
+    from physics_design.iajd_cg import iajd_to_lipid
+    from physics_design.build_mixed_bilayer import build_mixed_bilayer
+    t0 = time.time()
+    gmx = _gmx_cmd()
+    lip = iajd_to_lipid(iajd_num, protonated=False)
+    head_idx = int(lip.head_bead); nb_iajd = lip.n_beads
+    popc = load_lipid("POPC"); nb_popc = popc.n_beads
+    ff = parse_ff(needed_types=set(lip.bead_types) | set(popc.bead_types) | {"W", "NA", "CL"})
+    workdir = WORKROOT / f"IAJD{iajd_num}_host_T{int(temp)}"
+    shutil.rmtree(workdir, ignore_errors=True)
+    rec: Dict = {"iajd": iajd_num, "species": lip.name, "method": "host_POPC_upper_leaflet",
+                 "temp_K": temp, "n_iajd_upper": n_iajd_upper, "n_per_leaflet": n_per_leaflet,
+                 "prod_ns": prod_ns, "head_bead_idx": head_idx,
+                 "cg_mapping_validated": bool(getattr(lip, "cg_mapping_validated", False)),
+                 "contour": contour, "c0_nm_inv": float("nan"), "error": None,
+                 "provisional": True,
+                 "assumptions": "linear composition mixing; single mole fraction; assumed kappa"}
+
+    info = build_mixed_bilayer(lip, head_idx, workdir, gmx, n_per_leaflet=n_per_leaflet,
+                               n_iajd_upper=n_iajd_upper, apl_nm2=apl_nm2)
+    if info["status"] != "ok":
+        rec["error"] = f"build:{info['status']}"; rec["build_log"] = info.get("log", "")[-1200:]
+        return rec
+    x_upper = info["x_upper"]; n_iajd = info["n_iajd"]; n_popc = info["n_popc"]
+    rec.update(x_upper=x_upper, n_iajd=n_iajd, n_popc=n_popc, n_water=info["n_water"],
+               box_nm=info["box_nm"])
+
+    spec = BilayerRunSpec(workdir=workdir, gro=Path(info["gro"]), top=Path(info["top"]),
+                          gmx_cmd=gmx, temp_K=temp, eq2_ps=eq2_ps, prod_ns=prod_ns,
+                          frame_ps=frame_ps, n_threads=threads, dt_ps=0.010, gpu=gpu)
+    audit = run_bilayer(spec)
+    rec["md_status"] = audit.get("status")
+    if audit.get("status") != "ok":
+        rec["error"] = f"md:{audit.get('status')}"; rec["md_log"] = audit.get("log", "")[-1800:]
+        return rec
+
+    pos, names, resn, box = read_gro(workdir / "prod.gro"); pos = np.array(pos)
+    # mixed per-atom arrays in .gro order: IAJDs first, then POPC, then water
+    sysarr = build_atom_arrays_mixed([(lip, n_iajd), (popc, n_popc)], len(pos), ff)
+
+    # membrane reference from the POPC host PO4 plane (POPC bead 1; POPC block starts
+    # after the IAJD block in the contiguous layout)
+    iajd_atoms = n_iajd * nb_iajd
+    po4_z = np.array([pos[iajd_atoms + m * nb_popc + 1, 2] for m in range(n_popc)])
+    zc = float(po4_z.mean())
+    up = po4_z[po4_z > zc]; lo = po4_z[po4_z < zc]
+    thick = float(up.mean() - lo.mean()) if len(up) and len(lo) else float("nan")
+    apl_host = float(box[0] * box[1] * 2.0 / (2 * n_per_leaflet))
+    rec["apl_nm2"] = apl_host; rec["thickness_PP_nm"] = thick
+    rec["bilayer_intact"] = bool(len(up) > 0.3 * n_popc and len(lo) > 0.3 * n_popc
+                                 and np.isfinite(thick) and 3.0 < thick < 6.0)
+
+    if do_force_check:
+        try:
+            rec["force_check"] = energy_cross_check(workdir, gmx, lip, n_iajd, ff, sysarr=sysarr)
+        except Exception as exc:
+            rec["force_check"] = {"status": f"exception:{type(exc).__name__}:{exc}"}
+
+    prof = compute_profile(workdir / "prod.xtc", workdir / "prod.gro", sysarr,
+                           last_frac=last_frac, contour=contour)
+    zmax = (thick / 2.0 + 1.5) if np.isfinite(thick) else 3.0
+    tau_up, tau_lo = first_moment(prof, zmax=zmax)        # upper=POPC+IAJD, lower=pure POPC
+    tau_iajd = (tau_lo + (tau_up - tau_lo) / x_upper) if x_upper > 0 else float("nan")
+    kappa = kappa_J if kappa_J is not None else KAPPA_MONO_J["_default"]
+    c0_iajd = (tau_iajd * BARNM2_TO_N / kappa) * 1e-9
+    rec.update(surface_tension_mNm=prof.surface_tension_mNm, n_frames=prof.n_frames,
+               tau_upper_bar_nm2=tau_up, tau_lower_bar_nm2=tau_lo,
+               tau_iajd_bar_nm2=tau_iajd, kappa_mono_J=kappa, c0_nm_inv=c0_iajd,
+               R0_nm=(1.0 / c0_iajd if abs(c0_iajd) > 1e-9 else float("inf")))
+    rec["tensionless"] = bool(abs(prof.surface_tension_mNm) < 4.0)
+    rec["c0_physics_converged"] = bool(rec["tensionless"] and rec["bilayer_intact"])
+    rec["c0_trusted"] = bool(rec["c0_physics_converged"] and rec["cg_mapping_validated"])
+
+    DESIGN_DIR.mkdir(parents=True, exist_ok=True)
+    np.savez(DESIGN_DIR / f"IAJD{iajd_num}_host_T{int(temp)}_profile.npz",
+             z=prof.z, dP=prof.dP, dP_nb=prof.dP_nb, dP_bond=prof.dP_bond,
+             dP_angle=prof.dP_angle)
+    rec["profile_npz"] = str(DESIGN_DIR / f"IAJD{iajd_num}_host_T{int(temp)}_profile.npz")
+    rec["elapsed_min"] = round((time.time() - t0) / 60, 1)
+    _purge(workdir, keep_traj)
+    (DESIGN_DIR / f"IAJD{iajd_num}_host_T{int(temp)}_curvature.json").write_text(
+        json.dumps(rec, indent=2, default=str))
+    return rec
+
+
 # ──────────────────────────────────────────────────────────────────────
 # Validation gate
 # ──────────────────────────────────────────────────────────────────────
@@ -486,6 +590,11 @@ def main():
                         "tensionless NPT relaxes it to the equilibrium area")
     p.add_argument("--gpu", action="store_true",
                    help="offload MD nonbonded+bonded to GPU (gmx -nb gpu)")
+    p.add_argument("--host", action="store_true",
+                   help="HOST method: IAJD embedded in a POPC bilayer (FW-4; for "
+                        "non-bilayer IAJDs whose pure bilayer collapses)")
+    p.add_argument("--n-iajd", type=int, default=6,
+                   help="number of IAJDs in the upper leaflet (host method)")
     p.add_argument("--n-per-leaflet", type=int, default=72)
     p.add_argument("--prod-ns", type=float, default=100.0)
     p.add_argument("--eq2-ps", type=float, default=4000.0)
@@ -502,6 +611,17 @@ def main():
     if args.validate and not args.lipid:
         rep = aggregate_validation()
         print(json.dumps(rep.get("gate", {}), indent=2, default=str))
+        return 0
+
+    if args.iajd and args.host:
+        rec = characterize_iajd_host(args.iajd, n_iajd_upper=args.n_iajd,
+                                     n_per_leaflet=args.n_per_leaflet, prod_ns=args.prod_ns,
+                                     eq2_ps=args.eq2_ps, temp=args.temp, threads=args.threads,
+                                     frame_ps=args.frame_ps, last_frac=args.last_frac,
+                                     do_force_check=args.force_check, keep_traj=args.keep_traj,
+                                     contour=args.contour, gpu=args.gpu)
+        print(json.dumps({k: v for k, v in rec.items()
+                          if k not in ("md_log", "build_log")}, indent=2, default=str))
         return 0
 
     if args.iajd:

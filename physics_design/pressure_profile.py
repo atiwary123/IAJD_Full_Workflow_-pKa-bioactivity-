@@ -131,6 +131,64 @@ def build_atom_arrays(lip: Lipid, n_lipids: int, n_total: int,
     )
 
 
+def build_atom_arrays_mixed(species, n_total: int, ff: MartiniFF,
+                            water_type: str = "W") -> AtomArrays:
+    """Like build_atom_arrays but for a MIXED system. `species` is an ORDERED list of
+    (Lipid, count) laid out contiguously to match the .gro / [molecules] order, followed
+    by (n_total - sum) water beads. Used by the host-method mixed bilayer (IAJD + POPC):
+    every per-bead type/charge/bond/angle/exclusion is the real value for whichever
+    species owns that bead — no proxy. The force recompute (energy_cross_check) validates
+    the assembled arrays against GROMACS exactly as for a single species."""
+    used_types = {water_type}
+    for lip, _cnt in species:
+        used_types |= set(lip.bead_types)
+    used_types = sorted(used_types)
+    type_index = {t: i for i, t in enumerate(used_types)}
+    _, c6, c12 = ff.c6_c12_matrix(used_types)
+
+    type_idx = np.empty(n_total, dtype=np.int32)
+    charge = np.zeros(n_total, dtype=np.float64)
+    bonds, bond_r0, bond_k = [], [], []
+    angles, angle_cos0, angle_k = [], [], []
+    excl = set()
+    off = 0
+    for lip, cnt in species:
+        nb = lip.n_beads
+        lt = lip.bead_types
+        lc = [c for _, _, c in lip.beads]
+        for L in range(cnt):
+            base = off + L * nb
+            for b in range(nb):
+                type_idx[base + b] = type_index[lt[b]]
+                charge[base + b] = lc[b]
+            for (i, j, r0, k) in lip.bonds:
+                a, bb = base + i, base + j
+                bonds.append((a, bb)); bond_r0.append(r0); bond_k.append(k)
+                excl.add((a, bb) if a < bb else (bb, a))
+            for (i, j, k, th0, kk) in lip.angles:
+                angles.append((base + i, base + j, base + k))
+                angle_cos0.append(np.cos(np.deg2rad(th0))); angle_k.append(kk)
+        off += cnt * nb
+    n_lip_atoms = off
+    if n_total < n_lip_atoms:
+        raise ValueError(f"n_total {n_total} < molecule atoms {n_lip_atoms}")
+    type_idx[n_lip_atoms:] = type_index[water_type]
+
+    bonds_arr = np.array(bonds, dtype=np.int64) if bonds else np.zeros((0, 2), np.int64)
+    if len(bonds_arr):
+        qq_bond = charge[bonds_arr[:, 0]] * charge[bonds_arr[:, 1]]
+        excl_qq_mask = qq_bond != 0.0
+    else:
+        excl_qq_mask = np.zeros(0, dtype=bool)
+    return AtomArrays(
+        type_idx=type_idx, type_names=used_types, charge=charge, c6=c6, c12=c12,
+        bonds=bonds_arr, bond_r0=np.array(bond_r0), bond_k=np.array(bond_k),
+        angles=np.array(angles, dtype=np.int64) if angles else np.zeros((0, 3), np.int64),
+        angle_cos0=np.array(angle_cos0), angle_k=np.array(angle_k),
+        excl_pairs=excl, n_lipid_atoms=n_lip_atoms, excl_qq_mask=excl_qq_mask,
+    )
+
+
 def _minimum_image(d: np.ndarray, box: np.ndarray) -> np.ndarray:
     """Apply orthorhombic minimum image to displacement vectors d (..,3)."""
     return d - box * np.round(d / box)

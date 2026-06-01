@@ -1,0 +1,11 @@
+{
+  "target": "log10_flux_total",
+  "encoder": "morgan",
+  "results": {
+    "baseline": [
+      0.03765009307079929,
+      -0.030602144296605127,
+      247
+    ]
+  }
+}

@@ -14,32 +14,45 @@ question reduces to: **is there a pretraining source close enough to IAJDs that 
 features transfer?** The answer is a qualified yes — and the field already did the
 experiment (AGILE).
 
-## 1. Pretraining-source comparison (the key decision)
+## 1. Pretraining-source comparison (UPDATED 2026-06-01 after a dedicated lit search)
+
+A thorough literature search (verified, repos opened) found something **better than AGILE as
+a dataset**: **LNPDB** — a public MIT-licensed superset that *contains* AGILE's data and adds
+**in-vivo organ-delivery labels** (our actual endpoint). Ranked:
 
 | Source | What it is | Match to IAJDs | Verdict |
 |---|---|---|---|
-| **AGILE** (Xu et al., Nat. Commun. 2024) | MolCLR-style GNN **self-supervised on 60k virtual ionizable lipids**, **fine-tuned on 1,200 Ugi-3CR ionizable lipids × HeLa/macrophage transfection** | Ionizable-amphiphile chemistry shared; scaffold differs (2-tail lipids vs Janus dendrimers); endpoint = in-vitro transfection | **RECOMMENDED primary** — domain-matched on the *ionizable* axis, SOTA, code+data public |
-| **lion_repo** (in this repo) | chemprop GNN pipeline + LNP delivery data the lab already curated | Possibly closer on the *delivery in-vivo* endpoint; need to audit its actual molecules/labels | **Use as 2nd source / in-vivo bridge** — audit `lion_repo/data/libraries/` to see how close |
-| TransLNP / TransMA / LANTERN / data-balanced transformer (2024–25) | transformer/multimodal ionizable-LNP screeners, pretrain+finetune | same ionizable-lipid space, different architectures + extra datasets | **Mine for additional labeled data**, not as the backbone |
-| Generic (MolCLR/ChemBERTa on ZINC/PubChem) | self-supervised on millions of drug-like molecules | weak — IAJDs are far OOD amphiphiles | **backbone init only**, not the domain signal |
+| **LNPDB** (Collins et al., Nat. Commun. 2026; `github.com/evancollins1/LNPDB`, MIT) | **12,845 unique ionizable-lipid SMILES** from 42 papers; **2,388 in-vivo rows / 1,513 lipids** across 18 in-vivo papers with **per-organ labels (liver 905, spleen 258, lung 96, muscle 486, …)**; head/linker/tail-decomposed SMILES; ships ready AGILE + LiON/Chemprop fine-tune harnesses | **In-vivo organ-flux endpoint — matches our spleen/liver/lung target directly.** Ionizable-amphiphile prior. Still 0 dendritic/≥3-tail rows. | **PRIMARY pretraining corpus** — public, in-vivo, large, superset of AGILE |
+| **AGILE** (Xu et al., Nat. Commun. 2024; `bowang-lab/AGILE`, MIT) | MolCLR GNN **self-sup on 60k virtual ionizable lipids** (pretrained `model.pth` shipped) + 1,200 in-vitro labels | Closest published **contrastive encoder** to our amphiphile space; labels are in-vitro only | **Use the 60k pretrained ENCODER as init** (not its labels) |
+| **LANTERN** (arXiv 2507.03209; `AsalMehradfar/LANTERN`) | re-audited AGILE labels: **235/1,200 were wrong**; ships a cleaned **1,100-lipid** set | corrected in-vitro labels | **Use INSTEAD of AGILE's raw labels** if adding the in-vitro task |
+| LipidAI/Ouyang (Nat. Commun. 2024, figshare) · LNP_ML (`jswitten/LNP_ML`) | ~370 in-vivo lipids · Chemprop LNP in-vivo codebase | extra in-vivo signal | **in-vivo supplements** to LNPDB |
+| Siegwart iPhos / SORT (5A2-SC8 **dendrimer-lipid**) | closest *dendritic* chemistry + in-vivo organ targeting | **best scaffold match** BUT data **not public** (SMILES not tabulated, "on request") | **want it, can't get it** — note the gap |
 
-**Bottom line:** AGILE is strictly better-matched than generic chemistry for the *ionizable*
-half of an IAJD, and its 60k-lipid self-supervised encoder is the single most reusable
-asset. lion may add an *in-vivo delivery* signal AGILE lacks. Use **AGILE primary, lion as
-the in-vivo bridge.**
+**Bottom line (honest):** the ideal set — thousands of *dendritic, in-vivo* ionizable
+amphiphiles — **does not exist publicly** (the entire Percec IAJD literature is ~hundreds of
+molecules in figures, never released as SMILES+activity; our ~273 IAJDs essentially *are* the
+world's IAJD dataset). So pretrain on the **in-vivo ionizable-amphiphile** domain and transfer.
+**Use LNPDB (in-vivo rows) as the supervised pretraining corpus + AGILE's 60k MolCLR weights as
+the encoder init**, and be explicit that the prior is "ionizable amphiphile," NOT "Janus
+dendrimer" — that residual is exactly what the IAJD fine-tune + the physics features (A/B/C)
+must carry.
 
-## 2. The recipe (3 stages)
+## 2. The recipe (3 stages, UPDATED)
 
-1. **Self-supervised pretrain** a GNN encoder (MolCLR contrastive, as AGILE does) on a large
-   UNLABELED amphiphile library — reuse AGILE's 60k virtual lipids and, to close the scaffold
-   gap, **add an IAJD-like virtual library** (enumerate Janus-dendrimer head/linker/tail
-   combos from `iajd_grammar`). Learns amphiphile structure representations.
-2. **Supervised fine-tune** the encoder on AGILE's **1,200-lipid transfection** data (+ lion's
-   in-vivo labels if compatible). Learns *delivery-relevant* features, not just chemistry.
-3. **Freeze the encoder → GP head on the IAJDs.** Embed the 273 IAJDs, then put the existing
-   **GP / Bayesian-opt** ([[feedback-design-optima-gam-gpbo]]) on the embeddings to predict
-   flux. This keeps the **calibrated uncertainty the design loop needs** — fine-tuning all
-   weights on 273 points would overfit. (Deep-kernel GP = the principled version.)
+1. **Encoder init = AGILE's 60k MolCLR weights** (self-supervised on 60k virtual ionizable
+   lipids; the closest published contrastive encoder to our amphiphile space). Optionally
+   continue self-sup contrastive pretraining on an **IAJD-like virtual library** (enumerate
+   Janus-dendrimer head/linker/tail combos from `iajd_grammar`) to nudge the representation
+   toward the dendritic scaffold the public data lacks.
+2. **Supervised pretrain on LNPDB IN-VIVO rows** (filter `Model_type==in_vivo`, our organs:
+   spleen/liver/lung/LN; within-study normalization — their LiON pipeline does this). This is
+   the upgrade over the old plan: the pretraining endpoint is now *in-vivo organ delivery*,
+   matching the IAJD target, not in-vitro transfection. (Add LANTERN's cleaned 1,100 in-vitro
+   set + the LipidAI in-vivo rows as auxiliary tasks if helpful.)
+3. **Freeze the encoder → GP head on the 273 IAJDs.** Embed the IAJDs, put the existing
+   **GP / Bayesian-opt** ([[feedback-design-optima-gam-gpbo]]) on the embeddings (+ the physics
+   A/B/C descriptors) to predict organ flux. Keeps the **calibrated uncertainty the design loop
+   needs**; full fine-tune on 273 points would overfit. (Deep-kernel GP = the principled form.)
 
 The physics descriptors (Module A pKa, Module B c₀, Module C H_II) concatenate onto the
 embedding as extra GP features — mechanism + learned representation together.
