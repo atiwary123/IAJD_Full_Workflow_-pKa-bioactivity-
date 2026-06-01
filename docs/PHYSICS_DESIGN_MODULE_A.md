@@ -1,8 +1,10 @@
 # Module A — Apparent pKa (titratable Martini 3 constant-pH MD)
 
-**Status:** method verified on GROMACS 2026; driver + building blocks built & validated;
-pipeline validation (aniline) running; DLin-MC3-DMA membrane titration system built,
-validated (grompps), and launched (multi-day).
+**Status:** ✅ **VALIDATED 2026-06-01** — both validation tiers passed: aniline-in-water
+recovers the intrinsic pKa (4.83 vs 4.8), and DLin-MC3-DMA-in-membrane recovers the
+apparent pKa (**6.44 vs 6.44**) *non-circularly* from a generic 10.2 intrinsic bead via a
+physics-computed −3.76-unit membrane shift. Method ready; IAJD values still pending the
+IAJD titratable model + Module E.
 **Code:** `compute_apparent_pka.py` · `physics_design/build_membrane_pka.py` ·
 `martini/ionizable/MC3_titratable.itp` · vendored `martini/titratable/`.
 
@@ -51,9 +53,22 @@ for MDAnalysis' TPR parser**, so we pass a version-independent `.gro` topology).
   3–7), Henderson-Hasselbalch fit **apparent pKa = 4.828** (vs 4.8; |Δ|=0.03, tolerance
   ±0.5), Hill n = 0.52, fit RMSE = 0.026. The titratable-Martini apparent-pKa pipeline
   reproduces a calibrated pKa essentially exactly → the method is validated.
-- **Target (DLin-MC3-DMA in POPC):** apparent pKa ≈ **6.44 ± 0.5** (build prompt §3;
-  the membrane shifts the ~10 intrinsic down). Titration launched (8 pH × 20 ns,
-  multi-day, chained after aniline). Result → `bundles_caches/physics/design/pka/`.
+- **Target (DLin-MC3-DMA in POPC) — ✅ VALIDATED 2026-06-01.** 8 pH × 20 ns membrane
+  titration. Clean sigmoid (⟨q⟩: 0.002→0.004→0.004→0.010→0.013→0.632→0.985→0.961 over pH
+  3–8), Henderson-Hasselbalch fit **apparent pKa = 6.44** (vs experimental LNP 6.44),
+  Hill n = 4.0, RMSE = 0.015. **NON-CIRCULAR:** the input was the *generic* N2_10.2 amine
+  bead (intrinsic aqueous pKa 10.2), and the membrane constant-pH MD shifted it **−3.76
+  units** to 6.44 — reproducing the well-known ~3.5-unit environmental pKa depression of
+  ionizable lipids and landing on MC3's measured value. We did NOT input 6.44.
+  - **Honest precision:** the central value lands on 6.44, but the method's true precision
+    is ~±0.2–0.3 (single MC3, finite sampling, steep Hill, hand-built titratable MC3), so
+    the exact-to-2-decimals match is partly fortuitous; the *validated* claim is "recovers
+    the right value within ~0.3 and captures the correct large membrane shift."
+  - **Bug caught + fixed during the run** (`degree_of_deprot.py`): `prot_less` was scoped
+    inside the water-present branch, so a frame with no titratable water near the acid hit
+    the else-branch → NameError → ⟨q⟩=NaN at pH 6.5 (and would have voided the whole
+    transition region). Fixed; re-fit via `refit_membrane_pka.py` (cached MD, no re-sim).
+  - Result → `bundles_caches/physics/design/mc3_membrane_pka_refit.json`.
 
 ## 5. Honest scope
 
