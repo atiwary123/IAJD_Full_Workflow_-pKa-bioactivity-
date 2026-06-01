@@ -24,11 +24,15 @@ The pure-IAJD bilayer collapses for membrane-active IAJDs (FW-4), so the panel u
 locally on 369: bilayer stays intact, mixed-system forces exact to 0.00008%.
 
 ```bash
-# whole GA-Tris family, FW-3 order, host method, parallel across cores, GPU-assisted
+# whole GA-Tris family, FW-3 order, host method, parallel across cores (CPU)
 python run_iajd_panel.py --family GA-Tris --host --n-iajd 8 \
-       --jobs 6 --threads 4 --gpu-jobs 1 --prod-ns 80 --force-check
+       --jobs 6 --threads 4 --gpu-jobs 0 --prod-ns 80 --force-check
 ```
 - `--jobs N` concurrent IAJDs, `--threads K` cores each → size to `N*K ≈ vCPUs`.
+- **GPU:** conda-forge GROMACS is **CPU-only**, so keep `--gpu-jobs 0` UNLESS you ran
+  `BUILD_GPU_GMX=1 bash cloud_setup.sh` and `source /workspace/gromacs-gpu/bin/GMXRC` first
+  (only then does `--gpu-jobs 1` / `-nb gpu` work). The CG panel is CPU-parallel-bound anyway,
+  so CPU is the right default; the GPU mainly helps the (future) atomistic Module E.
 - Output: `IAJD_master/bundles_caches/physics/design/IAJD<n>_host_T300_curvature.json`
   (per IAJD: `c0_nm_inv`, `tau_upper/lower`, `c0_physics_converged`, `force_check`) +
   `iajd_panel_GA-Tris.json` (summary, FW-3 order, high/low Δc₀).
