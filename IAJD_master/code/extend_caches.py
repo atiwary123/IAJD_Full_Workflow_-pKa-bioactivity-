@@ -109,7 +109,8 @@ def predict_admet_for_smiles(smiles_list, cache_path=None, verbose=True):
     try:
         result = subprocess.run(
             [ADMET_VENV_PYTHON, script_path],
-            capture_output=True, text=True, timeout=180,
+            capture_output=True, text=True,
+            timeout=int(os.environ.get('ADMET_TIMEOUT_S', '600')),
             env=clean_env, start_new_session=True,
         )
         out_text = result.stdout
@@ -252,7 +253,8 @@ def predict_lion_for_smiles(smiles_list, cache_path=None, verbose=True):
     try:
         result = subprocess.run(
             [LION_VENV_PYTHON, script_path],
-            capture_output=True, text=True, timeout=180,
+            capture_output=True, text=True,
+            timeout=int(os.environ.get('LION_TIMEOUT_S', '1800')),
             env=clean_env, start_new_session=True,
         )
         out = result.stdout

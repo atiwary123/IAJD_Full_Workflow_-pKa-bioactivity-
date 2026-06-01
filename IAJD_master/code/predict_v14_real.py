@@ -25,12 +25,21 @@ from rdkit.DataStructs import BulkTanimotoSimilarity
 from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*')
 
-OUT = Path('/mnt/user-data/outputs/bioact_v14')
-sys.path.insert(0, str(OUT))
+# This file lives in IAJD_master/code/. Code modules are here; caches + the
+# deployable bundle live in IAJD_master/bundles_caches/ (sibling of this dir).
+_CODE = Path(__file__).resolve().parent
+OUT = _CODE.parent / 'bundles_caches'
+sys.path.insert(0, str(_CODE))
 from bioact_v14_pipeline import assemble_X, BLOCK_SLICES
 from iajd_bioact_v14 import _detect_family
 
-MFPGEN = AllChem.GetMorganGenerator(radius=2, fpSize=2048)
+# Morgan generator: AllChem.GetMorganGenerator exists only in newer RDKit; on
+# RDKit 2022.09 use rdFingerprintGenerator. Both yield the same FP.
+try:
+    MFPGEN = AllChem.GetMorganGenerator(radius=2, fpSize=2048)
+except AttributeError:
+    from rdkit.Chem import rdFingerprintGenerator as _rfg
+    MFPGEN = _rfg.GetMorganGenerator(radius=2, fpSize=2048)
 import pandas as pd
 
 
@@ -53,7 +62,7 @@ def _ensure_real_features(canonical_smi):
     # Need to compute one or both
     warnings = []
     try:
-        sys.path.insert(0, str(OUT))
+        sys.path.insert(0, str(_CODE))
         from extend_caches import predict_lion_for_smiles, predict_admet_for_smiles
         if not have_admet:
             predict_admet_for_smiles([canonical_smi], verbose=False)
@@ -99,10 +108,18 @@ def predict(smiles, bundle_path=None, auto_compute=True, formulation=None,
 
     lion_path = OUT / 'lion_cache_v13.json'
     admet_path = OUT / 'admet_cache_v13.json'
+    # Detect whether the loaded bundle was trained with Block D' (106 features)
+    # or before (92 features). The pre-Dprime bundle won't accept the extra
+    # cols, so we have to match its layout exactly.
+    include_dprime = (
+        bundle.get('direct_model_full') is not None
+        and getattr(bundle['direct_model_full'], 'n_features_in_', 92) >= 100
+    )
     X_q, lion_modes = assemble_X(
         df_q, [mol], [fp], [canonical],
         lion_cache_path=str(lion_path) if lion_path.exists() else None,
         admet_cache_path=str(admet_path) if admet_path.exists() else None,
+        include_dprime=include_dprime,
     )
     x = X_q[0]
     block_b_used_real = (lion_modes[0] == 'cached') if lion_modes else False
@@ -111,8 +128,8 @@ def predict(smiles, bundle_path=None, auto_compute=True, formulation=None,
     gate_b = bundle['block_b_active_per_family'].get(family, True)
     gate_c = bundle['block_c_active_per_family'].get(family, True)
     x_gated = x.copy()
-    if not gate_b: x_gated[BLOCK_SLICES['B'][0]:BLOCK_SLICES['B'][1]] = 0
-    if not gate_c: x_gated[BLOCK_SLICES['C'][0]:BLOCK_SLICES['C'][1]] = 0
+    if not gate_b: x_gated[BLOCK_SLICES['B']] = 0
+    if not gate_c: x_gated[BLOCK_SLICES['C']] = 0
 
     # Predict
     pred_direct = float(bundle['direct_model_full'].predict(x_gated.reshape(1, -1))[0])

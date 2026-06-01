@@ -155,8 +155,8 @@ def main():
     np.save('agile_embeddings_bioact.npy', embeddings)
     print(f"  Saved agile_embeddings_bioact.npy")
 
-    # Also do pKa dataset
-    pka = pd.read_excel('IAJD_master/datasets/IAJD_pKa_v21_final.xlsx', sheet_name='Dataset')
+    # Also do pKa dataset (post-audit canonical file uses 'Sheet1', not 'Dataset')
+    pka = pd.read_excel('IAJD_master/datasets/IAJD_pKa_v21_final.xlsx', sheet_name=0)
     pka_smiles = [str(r['SMILES']) for _, r in pka.iterrows()]
     print(f"\nExtracting embeddings for {len(pka_smiles)} pKa compounds...")
     pka_emb = extract_embeddings(pka_smiles, model)

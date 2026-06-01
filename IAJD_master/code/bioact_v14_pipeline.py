@@ -84,6 +84,25 @@ BLOCK_D_NAMES = [
     'charge_density_pH5', 'curvature_proxy_inv_nm',
 ]
 
+# Block D' (MD/QM-grounded physics) per IAJD Predictive-Physics plan §5.
+# Real values flow in from physics_cache_io.load_physics(); cache miss →
+# emulator (qm_emulator/md_emulator); both unavailable → NaN. XGBoost handles
+# NaN through its learned default branch at every split. No proxy defaults.
+BLOCK_DPRIME_NAMES = [
+    # MARTINI MD observables (W-B):
+    'md_a_head_prot_nm2', 'md_delta_a_head_nm2',
+    'md_cpp_prot', 'md_delta_cpp',
+    'md_bilayer_thick_nm', 'md_order_param',
+    'md_assembles', 'md_n_agg',
+    # xTB QM descriptors (W-A):
+    'qm_q_ionizableN', 'qm_dipole_D',
+    'qm_dGsolv_kJmol', 'qm_homo_lumo_eV',
+    # Helfrich-form escape (W-C):
+    'dG_escape_helfrich',
+    # Ensemble-Boltzmann head area (W-C):
+    'head_area_nm2',
+]
+
 # Headgroup area lookup (Å²) for CPP and charge density
 A_LOOKUP_HEAD = {'HPRZ': 47, 'MPRZ': 35, 'DMA': 25, 'PIP': 30, 'DMBA': 55,
                  'unknown': 40, None: 40, '': 40}
@@ -112,8 +131,17 @@ def load_v13():
     print(f'  raw v13:                {len(df)} rows')
     # Require log10_flux_total and SMILES_canonical
     keep = df['log10_flux_total'].notna() & df['SMILES_canonical'].notna()
+    # Exclude rows flagged in the 2026-06-01 dataset audit (suspect/unresolved
+    # SMILES). Per docs/DATASET_CORRECTION_AND_REGEN_GUIDE.md §4d these retain
+    # valid labels but must NOT enter structure-based training until resolved.
+    if 'audit_status' in df.columns:
+        flagged = df['audit_status'].astype(str).str.contains('UNRESOLVED|FLAG', na=False)
+        n_flag = int((keep & flagged).sum())
+        keep = keep & ~flagged
+        if n_flag:
+            print(f'  excluding {n_flag} audit-flagged rows (UNRESOLVED/FLAG)')
     df = df[keep].reset_index(drop=True)
-    print(f'  after flux+SMILES gate: {len(df)} rows')
+    print(f'  after flux+SMILES+audit gate: {len(df)} rows')
     # Canonicalize
     mols = []
     can_smi = []
@@ -349,6 +377,43 @@ def _charge_density(pKa, pH, head):
         return float("nan")
     f_prot = 1.0 / (1.0 + 10**(pH - pKa))
     return float(f_prot / a)
+
+
+def compute_block_dprime(df, mols, smis):
+    """Block D' — MD/QM-grounded physics layer.
+
+    For each row, pull from physics_cache_io.load_physics():
+      - QM cache or qm_emulator → 4 QM scalars
+      - MD cache or md_emulator → 8 MD observables
+      - head_area_ensemble.csv → boltzmann head_area
+      - Helfrich ΔG_escape computed in cache_io.load_physics
+
+    NaN-passthrough: any missing input stays NaN; XGBoost routes through its
+    learned default branch in every downstream tree. Never substitute a
+    constant / median / family default.
+    """
+    try:
+        from physics_cache_io import load_physics, BLOCK_DPRIME_KEYS
+    except ImportError:
+        # No physics module available — return all-NaN block of the right shape.
+        return np.full((len(df), len(BLOCK_DPRIME_NAMES)), np.nan)
+    X = np.full((len(df), len(BLOCK_DPRIME_NAMES)), np.nan)
+    for i, (_, row) in enumerate(df.iterrows()):
+        smi = smis[i]
+        head = _detect_head_group(row, mols[i])
+        # pKa — pass only when real (no median substitution).
+        pka_raw = row.get('pKa') or row.get('pKa_paper')
+        try:
+            pka = float(pka_raw) if (pka_raw is not None
+                                     and not pd.isna(pka_raw)) else None
+        except (TypeError, ValueError):
+            pka = None
+        rec = load_physics(smi, head_group=head, pka=pka)
+        flat = rec.as_block_dprime()
+        for j, key in enumerate(BLOCK_DPRIME_NAMES):
+            v = flat.get(key, float('nan'))
+            X[i, j] = v
+    return X
 
 
 def compute_block_d(df, mols):
@@ -602,9 +667,13 @@ ALL_NAMES_V14 = (
     BLOCK_D_NAMES +
     ['DNP_size_nm', 'DNP_size_nm_log', 'DNP_PDI', 'DNP_EE_pct',
      'DNP_zeta_mV', 'buffer_pH', 'dose_mRNA_ug', 'missing_formulation'] +
-    BLOCK_E_NAMES
+    BLOCK_E_NAMES +
+    BLOCK_DPRIME_NAMES
 )
-assert len(ALL_NAMES_V14) == 92, f"got {len(ALL_NAMES_V14)}"
+assert len(ALL_NAMES_V14) == 92 + len(BLOCK_DPRIME_NAMES), (
+    f"v14 feature count drift: got {len(ALL_NAMES_V14)} "
+    f"(expected {92 + len(BLOCK_DPRIME_NAMES)})"
+)
 
 BLOCK_SLICES = {
     'A':            slice(0, 50),
@@ -613,11 +682,21 @@ BLOCK_SLICES = {
     'D':            slice(74, 80),
     'formulation':  slice(80, 88),
     'E_sampleprep': slice(88, 92),
+    'Dprime':       slice(92, 92 + len(BLOCK_DPRIME_NAMES)),
 }
 
 
 def assemble_X(df, mols, fps, smis,
-               lion_cache_path=None, admet_cache_path=None, lion_train_fps_path=None):
+               lion_cache_path=None, admet_cache_path=None, lion_train_fps_path=None,
+               include_dprime=True):
+    """Assemble feature matrix.
+
+    include_dprime=False yields the original 92-col v14 layout (A+B+C+D+form+E),
+    which the pre-Block-D' deployed bundles expect. include_dprime=True (the
+    new default) appends Block D' for 106 columns total. Callers loading an
+    existing bundle should detect feature dimensionality via the bundle's
+    feature_names length and pass include_dprime accordingly.
+    """
     print('Assembling v14 feature matrix...')
     XA = compute_block_a(df, mols)
     XB, lion_modes = compute_block_b(mols, fps, smis, lion_cache_path, lion_train_fps_path)
@@ -625,8 +704,15 @@ def assemble_X(df, mols, fps, smis,
     XD = compute_block_d(df, mols)
     XF = compute_block_form(df)
     XE = compute_block_e_sampleprep(df)
-    X = np.hstack([XA, XB, XC, XD, XF, XE])
-    print(f'  Assembled X: shape={X.shape}')
+    blocks = [XA, XB, XC, XD, XF, XE]
+    if include_dprime:
+        XDp = compute_block_dprime(df, mols, smis)
+        blocks.append(XDp)
+    X = np.hstack(blocks)
+    if include_dprime:
+        print(f'  Assembled X: shape={X.shape}  (incl. Block D\'={blocks[-1].shape[1]} cols)')
+    else:
+        print(f'  Assembled X: shape={X.shape}  (Block D\' OFF)')
     return X, lion_modes
 
 

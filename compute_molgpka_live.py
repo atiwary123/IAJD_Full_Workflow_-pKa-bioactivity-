@@ -100,7 +100,15 @@ def molgpka_max_basic_pka(smiles: str, model_base: GCNNet,
 
 def main():
     print(f"Loading pKa table from {PKA_XLSX.name}…")
-    df = pd.read_excel(PKA_XLSX, sheet_name="Dataset")
+    # Read the first sheet (post-audit canonical file uses 'Sheet1', not 'Dataset').
+    df = pd.read_excel(PKA_XLSX, sheet_name=0)
+    # Match iajd_pka_v52.build_bundle: exclude audit-flagged rows so the saved
+    # molgpka_preds.npy aligns 1:1 (length + order) with the pKa training bundle.
+    if "audit_status" in df.columns:
+        _flag = df["audit_status"].astype(str).str.contains("UNRESOLVED|FLAG", na=False)
+        if int(_flag.sum()):
+            print(f"  excluding {int(_flag.sum())} audit-flagged rows (align with bundle)")
+        df = df[~_flag].reset_index(drop=True)
     smis = df["SMILES"].tolist()
     print(f"  {len(smis)} compounds")
 

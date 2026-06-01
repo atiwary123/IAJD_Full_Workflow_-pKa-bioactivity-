@@ -1331,7 +1331,16 @@ class Bundle:
 
 def build_bundle(xlsx_path: str, verbose: bool = True) -> Bundle:
     """Build the full model bundle from the v20 Excel dataset."""
-    df = pd.read_excel(xlsx_path, sheet_name="Dataset")
+    # First sheet (post-audit canonical file uses 'Sheet1', not 'Dataset').
+    df = pd.read_excel(xlsx_path, sheet_name=0)
+    # Exclude audit-flagged rows (suspect/unresolved SMILES) before any
+    # structure-based featurization/training (dataset audit §4d, 2026-06-01).
+    # Kept identical to compute_molgpka_live so molgpka_preds.npy aligns 1:1.
+    if "audit_status" in df.columns:
+        _flag = df["audit_status"].astype(str).str.contains("UNRESOLVED|FLAG", na=False)
+        if verbose and int(_flag.sum()):
+            print(f"[build_bundle] excluding {int(_flag.sum())} audit-flagged rows")
+        df = df[~_flag].reset_index(drop=True)
     if verbose:
         print(f"[build_bundle] Loaded {len(df)} rows")
 

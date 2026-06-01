@@ -50,7 +50,11 @@ def main():
 
     print(f"Loading bioact xlsx for per-organ measurements…", flush=True)
     df = pd.read_excel(BIO_XLSX)
-    df = df.dropna(subset=["log10_flux_total"]).reset_index(drop=True)
+    # Match bioact_v14_pipeline.load_v13 row selection EXACTLY (incl. the
+    # 2026-06-01 audit-flagged exclusion) so df aligns positionally with X_train.
+    if "audit_status" in df.columns:
+        df = df[~df["audit_status"].astype(str).str.contains("UNRESOLVED|FLAG", na=False)]
+    df = df.dropna(subset=["log10_flux_total"])
     df = df[df["SMILES_canonical"].notna()].reset_index(drop=True)
     assert len(df) == len(X), f"{len(df)} vs {len(X)}"
 

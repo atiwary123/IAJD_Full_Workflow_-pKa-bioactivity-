@@ -59,7 +59,7 @@ def compute_novelty_scores(smiles_list, train_fps):
         if mol is None:
             scores.append(1.0)
             continue
-        qfp = fpgen.GetFingerprint(mol)
+        qfp = _fp(mol)
         sims = BulkTanimotoSimilarity(qfp, train_fps)
         scores.append(1.0 - max(sims) if sims else 1.0)
     return np.array(scores)
@@ -206,7 +206,7 @@ def build_adaptive_stacker():
     for smi in smiles_all:
         mol = Chem.MolFromSmiles(smi)
         if mol:
-            train_fps.append(fpgen.GetFingerprint(mol))
+            train_fps.append(_fp(mol))
 
     # Compute LOO novelty scores (each compound's max Tanimoto to rest of training)
     print("Computing LOO novelty scores...")
@@ -216,7 +216,7 @@ def build_adaptive_stacker():
         if mol is None:
             novelty_loo[i] = 1.0
             continue
-        qfp = fpgen.GetFingerprint(mol)
+        qfp = _fp(mol)
         other_fps = [train_fps[j] for j in range(n) if j != i]
         sims = BulkTanimotoSimilarity(qfp, other_fps)
         novelty_loo[i] = 1.0 - max(sims) if sims else 1.0

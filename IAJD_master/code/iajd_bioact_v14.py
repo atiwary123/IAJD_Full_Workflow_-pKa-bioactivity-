@@ -98,8 +98,9 @@ def _detect_family(mol, fp, bundle):
 def load_bundle(path=None):
     if path is None:
         path = WORK / 'bioact_v14_bundle.pkl'
-        if not path.exists():
-            path = '/mnt/user-data/outputs/bioact_v14/bioact_v14_bundle.pkl'
+        if not Path(path).exists():
+            # Canonical location in this repo: IAJD_master/bundles_caches/
+            path = WORK.parent / 'bundles_caches' / 'bioact_v14_bundle.pkl'
     with open(path, 'rb') as f:
         return pickle.load(f)
 
