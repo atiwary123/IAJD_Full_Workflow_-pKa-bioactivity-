@@ -51,14 +51,16 @@ for ts in tqdm(u.trajectory[args.start:args.end]):
         indices = np.where(dists > 0)
         water_less = others[pairs[indices][:, 0]]
 
+        # extract all protons close to the acid. Computed BEFORE the water branch
+        # so the no-water else-branch can use prot_less too: previously prot_less was
+        # only defined inside `if len(water_less)!=0`, so a frame where the acid had
+        # NO titratable water within 11 A (first seen at pH 6.5) hit the else branch
+        # and raised NameError: 'prot_less' is not defined -> <q>=NaN for that pH.
+        pairs_p, dists_p = mda.lib.distances.capped_distance(
+            prot.positions, curr.position, max_cutoff=11.0, box=u.dimensions)
+        prot_less = prot[pairs_p[np.where(dists_p > 0)][:, 0]]
+
         if len(water_less) != 0:
-
-            # extract all protons close to acid
-
-            pairs, dists = mda.lib.distances.capped_distance(
-                prot.positions, curr.position, max_cutoff=11.0, box=u.dimensions)
-            indices = np.where(dists > 0)
-            prot_less = prot[pairs[indices][:, 0]]
 
             # compute all distances between water, acid and protons
 
