@@ -146,6 +146,15 @@ pure-IAJD-bilayer Module B is too initial-condition-sensitive and non-convergent
 equilibrium APL from a longer, area-relaxed or surface-tension-scanned run). The host method
 also sidesteps the "what is the right area" question entirely (the host sets it).
 
+**HOST METHOD BUILT + CONVERGED (2026-06-01).** `build_mixed_bilayer.py` +
+`compute_curvature.characterize_iajd_host` + `run_iajd_panel.py --host`. Full 369 run
+(8 IAJDs in 48/leaflet POPC, x=0.167, 60 ns): **tensionless (γ=2.3), bilayer intact, APL
+0.66 / thick 4.0 (sane), mixed-system forces exact 0.0002%, c0_physics_converged=True**,
+**c0_369 = +1.27 nm⁻¹**. The collapse is solved. HONEST: +1.27 is POSITIVE (inverted-cone)
+— surprising for escape (classically negative-curvature); provisional pending Module E + the
+panel (the relative c0 across the family is the interpretable signal, not the absolute sign).
+The 1/x extraction means use ≥8 IAJDs (done) and ideally multi-x extrapolation later.
+
 ## FW-2 (implied) — generalize the membrane-pKa builder to arbitrary IAJDs
 
 `build_membrane_pka.py` currently swaps one MC3 into a POPC bilayer. For 369 and the FW-1
