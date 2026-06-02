@@ -1423,5 +1423,10 @@
     "smiles_canonical": "CCCCCCCCCCCCOc1cc(OCCCCCCCCCCCC)cc(C(=O)OCC(COC(=O)c2cc(OCCCCCCCCCCCC)cc(OCCCCCCCCCCCC)c2)(COC(=O)c2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOCc3ccccc3)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)COC(=O)c2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOCc3ccccc3)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)c1",
     "elapsed_s": 4937.2,
     "error": "exception:FileNotFoundError:[Errno 2] No such file or directory: '/tmp/claude-501/qm_neutral_i2a2tj52/prot_cid0'"
+  },
+  {
+    "smiles_canonical": "CCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOCc3ccccc3)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)cc(OCCCCCCCC)c1",
+    "elapsed_s": 617.5,
+    "error": null
   }
 ]
