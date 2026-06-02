@@ -97,3 +97,6 @@ physics_logs/
 
 # Heavy pre-regen backup bundles (regenerable; recoverable from history)
 audit_work/pre_regen_backup_*/
+
+# Pre-metadata-fill dataset backups (local only)
+IAJD_master/datasets/*.PRE_METAFILL.xlsx
