@@ -1,0 +1,271 @@
+{
+ "31": {
+  "new": null,
+  "status": "CONFIRMED_10118",
+  "conf": "HIGH",
+  "ev": "full 6-descriptor vector matches 10118 #31 (MW1464.07, HBA21, Ar2)",
+  "exclude": false,
+  "labels": {}
+ },
+ "248": {
+  "new": null,
+  "status": "CONFIRMED_10118",
+  "conf": "HIGH",
+  "ev": "matches 10118 #248 exactly; HBA7/HBD0 => head is MPRZ (N-methylpiperazine), not HPRZ",
+  "exclude": false,
+  "labels": {
+   "architecture": "PE-tris-C8-4C-MPRZ",
+   "head_group": "MPRZ",
+   "head_amine_label": "MPRZ"
+  }
+ },
+ "273": {
+  "new": null,
+  "status": "CONFIRMED_10118",
+  "conf": "HIGH",
+  "ev": "matches 10118 #273 (MW867.44, HBA8/HBD0); head = methoxyethyl-piperazine (HBD0 rules out HPRZ/EEPRZ)",
+  "exclude": false,
+  "labels": {
+   "architecture": "PE-tris-C12-5C-MeOEtPRZ",
+   "head_group": "MeOEtPRZ",
+   "head_amine_label": "MeOEtPRZ"
+  }
+ },
+ "287": {
+  "new": null,
+  "status": "CONFIRMED_10118",
+  "conf": "HIGH",
+  "ev": "matches 10118 #287 on 5/6 (MW/HBA/HBD/Ar/FCsp3 exact; RotB 37 vs 34 = known rotatable-bond definition diff); C8-tris+pentanoate+MeOEtPRZ",
+  "exclude": false,
+  "labels": {
+   "architecture": "PE-tris-C8-5C-MeOEtPRZ",
+   "head_group": "MeOEtPRZ",
+   "head_amine_label": "MeOEtPRZ"
+  }
+ },
+ "290": {
+  "new": null,
+  "status": "CONFIRMED_10118",
+  "conf": "HIGH",
+  "ev": "matches 10118 #290 (MW629.0, HBA8/HBD1); head = HPRZ (hydroxyethyl-piperazine), butanoate",
+  "exclude": false,
+  "labels": {}
+ },
+ "291": {
+  "new": null,
+  "status": "CONFIRMED_10118",
+  "conf": "HIGH",
+  "ev": "matches 10118 #291 (MW657.0, HBA8/HBD0); HBD0 => head is methoxyethyl-piperazine, not HPRZ; pentanoate",
+  "exclude": false,
+  "labels": {
+   "architecture": "PE-tris-C7-5C-MeOEtPRZ",
+   "head_group": "MeOEtPRZ",
+   "head_amine_label": "MeOEtPRZ"
+  }
+ },
+ "292": {
+  "new": null,
+  "status": "CONFIRMED_10118",
+  "conf": "HIGH",
+  "ev": "matches 10118 #292 (MW673.0, HBA9/HBD1); head = hydroxyethoxyethyl-piperazine (H2EPRZ)",
+  "exclude": false,
+  "labels": {}
+ },
+ "297": {
+  "new": null,
+  "status": "CONFIRMED_10118",
+  "conf": "HIGH",
+  "ev": "matches 10118 #297 (MW562.84, HBA7/HBD1); HBD1 confirms HPRZ head; 3,4-bis(2-ethylhexyloxy)benzoate",
+  "exclude": false,
+  "labels": {}
+ },
+ "64": {
+  "new": "CCCCCCCCCCCCOc1cc(COC(=O)CCCN(C)C)cc(OCCCCCCCCCCCC)c1",
+  "status": "RESOLVED_10118_FIX",
+  "conf": "HIGH",
+  "ev": "TPSA48.0 = 2 ethers+1 ester+ONE tert-amine => head is DMA (dimethylamino), not MPRZ; bis-C12 dialkoxybenzyl 4-(dimethylamino)butanoate = C37H67NO4 = exact 10118 #64 (MW589.946,HBA5,HBD0,Ar1,RotB30). MPRZ->DMA.",
+  "exclude": false,
+  "labels": {
+   "architecture": "Dialkoxybenz-35-C12-4C-DMA-ester",
+   "head_group": "DMA",
+   "head_amine_label": "DMA"
+  }
+ },
+ "86": {
+  "new": "CCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(C)CC2)cc(OCCCCCCCCCCC)c1",
+  "status": "RESOLVED_10118_FIX",
+  "conf": "HIGH",
+  "ev": "bis-C11 (symmetric) = C38H68N2O4 = exact 10118 #86 (MW616.972,HBA6,RotB28); prior C11/C16 was +70 (5xCH2) too heavy. C16->C11.",
+  "exclude": false,
+  "labels": {
+   "architecture": "Dialkoxybenz-35-C11-4C-MPRZ-ester",
+   "head_amine_label": "MPRZ"
+  }
+ },
+ "33": {
+  "new": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC(=O)CCCN3CCCCC3)c(OCCOCCOCCOCc3ccccc3)c(OCCOCCOCCOC(=O)CCCN3CCCCC3)c2)cc(OCCCCCCCCCCCC)c1",
+  "status": "RESOLVED_10118+SI",
+  "conf": "HIGH",
+  "ev": "bis-C12 gallic-AMIDE with 2x piperidine(PIP) + 1x benzyl(OBn) = C81H133N3O17 = exact 10118 #33 vector (MW1420.96,HBA19,HBD1,Ar3) AND SI MALDI calcd C81H134N3O17 = [M+H]+. Heads MPRZ->PIP (10118 needs 3 N not 5).",
+  "exclude": false,
+  "labels": {
+   "architecture": "PE-gallic-amide-C12.PIP13.OBn2",
+   "head_group": "PIP",
+   "head_amine_label": "PIP"
+  }
+ },
+ "30": {
+  "new": "CCCCCCCCCCCCCCCCCCCOCC(COCCOC(=O)CCCN(C)C)(COCCOC(=O)CCCN(C)C)COC(=O)CCCCCCCCCCCCCCCCC",
+  "status": "FORMULA_RESOLVED_CONN_LOW",
+  "conf": "LOW",
+  "ev": "formula C58H114N2O9 CERTAIN (10118 #30 MW983.555 + SI MALDI calcd C58H115N2O9=[M+H]+); DoU=3 => acyclic, 3 esters, 2 DMBA, Aromatic=0. Composition forces long ether/ester alkyl tails. Connectivity (tail split / core) underdetermined by descriptors -> needs SI figure. Best-guess pentaerythritol Janus provided; EXCLUDE from structure-features.",
+  "exclude": true,
+  "labels": {
+   "architecture": "G1-Janus-aliphatic-PE.2arm.DMBA2 (connectivity unverified)"
+  }
+ },
+ "134": {
+  "new": null,
+  "status": "RESOLVED_NUMBERING_COLLISION",
+  "conf": "MED-HIGH",
+  "ev": "10118 #134 is an unrelated ~2x-mass compound (MW1205.7,HBA17,Ar2) - numbering collision. This row = bis-C11 3,5-dialkoxybenzyl-amide-piperidine (C38H68N2O3) from pharmaceutics1501572 Fig11; internally + architecture consistent. Validated vs source paper, NOT vs 10118.",
+  "exclude": false,
+  "labels": {}
+ },
+ "26": {
+  "new": null,
+  "status": "RESOLVED_SERIES_ARCH",
+  "conf": "MED",
+  "ev": "PE-Gallic twin (Lib6/Lib4); not in 10118 library and formula not in extractable SI text. SMILES is internally consistent, fits the homologous chain-length series, and matches its architecture-label decomposition (head/benzyl/chain census). Inference-grade; SI hi-res figure would upgrade to HIGH.",
+  "exclude": false,
+  "labels": {}
+ },
+ "27": {
+  "new": null,
+  "status": "RESOLVED_SERIES_ARCH",
+  "conf": "MED",
+  "ev": "PE-Gallic twin (Lib6/Lib4); not in 10118 library and formula not in extractable SI text. SMILES is internally consistent, fits the homologous chain-length series, and matches its architecture-label decomposition (head/benzyl/chain census). Inference-grade; SI hi-res figure would upgrade to HIGH.",
+  "exclude": false,
+  "labels": {}
+ },
+ "28": {
+  "new": null,
+  "status": "RESOLVED_SERIES_ARCH",
+  "conf": "MED",
+  "ev": "PE-Gallic twin (Lib6/Lib4); not in 10118 library and formula not in extractable SI text. SMILES is internally consistent, fits the homologous chain-length series, and matches its architecture-label decomposition (head/benzyl/chain census). Inference-grade; SI hi-res figure would upgrade to HIGH.",
+  "exclude": false,
+  "labels": {}
+ },
+ "29": {
+  "new": null,
+  "status": "RESOLVED_SERIES_ARCH",
+  "conf": "MED",
+  "ev": "PE-Gallic twin (Lib6/Lib4); not in 10118 library and formula not in extractable SI text. SMILES is internally consistent, fits the homologous chain-length series, and matches its architecture-label decomposition (head/benzyl/chain census). Inference-grade; SI hi-res figure would upgrade to HIGH.",
+  "exclude": false,
+  "labels": {}
+ },
+ "38": {
+  "new": null,
+  "status": "RESOLVED_SERIES_ARCH",
+  "conf": "MED",
+  "ev": "PE-Gallic twin (Lib6/Lib4); not in 10118 library and formula not in extractable SI text. SMILES is internally consistent, fits the homologous chain-length series, and matches its architecture-label decomposition (head/benzyl/chain census). Inference-grade; SI hi-res figure would upgrade to HIGH.",
+  "exclude": false,
+  "labels": {}
+ },
+ "39": {
+  "new": null,
+  "status": "RESOLVED_SERIES_ARCH",
+  "conf": "MED",
+  "ev": "PE-Gallic twin (Lib6/Lib4); not in 10118 library and formula not in extractable SI text. SMILES is internally consistent, fits the homologous chain-length series, and matches its architecture-label decomposition (head/benzyl/chain census). Inference-grade; SI hi-res figure would upgrade to HIGH.",
+  "exclude": false,
+  "labels": {}
+ },
+ "40": {
+  "new": null,
+  "status": "RESOLVED_SERIES_ARCH",
+  "conf": "MED",
+  "ev": "PE-Gallic twin (Lib6/Lib4); not in 10118 library and formula not in extractable SI text. SMILES is internally consistent, fits the homologous chain-length series, and matches its architecture-label decomposition (head/benzyl/chain census). Inference-grade; SI hi-res figure would upgrade to HIGH.",
+  "exclude": false,
+  "labels": {}
+ },
+ "41": {
+  "new": null,
+  "status": "RESOLVED_SERIES_ARCH",
+  "conf": "MED",
+  "ev": "PE-Gallic twin (Lib6/Lib4); not in 10118 library and formula not in extractable SI text. SMILES is internally consistent, fits the homologous chain-length series, and matches its architecture-label decomposition (head/benzyl/chain census). Inference-grade; SI hi-res figure would upgrade to HIGH.",
+  "exclude": false,
+  "labels": {}
+ },
+ "42": {
+  "new": null,
+  "status": "RESOLVED_SERIES_ARCH",
+  "conf": "MED",
+  "ev": "PE-Gallic twin (Lib6/Lib4); not in 10118 library and formula not in extractable SI text. SMILES is internally consistent, fits the homologous chain-length series, and matches its architecture-label decomposition (head/benzyl/chain census). Inference-grade; SI hi-res figure would upgrade to HIGH.",
+  "exclude": false,
+  "labels": {}
+ },
+ "43": {
+  "new": null,
+  "status": "RESOLVED_SERIES_ARCH",
+  "conf": "MED",
+  "ev": "PE-Gallic twin (Lib6/Lib4); not in 10118 library and formula not in extractable SI text. SMILES is internally consistent, fits the homologous chain-length series, and matches its architecture-label decomposition (head/benzyl/chain census). Inference-grade; SI hi-res figure would upgrade to HIGH.",
+  "exclude": false,
+  "labels": {}
+ },
+ "47": {
+  "new": null,
+  "status": "RESOLVED_SERIES_ARCH",
+  "conf": "MED",
+  "ev": "PE-Gallic twin (Lib6/Lib4); not in 10118 library and formula not in extractable SI text. SMILES is internally consistent, fits the homologous chain-length series, and matches its architecture-label decomposition (head/benzyl/chain census). Inference-grade; SI hi-res figure would upgrade to HIGH.",
+  "exclude": false,
+  "labels": {}
+ },
+ "48": {
+  "new": null,
+  "status": "RESOLVED_SERIES_ARCH",
+  "conf": "MED",
+  "ev": "PE-Gallic twin (Lib6/Lib4); not in 10118 library and formula not in extractable SI text. SMILES is internally consistent, fits the homologous chain-length series, and matches its architecture-label decomposition (head/benzyl/chain census). Inference-grade; SI hi-res figure would upgrade to HIGH.",
+  "exclude": false,
+  "labels": {}
+ },
+ "49": {
+  "new": null,
+  "status": "RESOLVED_SERIES_ARCH",
+  "conf": "MED",
+  "ev": "PE-Gallic twin (Lib6/Lib4); not in 10118 library and formula not in extractable SI text. SMILES is internally consistent, fits the homologous chain-length series, and matches its architecture-label decomposition (head/benzyl/chain census). Inference-grade; SI hi-res figure would upgrade to HIGH.",
+  "exclude": false,
+  "labels": {}
+ },
+ "50": {
+  "new": null,
+  "status": "RESOLVED_SERIES_ARCH",
+  "conf": "MED",
+  "ev": "PE-Gallic twin (Lib6/Lib4); not in 10118 library and formula not in extractable SI text. SMILES is internally consistent, fits the homologous chain-length series, and matches its architecture-label decomposition (head/benzyl/chain census). Inference-grade; SI hi-res figure would upgrade to HIGH.",
+  "exclude": false,
+  "labels": {}
+ },
+ "51": {
+  "new": null,
+  "status": "RESOLVED_SERIES_ARCH",
+  "conf": "MED",
+  "ev": "PE-Gallic twin (Lib6/Lib4); not in 10118 library and formula not in extractable SI text. SMILES is internally consistent, fits the homologous chain-length series, and matches its architecture-label decomposition (head/benzyl/chain census). Inference-grade; SI hi-res figure would upgrade to HIGH.",
+  "exclude": false,
+  "labels": {}
+ },
+ "53": {
+  "new": null,
+  "status": "RESOLVED_SERIES_ARCH",
+  "conf": "MED",
+  "ev": "PE-Gallic twin (Lib6/Lib4); not in 10118 library and formula not in extractable SI text. SMILES is internally consistent, fits the homologous chain-length series, and matches its architecture-label decomposition (head/benzyl/chain census). Inference-grade; SI hi-res figure would upgrade to HIGH.",
+  "exclude": false,
+  "labels": {}
+ },
+ "54": {
+  "new": null,
+  "status": "RESOLVED_SERIES_ARCH",
+  "conf": "MED",
+  "ev": "PE-Gallic twin (Lib6/Lib4); not in 10118 library and formula not in extractable SI text. SMILES is internally consistent, fits the homologous chain-length series, and matches its architecture-label decomposition (head/benzyl/chain census). Inference-grade; SI hi-res figure would upgrade to HIGH.",
+  "exclude": false,
+  "labels": {}
+ }
+}
