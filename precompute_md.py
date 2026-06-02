@@ -31,6 +31,7 @@ import shutil
 import sys
 import time
 import warnings
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Dict, List
 
@@ -215,7 +216,15 @@ def main():
     parser.add_argument("--keep-trajectories", action="store_true",
                         help="Keep raw MD trajectories (default: delete after "
                              "observables are extracted, to bound disk use).")
+    parser.add_argument("--threads", type=int, default=4,
+                        help="GROMACS OpenMP threads per molecule (small CG systems "
+                             "scale poorly past ~4).")
+    parser.add_argument("--jobs", type=int, default=0,
+                        help="Concurrent molecules. 0 = auto (cpu_count // threads) so "
+                             "jobs x threads ≈ all cores. 1 = serial.")
     args = parser.parse_args()
+    if args.jobs <= 0:
+        args.jobs = max(1, (os.cpu_count() or 4) // max(1, args.threads))
 
     if not gromacs_available():
         print("WARNING: gromacs binary not detected on PATH. The driver will "
@@ -271,16 +280,25 @@ def main():
 
     records: List[dict] = list(existing.values())
     PHYSICS_WORK.mkdir(parents=True, exist_ok=True)
+    # Cap GROMACS to --threads per molecule and turn OFF core-pinning when running
+    # concurrently, so the --jobs mdruns spread across ALL cores instead of every
+    # one pinning to cores 0..threads (which idled the rest in the serial version).
+    os.environ["GMX_NTHREADS"] = str(args.threads)
+    if args.jobs > 1:
+        os.environ["GMX_PIN"] = "off"
+    todo = [row for _, row in df_unique.iterrows()
+            if not (args.resume and row["SMILES_canonical"] in existing)]
+    print(f"  computing {len(todo)} molecules — {args.jobs} jobs x {args.threads} "
+          f"threads = {args.jobs * args.threads} cores", flush=True)
     t0 = time.time()
     n_done = 0
-    for i, (_, row) in enumerate(df_unique.iterrows()):
+
+    def _work(row):
         smi = row["SMILES_canonical"]
-        if args.resume and smi in existing:
-            continue
         t_start = time.time()
         try:
             rec = run_one_compound(
-                smi, row.to_dict(),
+                smi, dict(row),
                 workroot=PHYSICS_WORK,
                 n_molecules=args.n_molecules,
                 prod_ns=args.prod_ns,
@@ -289,22 +307,27 @@ def main():
                 timeout_s=args.timeout_s,
                 keep_workdir=args.keep_trajectories,
             )
-        except (RuntimeError, ValueError, OSError) as exc:
+        except Exception as exc:   # one bad molecule must never abort the whole batch
             rec = _nan_md_record(smi, f"exception:{type(exc).__name__}:{exc}")
-        elapsed = time.time() - t_start
+        return smi, rec, time.time() - t_start
 
-        rec_audit = rec.pop("_audit", None)
-        records.append(rec)
-        audit.append({"smiles_canonical": smi,
-                       "elapsed_s": round(elapsed, 1),
-                       "error": rec.get("md_error"),
-                       "audit": rec_audit})
-        n_done += 1
-
-        if n_done % args.checkpoint_every == 0:
-            _save(records, audit)
-        print(f"  [{i+1}/{len(df_unique)}] {smi[:50]}… "
-              f"{elapsed:.0f}s  err={rec.get('md_error')}", flush=True)
+    # Main thread collects results as they finish → records/audit/checkpoint writes
+    # stay single-threaded and safe; GROMACS does the parallel work in subprocesses.
+    with ThreadPoolExecutor(max_workers=args.jobs) as ex:
+        futures = [ex.submit(_work, row) for row in todo]
+        for fut in as_completed(futures):
+            smi, rec, elapsed = fut.result()
+            rec_audit = rec.pop("_audit", None)
+            records.append(rec)
+            audit.append({"smiles_canonical": smi,
+                           "elapsed_s": round(elapsed, 1),
+                           "error": rec.get("md_error"),
+                           "audit": rec_audit})
+            n_done += 1
+            if n_done % args.checkpoint_every == 0:
+                _save(records, audit)
+            print(f"  [{n_done}/{len(todo)}] {smi[:50]}… "
+                  f"{elapsed:.0f}s  err={rec.get('md_error')}", flush=True)
 
     _save(records, audit)
     print(f"\nDone in {(time.time()-t0)/60:.1f} min "

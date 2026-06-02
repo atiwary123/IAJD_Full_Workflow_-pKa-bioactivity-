@@ -256,9 +256,13 @@ def _grompp_mdrun(workdir: Path, mdp: Path, gro: Path, top: Path, *,
     # production step; gmx auto-picks for shorter steps. The micromamba-
     # wrapped binary uses ARM_NEON_ASIMD on Apple Silicon.
     n_threads = os.environ.get("GMX_NTHREADS", str(os.cpu_count() or 4))
+    # Parallel callers (precompute_md --jobs N) run many mdruns at once and set
+    # GMX_PIN=off so concurrent jobs don't all pin to the same physical cores
+    # (which would oversubscribe a few cores and idle the rest). Serial = pin on.
+    pin_mode = os.environ.get("GMX_PIN", "on")
     ok2, out2 = _gmx(
         ["mdrun", "-s", str(tpr), "-deffnm", step_name,
-         "-pin", "on", "-ntmpi", "1", "-ntomp", n_threads],
+         "-pin", pin_mode, "-ntmpi", "1", "-ntomp", n_threads],
         cwd=workdir, timeout_s=timeout_s,
     )
     return ok2, out1 + out2
