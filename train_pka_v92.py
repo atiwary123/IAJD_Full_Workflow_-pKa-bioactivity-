@@ -38,6 +38,7 @@ RDLogger.logger().setLevel(RDLogger.ERROR)
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "IAJD_master/code"))
+from sample_prep_weights import maybe_pka_weight  # default-off (IAJD_USE_PREP_WEIGHTS)
 
 PKA_XLSX = ROOT / "IAJD_master/datasets/IAJD_pKa_v21_final.xlsx"
 MOLGPKA_NPY = ROOT / "IAJD_master/bundles_caches/molgpka_preds.npy"
@@ -100,7 +101,7 @@ def head_analog_loo(b, verbose=True) -> np.ndarray:
     return preds
 
 
-def head_xgb_loo(b, verbose=True) -> np.ndarray:
+def head_xgb_loo(b, verbose=True, w=None) -> np.ndarray:
     """LOO XGB on the 30 base v52 features (no MolGpKa)."""
     n = len(b.pkas)
     X = np.asarray(b.features, dtype=float)
@@ -119,7 +120,8 @@ def head_xgb_loo(b, verbose=True) -> np.ndarray:
         Xs_tr = sc.transform(X[keep])
         Xs_q = sc.transform(X[i:i+1])
         m = xgb.XGBRegressor(**XGB_HP)
-        m.fit(Xs_tr, y[keep], verbose=False)
+        m.fit(Xs_tr, y[keep],
+              sample_weight=(np.asarray(w)[keep] if w is not None else None), verbose=False)
         preds[i] = float(m.predict(Xs_q)[0])
         if verbose and (i + 1) % 50 == 0:
             print(f"  [xgb] {i+1}/{n}", flush=True)
@@ -199,6 +201,10 @@ def main():
     b = build_v52_features_and_fps()
     y = np.array(b.pkas, dtype=float)
     n = len(y)
+    sw_pka = maybe_pka_weight(list(b.canonical_smiles), PKA_XLSX)  # None unless flag (no-op)
+    if sw_pka is not None:
+        print(f"  [prep-weights] ON: pKa w[min/mean/max]="
+              f"{sw_pka.min():.2f}/{sw_pka.mean():.2f}/{sw_pka.max():.2f}", flush=True)
     raw_molgpka = np.load(MOLGPKA_NPY)
     debias = joblib.load(DEBIAS_PATH)
     print(f"  molgpka cache: {len(raw_molgpka)} entries", flush=True)
@@ -210,7 +216,7 @@ def main():
     print(f"  analog LOO MAE: {mae_analog:.4f}", flush=True)
 
     print("\n[v92] head 2/3: pure XGB on 30 base features (LOO)…", flush=True)
-    p_xgb = head_xgb_loo(b)
+    p_xgb = head_xgb_loo(b, w=sw_pka)
     mae_xgb = float(np.mean(np.abs(p_xgb - y)))
     print(f"  xgb_pure LOO MAE: {mae_xgb:.4f}", flush=True)
 
@@ -267,6 +273,7 @@ def main():
                                    nan=np.nanmedian(b.features))
                 ),
                 np.array(b.pkas, dtype=float),
+                sample_weight=sw_pka,
                 verbose=False,
             ),
             "scaler": StandardScaler().fit(

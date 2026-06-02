@@ -1,0 +1,132 @@
+{
+  "generated_utc": "2026-06-02T22:58:51Z",
+  "standard_protocol": {
+    "sp_prep_method": "ethanol_injection",
+    "sp_prep_method_code": 1,
+    "sp_n_components": 1,
+    "sp_assembly_buffer": "acetate",
+    "sp_assembly_buffer_mM": 10.0,
+    "sp_assembly_pH": 4.0,
+    "sp_IAJD_conc_final_mg_mL": 4.0,
+    "sp_mRNA_conc_final_mg_mL": 0.1,
+    "sp_IAJD_mRNA_mass_ratio": 40.0,
+    "sp_ethanol_vol_frac": 0.05,
+    "sp_vortex_time_s": 5.0,
+    "sp_assembly_temp_C": 23.0,
+    "sp_dialyzed": 0,
+    "sp_cargo": "Luc-mRNA",
+    "sp_cargo_code": 1,
+    "sp_mRNA_polyA_nt": 101.0,
+    "sp_assay_system": "in_vivo",
+    "sp_assay_system_code": 1,
+    "sp_inj_route": "retro-orbital",
+    "sp_inj_route_iv": 1,
+    "sp_dose_mRNA_ug": 10.0,
+    "sp_inj_volume_uL": 100.0,
+    "sp_mouse_strain": "BALB/c",
+    "sp_imaging_time_h": 4.0,
+    "sp_luciferin_mg_kg": 150.0,
+    "sp_pKa_method": "ethanolic_HCl_titration_half_equiv",
+    "sp_pKa_method_code": 1,
+    "sp_pKa_IAJD_conc_mg_mL": 1.5,
+    "sp_provenance": "paper_protocol",
+    "sp_confidence": 0.85,
+    "sp_notes": ""
+  },
+  "paper_overrides": {
+    "ja1c05813": {
+      "sp_provenance": "reported_per_row",
+      "sp_confidence": 1.0,
+      "sp_notes": "Library 1-6 screen; buffer/pH/conc/size/PDI/time read per-compound from Table S7. In-vivo C_mRNA 0.10 (40:1) for all; assembly acetate pH 4.0 or 5.2 (per Table S7); IAJD 9 = citrate pH 3.0 then PBS dialysis, C_mRNA 0.025 (160:1)."
+    },
+    "ja2c00273": {
+      "sp_notes": "Tables S2/S3/S4 = in-vivo (used here). Table S1 = in-vitro HEK293T 125 ng/well (not used). Imaging 4-7 h. Symmetric (S3) vs nonsymmetric (S4) alkyl chains."
+    },
+    "pharmaceutics1501572": {
+      "sp_notes": "Optimized organ-targeting series (lung/liver/spleen). SI states retro-orbital; dataset labels route intravenous. poly(A)=101 nt, m1psi, cap1. Imaging 4-6 h."
+    },
+    "ja3c07337": {
+      "sp_notes": "Standard protocol confirmed from image-SI. Imaging 4-6 h. In-vivo only."
+    },
+    "ja3c13569": {
+      "sp_notes": "Standard confirmed from image-SI. CAVEAT: vortex stated as '5 or 20 s' (sp_vortex_time_s=5 = primary); assembly pH rises 4.0->~4.8-5.0 after IAJD injection; encapsulation >97%. In-vivo only."
+    },
+    "ja1c09585": {
+      "sp_notes": "Early (2021) paper. In-vitro HEK293T (125 ng/well) also present. SI imaging 4-6 h - some dataset T_hours up to 10.25 are NOT supported by the SI (treat high imaging_time with caution). poly(A) length not stated in this paper."
+    },
+    "ja5c07232": {
+      "sp_notes": "Standard confirmed. ALSO reports DNP-surface pKa by TNS fluorescence (sp_pKa_method_code 2 available). Organ panel adds lymph node. poly(A)=101, m1psi, cap1."
+    },
+    "bm4c01599": {
+      "sp_provenance": "inferred_group_standard",
+      "sp_confidence": 0.65,
+      "sp_notes": "GA-Tris family. Synthesis/characterization-only SI (no written formulation or in-vivo methods). Assembly acetate pH 4.0 + final 4.0/0.10 mg/mL from DLS captions; mixing volumes/ratio/vortex INFERRED from Percec group standard. Dataset carries main-paper in-vivo metadata (retro-orbital, BALB/c, 10 ug)."
+    },
+    "novel_2026": {
+      "sp_provenance": "inferred_group_standard",
+      "sp_confidence": 0.35,
+      "sp_notes": "GA-Tris-345-EH dendron family (same dendron as IAJD-97). NOT from any cited paper - reconstructed from a ChemDraw CDXML + bare flux spreadsheet. Spleen-dominant. ALL prep params INFERRED from the Percec one-component standard - LOW confidence, down-weight in modeling."
+    }
+  },
+  "ja1c05813_assembly_pH": {
+    "acetate_pH4.0": [
+      33,
+      34,
+      35,
+      36,
+      37,
+      46,
+      47,
+      50,
+      51,
+      54
+    ],
+    "citrate_pH3.0_dialysed": [
+      9
+    ],
+    "default": "acetate_pH5.2"
+  },
+  "varying_columns": [
+    "sp_assembly_pH",
+    "sp_assembly_buffer",
+    "sp_mRNA_conc_final_mg_mL",
+    "sp_IAJD_mRNA_mass_ratio",
+    "sp_dialyzed",
+    "sp_imaging_time_h",
+    "sp_provenance",
+    "sp_confidence"
+  ],
+  "all_sp_columns": [
+    "sp_prep_method",
+    "sp_prep_method_code",
+    "sp_n_components",
+    "sp_assembly_buffer",
+    "sp_assembly_buffer_mM",
+    "sp_assembly_pH",
+    "sp_IAJD_conc_final_mg_mL",
+    "sp_mRNA_conc_final_mg_mL",
+    "sp_IAJD_mRNA_mass_ratio",
+    "sp_ethanol_vol_frac",
+    "sp_vortex_time_s",
+    "sp_assembly_temp_C",
+    "sp_dialyzed",
+    "sp_cargo",
+    "sp_cargo_code",
+    "sp_mRNA_polyA_nt",
+    "sp_assay_system",
+    "sp_assay_system_code",
+    "sp_inj_route",
+    "sp_inj_route_iv",
+    "sp_dose_mRNA_ug",
+    "sp_inj_volume_uL",
+    "sp_mouse_strain",
+    "sp_imaging_time_h",
+    "sp_luciferin_mg_kg",
+    "sp_pKa_method",
+    "sp_pKa_method_code",
+    "sp_pKa_IAJD_conc_mg_mL",
+    "sp_provenance",
+    "sp_confidence",
+    "sp_notes"
+  ]
+}

@@ -22,6 +22,7 @@ import xgboost as xgb
 
 warnings.filterwarnings("ignore")
 ROOT = Path(__file__).resolve().parent
+from sample_prep_weights import maybe_bundle_weight  # default-off (IAJD_USE_PREP_WEIGHTS)
 V14_BUNDLE = ROOT / "IAJD_master/bundles_caches/bioact_v14_bundle.pkl"
 BIO_XLSX = ROOT / "IAJD_master/datasets/IAJD_Bioact_v13_clean.xlsx"
 OUT_BUNDLE = ROOT / "IAJD_master/bundles_caches/bioact_per_organ_bundle.pkl"
@@ -58,6 +59,10 @@ def main():
     df = df[df["SMILES_canonical"].notna()].reset_index(drop=True)
     assert len(df) == len(X), f"{len(df)} vs {len(X)}"
 
+    w = maybe_bundle_weight(b14, BIO_XLSX)  # None unless IAJD_USE_PREP_WEIGHTS=1 (no-op)
+    if w is not None:
+        print(f"  [prep-weights] ON: w[min/mean/max]={w.min():.2f}/{w.mean():.2f}/{w.max():.2f}", flush=True)
+
     organ_bundles = {}
     organ_metrics = {}
     for organ_col in ORGAN_COLS:
@@ -72,12 +77,14 @@ def main():
             continue
 
         X_m, y_m, fams_m = X[mask], y[mask], families[mask]
+        w_m = w[mask] if w is not None else None
         # LOO predictions
         loo = np.zeros(mask.sum())
         for i in range(mask.sum()):
             keep = np.arange(mask.sum()) != i
             m = xgb.XGBRegressor(**XGB_HP)
-            m.fit(X_m[keep], y_m[keep], verbose=False)
+            m.fit(X_m[keep], y_m[keep],
+                  sample_weight=(w_m[keep] if w_m is not None else None), verbose=False)
             loo[i] = float(m.predict(X_m[i:i+1])[0])
             if (i + 1) % 50 == 0:
                 print(f"  LOO {i+1}/{mask.sum()}", flush=True)
@@ -91,7 +98,7 @@ def main():
             per_fam_rmse[fam] = float(np.sqrt(np.mean((loo[fm] - y_m[fm]) ** 2)))
         # Final model on full data for inference
         final = xgb.XGBRegressor(**XGB_HP)
-        final.fit(X_m, y_m, verbose=False)
+        final.fit(X_m, y_m, sample_weight=w_m, verbose=False)
 
         organ_bundles[organ_col] = {
             "model": final,

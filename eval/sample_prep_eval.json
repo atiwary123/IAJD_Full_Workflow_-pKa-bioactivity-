@@ -1,0 +1,91 @@
+{
+  "n_compounds": 247,
+  "n_families": 6,
+  "noise_floor_logunits": NaN,
+  "folds": [
+    "Dialkoxybenzyl",
+    "G1-Janus-Dendrimer",
+    "GA-Tris",
+    "PE-Gallic",
+    "PE-Tris",
+    "sSS-Nonsym"
+  ],
+  "is_pH52_count": 20,
+  "trusted_conf>=0.85": 226,
+  "Q1_weighting": [
+    {
+      "n": 247,
+      "r2": -0.42763077697920004,
+      "mae": 0.7906755200442189,
+      "rho": 0.15222878604534928,
+      "model": "Ridge",
+      "weight": "none",
+      "mae_trusted": 0.7939
+    },
+    {
+      "n": 247,
+      "r2": -0.4728552827279464,
+      "mae": 0.7721188223758272,
+      "rho": 0.17685821772909155,
+      "model": "Ridge",
+      "weight": "conf",
+      "mae_trusted": 0.7587
+    },
+    {
+      "n": 247,
+      "r2": -0.47285528272794797,
+      "mae": 0.7721188223758274,
+      "rho": 0.17685821772909155,
+      "model": "Ridge",
+      "weight": "conf+var",
+      "mae_trusted": 0.7587
+    },
+    {
+      "n": 247,
+      "r2": 0.07153276265715669,
+      "mae": 0.6303023429585785,
+      "rho": 0.2979678225622742,
+      "model": "RandomForest",
+      "weight": "none",
+      "mae_trusted": 0.6148
+    },
+    {
+      "n": 247,
+      "r2": 0.1849698148662694,
+      "mae": 0.6040548378036289,
+      "rho": 0.3558969403310296,
+      "model": "RandomForest",
+      "weight": "conf",
+      "mae_trusted": 0.575
+    },
+    {
+      "n": 247,
+      "r2": 0.18634400674152318,
+      "mae": 0.6028009960141529,
+      "rho": 0.35391831930963186,
+      "model": "RandomForest",
+      "weight": "conf+var",
+      "mae_trusted": 0.5748
+    }
+  ],
+  "mean_floor": {
+    "n": 247,
+    "r2": -0.089894771445173,
+    "mae": 0.6987354802741693,
+    "rho": -0.11888304793677051
+  },
+  "Q2_within_ja1c05813": {
+    "n": 24,
+    "skipped": "insufficient within-ja1c05813 variation"
+  },
+  "Q3_is_pH52_vs_paper": {
+    "r2_paper_only": 0.5122,
+    "r2_paper+is_pH52": 0.5224,
+    "delta_r2": 0.0102,
+    "delta_r2_boot95": [
+      0.0,
+      0.0453
+    ],
+    "verdict": "adds signal beyond paper"
+  }
+}

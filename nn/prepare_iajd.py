@@ -63,6 +63,9 @@ def main():
               "audit_status"):
         if c in df.columns:
             keep[c] = c
+    for c in df.columns:                       # carry the sample-prep block (durable across regens)
+        if str(c).startswith("sp_"):
+            keep[c] = c
     if fam:
         keep[fam] = "family"
     out = df[list(keep)].rename(columns=keep).copy()

@@ -42,7 +42,9 @@ from sklearn.metrics import (
 warnings.filterwarnings("ignore")
 
 ROOT = Path(__file__).resolve().parent
+from sample_prep_weights import maybe_bundle_weight  # default-off (IAJD_USE_PREP_WEIGHTS)
 V14_BUNDLE = ROOT / "IAJD_master/bundles_caches/bioact_v14_bundle.pkl"
+BIO_XLSX = ROOT / "IAJD_master/datasets/IAJD_Bioact_v13_clean.xlsx"
 OUT_BUNDLE = ROOT / "IAJD_master/bundles_caches/bioact_binary_bundle.pkl"
 REPORT_JSON = ROOT / "bioact_binary_loo_report.json"
 
@@ -61,26 +63,28 @@ XGB_REG_HP = dict(
 )
 
 
-def loo_predict_clf(X, y_bin):
+def loo_predict_clf(X, y_bin, w=None):
     """Leave-one-out probabilities from XGB classifier."""
     n = len(y_bin)
     p = np.zeros(n)
     for i in range(n):
         mask = np.ones(n, dtype=bool); mask[i] = False
         clf = xgb.XGBClassifier(**XGB_CLF_HP)
-        clf.fit(X[mask], y_bin[mask], verbose=False)
+        clf.fit(X[mask], y_bin[mask],
+                sample_weight=(w[mask] if w is not None else None), verbose=False)
         p[i] = float(clf.predict_proba(X[i:i+1])[0, 1])
     return p
 
 
-def loo_predict_reg(X, y):
+def loo_predict_reg(X, y, w=None):
     """LOO regression predictions for the noise-aware probabilistic head."""
     n = len(y)
     yhat = np.zeros(n)
     for i in range(n):
         mask = np.ones(n, dtype=bool); mask[i] = False
         reg = xgb.XGBRegressor(**XGB_REG_HP)
-        reg.fit(X[mask], y[mask], verbose=False)
+        reg.fit(X[mask], y[mask],
+                sample_weight=(w[mask] if w is not None else None), verbose=False)
         yhat[i] = float(reg.predict(X[i:i+1])[0])
     return yhat
 
@@ -125,11 +129,15 @@ def main():
     print(f"  y range: [{y.min():.2f}, {y.max():.2f}]  median={np.median(y):.2f}")
     print(f"  fraction ≥ {DEFAULT_THRESHOLD}: {(y >= DEFAULT_THRESHOLD).mean():.2%}")
 
+    w = maybe_bundle_weight(b, BIO_XLSX)  # None unless IAJD_USE_PREP_WEIGHTS=1 (no-op)
+    if w is not None:
+        print(f"  [prep-weights] ON: w[min/mean/max]={w.min():.2f}/{w.mean():.2f}/{w.max():.2f}")
+
     # ── 1. Hard-target classifier @ default threshold ───────────────────
     print(f"\n[1/4] Training direct binary classifier @ T={DEFAULT_THRESHOLD}…")
     y_bin_default = (y >= DEFAULT_THRESHOLD).astype(int)
     print(f"      class balance: pos={y_bin_default.sum()}/{n} ({y_bin_default.mean():.2%})")
-    p_loo_direct = loo_predict_clf(X, y_bin_default)
+    p_loo_direct = loo_predict_clf(X, y_bin_default, w=w)
     iso = IsotonicRegression(out_of_bounds="clip").fit(p_loo_direct, y_bin_default)
     p_loo_direct_cal = iso.transform(p_loo_direct)
 
@@ -140,16 +148,16 @@ def main():
     print(f"      DIRECT LOO @ T={DEFAULT_THRESHOLD}: ROC-AUC={roc_auc_d:.3f}  "
           f"PR-AUC={pr_auc_d:.3f}  Brier={brier_d:.3f}  logloss={logloss_d:.3f}")
 
-    final_direct = xgb.XGBClassifier(**XGB_CLF_HP).fit(X, y_bin_default, verbose=False)
+    final_direct = xgb.XGBClassifier(**XGB_CLF_HP).fit(X, y_bin_default, sample_weight=w, verbose=False)
 
     # ── 2. LOO regression predictions (input to noise-aware head) ───────
     print(f"\n[2/4] LOO regression for the continuous-threshold head…")
-    yhat_loo = loo_predict_reg(X, y)
+    yhat_loo = loo_predict_reg(X, y, w=w)
     reg_mae = float(np.mean(np.abs(yhat_loo - y)))
     reg_r2  = 1 - np.sum((y - yhat_loo)**2) / np.sum((y - y.mean())**2)
     print(f"      regressor LOO: MAE={reg_mae:.3f}  R²={reg_r2:.3f}")
 
-    final_reg = xgb.XGBRegressor(**XGB_REG_HP).fit(X, y, verbose=False)
+    final_reg = xgb.XGBRegressor(**XGB_REG_HP).fit(X, y, sample_weight=w, verbose=False)
 
     # ── 3. Threshold-grid calibrator ────────────────────────────────────
     print(f"\n[3/4] Fitting per-threshold sigmoid calibrators over grid {THRESHOLD_GRID.tolist()}…")
