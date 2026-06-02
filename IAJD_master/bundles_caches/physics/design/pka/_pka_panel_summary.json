@@ -1,0 +1,12 @@
+{
+  "n_iajd": 1,
+  "n_fit": 1,
+  "elapsed_min": 3.2,
+  "results": [
+    {
+      "iajd": "IAJD1",
+      "apparent_pKa": 2.0000000000000004,
+      "n_pH_ok": 4
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "name": "IAJD2",
+  "sel": "name P2",
+  "ref": "name WN",
+  "method": "titratable-Martini-3 constant-pH MD (Module A), generic N2_10.2 intrinsic; apparent = membrane-shifted",
+  "pH_values": [
+    6.0,
+    7.0
+  ],
+  "points": [
+    {
+      "pH": 6.0,
+      "q": 1.0
+    },
+    {
+      "pH": 7.0,
+      "q": 1.0
+    }
+  ],
+  "apparent_pKa": NaN,
+  "hill_n": NaN,
+  "fit_rmse": NaN,
+  "n_pH_ok": 2
+}
