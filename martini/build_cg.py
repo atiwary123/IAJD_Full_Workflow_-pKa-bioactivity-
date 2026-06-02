@@ -143,7 +143,12 @@ def _assemble_g1_janus(seed, *, protonated: bool) -> AssembledTopology:
             for k in range(max(1, (seed.linker_n + 3) // 4)):
                 topo.beads.append((f"BR{k+1}", "SC1", 54.0, 0.0)); bidx = len(topo.beads) - 1
                 topo.bonds.append((prev, bidx, 0.270, 5000.0)); prev = bidx
-            head = make_head("DMA", protonated=protonated)   # G1-Janus head is DMA (label "DMBA" is wrong)
+            # use the actual head from the decomposed structure (piperidine for the
+            # pharmaceutics lung series; DMA for the ja1c05813 series); fall back to DMA.
+            try:
+                head = make_head(seed.head, protonated=protonated)
+            except KeyError:
+                head = make_head("DMA", protonated=protonated)
             _append_fragment(topo, head, anchor_bead=prev,
                               anchor_bond_length=0.300, anchor_bond_k=7000.0)
     return topo
