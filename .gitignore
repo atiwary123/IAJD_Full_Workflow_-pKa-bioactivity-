@@ -103,3 +103,5 @@ IAJD_master/datasets/*.PRE_METAFILL.xlsx
 
 # Pre-reconstruction dataset backups (local only)
 IAJD_master/datasets/*.PRE_RECON.xlsx
+
+IAJD_master/datasets/*.PRE_RECOMPUTE.xlsx
