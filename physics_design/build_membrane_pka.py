@@ -23,13 +23,14 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from .lipid_library import load_lipid
+from .lipid_library import load_lipid, Lipid
 from .bilayer import build_bilayer_coords, write_gro, read_gro
 
 ROOT = Path(__file__).resolve().parent.parent
 TITR_FF = ROOT / "martini" / "titratable" / "force_fields"
 SCRIPTS = ROOT / "martini" / "titratable" / "scripts"
 WATER_GRO = ROOT / "martini" / "ff" / "water.gro"
+FULL_FF = TITR_FF / "martini_titratable_full.itp"   # merged FF (build_titratable_ff.py)
 
 
 # MC3 (DLin-MC3-DMA) bead layout, mapped onto a POPC site (head->head, tails->tails).
@@ -140,13 +141,170 @@ H+  {n_water}
 """
 
 
+# ======================================================================================
+# GENERALIZED IAJD PATH (FW-2): embed ANY IAJD in POPC + make its head titratable.
+# ======================================================================================
+# The MC3 path above swaps one MC3 bead-for-bead into a single POPC site. IAJDs are
+# 24-33-bead dendrimers, so we instead EMBED one IAJD dilutely in a POPC host bilayer
+# (reusing the validated Module-B host machinery, build_mixed_bilayer) with its ionizable
+# head placed at the interface, then convert that head to the titratable P2/DN/DP motif and
+# the water to WNA+H+ — exactly the conversion the MC3 path uses. The merged FF
+# (martini_titratable_full.itp) supplies the full IAJD bead-interaction matrix so grompp
+# sees no undefined/zero interactions.
+
+# Titratable head motif (Grunewald 2020, as used by MC3_titratable.itp):
+#   head bead -> P2 (intrinsic-pKa amine bead, charge -1) + DN (DB1, 0) + DP (DB2, +1).
+_HEAD_INTRINSIC = "N2_10.2"   # tertiary-amine intrinsic pKa 10.2 (DMA/piperazine/piperidine
+#                               heads); the MEMBRANE-SHIFTED apparent pKa is what we measure,
+#                               exactly as the validated MC3 run (generic 10.2 intrinsic).
+
+
+def _remap(i: int, head_bead: int) -> int:
+    """0-based original bead index -> 1-based index after inserting DN,DP right after head."""
+    return (i + 1) if i <= head_bead else (i + 3)
+
+
+def write_titratable_iajd_itp(lip: "Lipid", head_bead: int, path: Path, mol_name: str,
+                              intrinsic: str = _HEAD_INTRINSIC) -> Dict:
+    """Emit a titratable .itp for IAJD `lip`: the head bead becomes the P2/DN/DP motif
+    in-place (matching convert_gro_to_titratable.py's ordering), all bonds/angles renumbered,
+    + the DP-P2 proton bond, P2-DN dummy constraint, and dummy exclusions. The IAJD's own
+    bonds/angles (incl. those to the head) are preserved (now referencing P2)."""
+    p2, dn, dp = head_bead + 1, head_bead + 2, head_bead + 3   # 1-based indices
+
+    atoms: List[Tuple[int, str, str, float]] = []
+    for i, (name, btype, charge) in enumerate(lip.beads):
+        if i == head_bead:
+            atoms.append((p2, intrinsic, "P2", -1.00))
+            atoms.append((dn, "DB1", "DN", 0.00))
+            atoms.append((dp, "DB2", "DP", 1.00))
+        else:
+            atoms.append((_remap(i, head_bead), btype, name, float(charge)))
+    atoms.sort(key=lambda a: a[0])
+
+    L = [f"; Titratable {mol_name} — IAJD head -> {intrinsic} titratable motif (auto-generated",
+         f";  by build_membrane_pka.write_titratable_iajd_itp). Use martini_titratable_full.itp.",
+         "[ moleculetype ]", "; name  nrexcl", f"  {mol_name}  1", "", "[ atoms ]",
+         "; nr  type  resnr residue atom  cgnr  charge"]
+    for (idx, btype, name, charge) in atoms:
+        L.append(f"{idx:5d} {btype:10s} 1 {mol_name:8s} {name:5s} {idx:5d} {charge:7.3f}")
+
+    L += ["", "[ bonds ]", "; head titratable motif: DP-P2 proton bond",
+          f"{dp:4d} {p2:4d} 1 0.000 4000"]
+    for (i, j, r0, k) in lip.bonds:
+        L.append(f"{_remap(i, head_bead):4d} {_remap(j, head_bead):4d} 1 {r0:.4f} {k:.1f}")
+
+    L += ["", "[ constraints ]", "; head dummy DN held off P2",
+          f"{p2:4d} {dn:4d} 1 0.200"]
+
+    if lip.angles:
+        L += ["", "[ angles ]", ";  i j k func theta0 k"]
+        for (i, j, k, th, kk) in lip.angles:
+            L.append(f"{_remap(i, head_bead):4d} {_remap(j, head_bead):4d} "
+                     f"{_remap(k, head_bead):4d} 2 {th:.2f} {kk:.1f}")
+
+    L += ["", "[ exclusions ]", "; head dummies mutually excluded from P2 and each other",
+          f"{p2:4d} {dn:4d} {dp:4d}", f"{dn:4d} {dp:4d}"]
+    path.write_text("\n".join(L) + "\n")
+    return {"mol_name": mol_name, "n_atoms": len(atoms), "p2_idx": p2, "dn_idx": dn,
+            "dp_idx": dp, "intrinsic": intrinsic}
+
+
+def _iajd_system_top(mol_name: str, itp_path: Path, n_popc: int, n_water: int) -> str:
+    """Titratable system.top: merged FF (atomtypes+nonbond) + moleculetype libs + IAJD.
+
+    ALL includes are absolute: compute_apparent_pka.run_one_pH runs grompp from a
+    pH_X/min/ subdir, so a relative IAJD-.itp include would be unresolvable (fatal)."""
+    return f"""#define pH<value>
+#include "{FULL_FF}"
+#include "{TITR_FF}/lipids.itp"
+#include "{TITR_FF}/molecules.itp"
+#include "{TITR_FF}/ion.itp"
+#include "{Path(itp_path).resolve()}"
+
+[ system ]
+{mol_name} in POPC bilayer (titratable, constant-pH)
+
+[ molecules ]
+{mol_name}  1
+POPC  {n_popc}
+WNA  {n_water}
+H+  {n_water}
+"""
+
+
+def build_iajd(iajd_num: int, workdir: Path, gmx: List[str], *,
+               n_per_leaflet: int = 32, intrinsic: str = _HEAD_INTRINSIC,
+               protonated: bool = False) -> Dict:
+    """Build a titratable constant-pH system for IAJD `iajd_num`: 1 IAJD embedded head-up in
+    a POPC host bilayer, head -> titratable motif, water -> WNA+H+. Returns start_gro / top /
+    analysis selections for compute_apparent_pka.titrate()."""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT))
+    from physics_design.iajd_cg import iajd_to_lipid
+    from physics_design.build_mixed_bilayer import build_mixed_bilayer
+
+    workdir = Path(workdir).resolve()
+    workdir.mkdir(parents=True, exist_ok=True)
+    if not FULL_FF.exists():
+        from physics_design.build_titratable_ff import build as _build_ff
+        _build_ff(verbose=False)
+
+    lip = iajd_to_lipid(iajd_num, protonated=protonated)
+    head_bead = int(lip.head_bead)
+    mol_name = f"IAJD{iajd_num}T"
+    # rename the head bead to "P2" so convert_gro_to_titratable.py (-sel 'name P2') finds it
+    lip.beads[head_bead] = ("P2", lip.beads[head_bead][1], lip.beads[head_bead][2])
+
+    # 1. embed ONE IAJD head-up in a POPC host bilayer (reuse validated Module-B machinery)
+    mb = build_mixed_bilayer(lip, head_bead, workdir, gmx, n_per_leaflet=n_per_leaflet,
+                             n_iajd_upper=1)
+    if mb.get("status") != "ok":
+        return {"status": f"embed_failed:{mb.get('status')}", "log": mb.get("log", "")}
+    embedded = Path(mb["gro"])     # POPC + IAJD(head named P2) + W
+
+    # 2. titratable conversion: head P2 -> base(+DN,DP), water W -> WNA(+H+)
+    py = _sys.executable
+    temp = workdir / "temp.gro"
+    start = workdir / "start.gro"
+    r1 = subprocess.run([py, str(SCRIPTS / "convert_gro_to_titratable.py"), "-f",
+                         str(embedded), "-o", str(temp), "-sel", "name P2", "-bead", "base"],
+                        cwd=str(workdir), capture_output=True, text=True)
+    r2 = subprocess.run([py, str(SCRIPTS / "convert_gro_to_titratable.py"), "-f", str(temp),
+                         "-o", str(start), "-sel", "name W", "-bead", "water"],
+                        cwd=str(workdir), capture_output=True, text=True)
+    if not start.exists():
+        return {"status": "convert_failed",
+                "log": (r1.stdout + r1.stderr + r2.stdout + r2.stderr)[-2000:]}
+
+    # 3. titratable IAJD .itp (head motif placed at head_bead) + system.top
+    itp_path = workdir / f"{mol_name}.itp"
+    itp_info = write_titratable_iajd_itp(lip, head_bead, itp_path, mol_name,
+                                         intrinsic=intrinsic)
+    n_popc, n_water = mb["n_popc"], mb["n_water"]
+    top = workdir / "system.top"
+    top.write_text(_iajd_system_top(mol_name, itp_path, n_popc, n_water))
+
+    return {"status": "ok", "start_gro": str(start), "top": str(top), "ion": mol_name,
+            "n_popc": n_popc, "n_water": n_water, "head_bead": head_bead,
+            "head_type_orig": lip.beads[head_bead][1], "n_beads_iajd": lip.n_beads,
+            "intrinsic": intrinsic, "box_nm": mb.get("box_nm"),
+            "analysis_sel": "name P2", "analysis_ref": "name WN", **itp_info}
+
+
 if __name__ == "__main__":
     import argparse, json
     p = argparse.ArgumentParser()
-    p.add_argument("--ionizable", default="MC3")
-    p.add_argument("--workdir", default="/tmp/membrane_mc3")
+    p.add_argument("--ionizable", default="MC3", help="MC3 (legacy) — ignored if --iajd given")
+    p.add_argument("--iajd", type=int, default=None, help="IAJD_num: build titratable IAJD system")
+    p.add_argument("--workdir", default=None)
     p.add_argument("--n-per-leaflet", type=int, default=32)
     args = p.parse_args()
     gmx = [os.environ.get("GMX", "/opt/homebrew/bin/gmx")]
-    info = build(args.ionizable, Path(args.workdir), gmx, n_per_leaflet=args.n_per_leaflet)
+    if args.iajd is not None:
+        wd = Path(args.workdir or f"/tmp/membrane_iajd{args.iajd}")
+        info = build_iajd(args.iajd, wd, gmx, n_per_leaflet=args.n_per_leaflet)
+    else:
+        info = build(args.ionizable, Path(args.workdir or "/tmp/membrane_mc3"), gmx,
+                     n_per_leaflet=args.n_per_leaflet)
     print(json.dumps(info, indent=2, default=str))

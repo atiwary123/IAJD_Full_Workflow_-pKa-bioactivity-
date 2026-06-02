@@ -69,9 +69,35 @@ curve once n≥8, and a conservative **VERDICT** (signal needs |Spearman|≥0.35
   physics axis likely isn't the lever *for that family* → don't burn more compute there; pivot
   family or stop. If a family shows |Spearman|≥0.35 with a CI off 0, keep going + widen the panel.
 
-### (optional) Module A apparent-pKa on IAJDs
-Needs a titratable IAJD model first (per-IAJD, not yet built — see FW-2). The METHOD is
-validated (MC3 → 6.44). Not part of this launch.
+## 1c. Module A — apparent-pKa panel (titratable Martini 3 constant-pH MD)  ← BUILT 2026-06-02
+
+The per-IAJD titratable model (FW-2) is now built + validated to RUN (grompp + EM + NVT clean
+across all 6 families, local GROMACS 2026). The apparent pKa is the **best-validated escape
+correlate** (Module A; the method recovers MC3 → 6.44 non-circularly).
+
+```bash
+# whole library, 32 vCPU: 8 concurrent jobs x 4 threads. Resumable; safe to re-run.
+python run_pka_panel.py --jobs $(( $(nproc) / 4 )) --threads 4 --prod-ns 20 --eq-ns 2
+# target one family / flux-extremes first / a subset:
+python run_pka_panel.py --family PE-Tris --jobs 8 --threads 4          # PE-Tris (best pKa↔flux)
+python run_pka_panel.py --order flux --n-iajd 16 --jobs 8 --threads 4  # most-informative first
+```
+- **Parallelism:** the unit of work is one (IAJD × pH) constant-pH MD job; `--jobs N × --threads K
+  ≈ vCPUs`, `-pin off` so concurrent mdruns don't contend. 11 pH points × ~250 IAJDs = ~2750 jobs.
+- **Output:** `IAJD_master/bundles_caches/physics/design/pka/IAJD<n>_pka.json` (per IAJD:
+  `apparent_pKa`, `hill_n`, `fit_rmse`, the `<q>(pH)` titration points) + `_pka_panel_summary.json`.
+- **Trust rule:** a clean fit needs ≥3 finite pH points spanning the transition + low `fit_rmse`;
+  a non-converged titration → `apparent_pKa = NaN` + audit (never a fabricated value).
+- **Data:** reads the corrected `IAJD_Bioact_v13_clean.AUDIT_FIXED.xlsx`, §4d-filtered
+  (drops `UNRESOLVED|FLAG`); the CG model is rebuilt fresh from the corrected SMILES.
+- **Cost/time:** ~one pH point ≈ a short host-bilayer MD; the full grid for ~250 IAJDs is a
+  multi-hour-to-overnight CPU run depending on `--prod-ns` and box (n-per-leaflet 32).
+
+**HONEST scope:** the per-IAJD value is the **membrane-shifted** apparent pKa relative to a
+consistent generic 10.2 intrinsic amine bead (same setup the MC3 validation used) — so the
+design signal is the **shift / relative ordering across IAJDs**, not the absolute number, and it
+inherits the provisional (Module-E-unvalidated) CG mapping. Multi-head dendrimers (G1-Janus)
+titrate the single highest-charge head.
 
 ---
 

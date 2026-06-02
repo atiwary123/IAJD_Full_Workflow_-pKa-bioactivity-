@@ -69,8 +69,13 @@ def _run(cmd: List[str], cwd: Path, log: Path, timeout: int) -> bool:
 
 def run_one_pH(workdir: Path, pH: float, start_gro: Path, top_template: Path,
                gmx: List[str], *, eq_steps: int, prod_steps: int, threads: int,
-               nice: int = 10) -> Dict:
-    """EM -> NVT eq -> NpT production at one pH. Returns paths + status."""
+               nice: int = 10, pin: str = "off", maxwarn: int = 10) -> Dict:
+    """EM -> NVT eq -> NpT production at one pH. Returns paths + status.
+
+    `pin` defaults to 'off' so many concurrent mdruns (the 32-CPU panel) don't all pin to
+    the same physical cores; set 'on' only for a single dedicated run. `maxwarn` covers the
+    titratable scheme's expected grompp notes (atom-name WN/W relabel + the proton-bath net
+    charge handled by PME's neutralizing background, exactly as the validated MC3 run)."""
     d = workdir / f"pH_{pH}"
     if (d / "prod" / "traj_comp.xtc").exists() and (d / "prod" / "topol.tpr").exists():
         return {"pH": pH, "status": "cached", "dir": str(d)}
@@ -79,40 +84,44 @@ def run_one_pH(workdir: Path, pH: float, start_gro: Path, top_template: Path,
     _abs_top(top_template, pH, top)
     log = d / "run.log"
     nice_p = ["nice", "-n", str(nice)]
+    pin_f = ["-pin", pin]
+    mw = ["-maxwarn", str(maxwarn)]
 
     # 1. EM
     (d / "min").mkdir(exist_ok=True)
     if not _run(gmx + ["grompp", "-f", str(MDP_DIR / "min.mdp"), "-c", str(start_gro),
-                       "-p", str(top), "-o", str(d / "min" / "em.tpr"), "-maxwarn", "5"],
+                       "-p", str(top), "-o", str(d / "min" / "em.tpr")] + mw,
                 d / "min", log, 600):
         return {"pH": pH, "status": "grompp_min_failed", "dir": str(d)}
     if not _run(nice_p + gmx + ["mdrun", "-s", str(d / "min" / "em.tpr"),
                                 "-deffnm", str(d / "min" / "em"), "-ntmpi", "1",
-                                "-ntomp", str(threads)], d / "min", log, 3600):
+                                "-ntomp", str(threads)] + pin_f, d / "min", log, 3600):
         return {"pH": pH, "status": "mdrun_min_failed", "dir": str(d)}
 
     # 2. NVT equilibration
     (d / "eq").mkdir(exist_ok=True)
     if not _run(gmx + ["grompp", "-f", str(MDP_DIR / "eq.mdp"), "-c", str(d / "min" / "em.gro"),
-                       "-p", str(top), "-o", str(d / "eq" / "eq.tpr"), "-maxwarn", "5"],
+                       "-p", str(top), "-o", str(d / "eq" / "eq.tpr")] + mw,
                 d / "eq", log, 600):
         return {"pH": pH, "status": "grompp_eq_failed", "dir": str(d)}
     if not _run(nice_p + gmx + ["mdrun", "-s", str(d / "eq" / "eq.tpr"), "-deffnm",
                                 str(d / "eq" / "eq"), "-nsteps", str(eq_steps),
-                                "-ntmpi", "1", "-ntomp", str(threads)], d / "eq", log, 86400):
+                                "-ntmpi", "1", "-ntomp", str(threads)] + pin_f,
+                d / "eq", log, 86400):
         return {"pH": pH, "status": "mdrun_eq_failed", "dir": str(d)}
 
     # 3. NpT production
     (d / "prod").mkdir(exist_ok=True)
     if not _run(gmx + ["grompp", "-f", str(MDP_DIR / "NpT.mdp"), "-c", str(d / "eq" / "eq.gro"),
-                       "-p", str(top), "-o", str(d / "prod" / "topol.tpr"), "-maxwarn", "5"],
+                       "-p", str(top), "-o", str(d / "prod" / "topol.tpr")] + mw,
                 d / "prod", log, 600):
         return {"pH": pH, "status": "grompp_prod_failed", "dir": str(d)}
     if not _run(nice_p + gmx + ["mdrun", "-s", str(d / "prod" / "topol.tpr"), "-deffnm",
                                 str(d / "prod" / "prod"), "-nsteps", str(prod_steps),
                                 "-c", str(d / "prod" / "confout.gro"),
                                 "-x", str(d / "prod" / "traj_comp.xtc"),
-                                "-ntmpi", "1", "-ntomp", str(threads)], d / "prod", log, 172800):
+                                "-ntmpi", "1", "-ntomp", str(threads)] + pin_f,
+                d / "prod", log, 172800):
         return {"pH": pH, "status": "mdrun_prod_failed", "dir": str(d)}
     return {"pH": pH, "status": "ok", "dir": str(d)}
 
