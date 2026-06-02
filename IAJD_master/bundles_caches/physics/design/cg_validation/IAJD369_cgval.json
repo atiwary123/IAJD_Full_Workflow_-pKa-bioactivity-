@@ -1,0 +1,11 @@
+{
+  "iajd_num": 369,
+  "smiles": "CCCCC(CC)CCOc1cc(COC(=O)CN2CCN(CCOCCO)CC2)cc(OCCC(CC)CCCC)c1OCCC(CC)CCCC",
+  "aa_ns": 20.0,
+  "cg_ns": 20.0,
+  "status": "setup_only",
+  "gaff": "ok",
+  "aa_setup": "ok",
+  "aa_em_grompp": "ok",
+  "cg_setup": "ok"
+}
