@@ -118,7 +118,7 @@ def main():
     iajd = iajd[valid].reset_index(drop=True)
     # audit §4d: drop rows whose SMILES are still flagged-unreliable (UNRESOLVED/FLAG_10118)
     if "audit_status" in iajd.columns:
-        bad = iajd["audit_status"].astype(str).str.contains("UNRESOLVED|FLAG_10118", na=False)
+        bad = iajd["audit_status"].astype(str).str.contains("UNRESOLVED|FLAG", na=False)
         if bad.any():
             print(f"  excluding {int(bad.sum())} rows with flagged-unreliable SMILES (audit §4d)")
             iajd = iajd[~bad].reset_index(drop=True)

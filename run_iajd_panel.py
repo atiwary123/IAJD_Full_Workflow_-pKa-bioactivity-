@@ -63,7 +63,7 @@ def load_family(family: str, flux_col: str):
     # from this structure-based c0 panel. They keep valid flux/pKa LABELS for label-only work,
     # but their SMILES are wrong/unverifiable so the CG c0 would be meaningless.
     if "audit_status" in sub.columns:
-        flagged = sub["audit_status"].astype(str).str.contains("UNRESOLVED|FLAG_10118", na=False)
+        flagged = sub["audit_status"].astype(str).str.contains("UNRESOLVED|FLAG", na=False)
         if flagged.any():
             print(f"  [load_family] excluding {int(flagged.sum())} flagged-unreliable SMILES (audit §4d)")
             sub = sub[~flagged].copy()
