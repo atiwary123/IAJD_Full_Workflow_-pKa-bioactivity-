@@ -126,6 +126,32 @@ def benzyl_core_35disubst() -> Fragment:
     return f
 
 
+def pentaerythritol_core() -> Fragment:
+    """PE-Tris pentaerythritol core (NOT a benzene ring — a central sp3 quaternary
+    carbon C(CH2-O-R)4). Three CH2 arms bear the alkyl tails; the fourth bears the
+    ester linker. Mapped to fit the same assembly interface as the benzyl cores:
+    beads 0,1,2 are the three tail-attachment arms; linker_out is the ester arm.
+
+    The C(CH2)4 neopentane-like centre is a small SC2 hub with four SC1 CH2 arms
+    in a tetrahedral geometry (MARTINI 3 small beads). This is the architectural
+    fix for PE-Tris, which the original code wrongly mapped to a benzene ring.
+    """
+    f = Fragment(name="pentaerythritol_core")
+    f.beads.append(("A1", "SC1", 28.0, 0.0))   # CH2 arm 1 (tail)
+    f.beads.append(("A2", "SC1", 28.0, 0.0))   # CH2 arm 2 (tail)
+    f.beads.append(("A3", "SC1", 28.0, 0.0))   # CH2 arm 3 (tail)
+    f.beads.append(("PC", "SC2", 28.0, 0.0))   # central quaternary carbon (hub)
+    f.beads.append(("A4", "SC1", 28.0, 0.0))   # CH2 arm 4 (ester linker)
+    for arm in (0, 1, 2, 4):                     # hub → each arm
+        f.bonds.append((3, arm, 0.270, 7500.0))
+    # tetrahedral angles (arm-hub-arm ~109.5°) keep the four arms splayed
+    f.angles += [(0, 3, 1, 109.5, 50.0), (0, 3, 2, 109.5, 50.0), (1, 3, 2, 109.5, 50.0),
+                 (0, 3, 4, 109.5, 50.0), (1, 3, 4, 109.5, 50.0), (2, 3, 4, 109.5, 50.0)]
+    f.linker_in = 3
+    f.linker_out = 4   # ester arm → ester linker → (CH2)n bridge → head
+    return f
+
+
 # ──────────────────────────────────────────────────────────────────────
 # Head groups (two parametrizations each: neutral + protonated)
 # ──────────────────────────────────────────────────────────────────────
@@ -258,7 +284,7 @@ HEAD_FACTORIES = {
 
 CORE_FACTORIES = {
     "GA-Tris":        benzyl_core_3trisubst,
-    "PE-Tris":        benzyl_core_3trisubst,
+    "PE-Tris":        pentaerythritol_core,   # FIX: PE-Tris is pentaerythritol, not benzene
     "PE-Gallic":      benzyl_core_3trisubst,
     "sSS-Nonsym":     benzyl_core_35disubst,
     "Dialkoxybenzyl": benzyl_core_35disubst,

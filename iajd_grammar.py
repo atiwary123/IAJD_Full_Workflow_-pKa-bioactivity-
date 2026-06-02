@@ -196,29 +196,46 @@ def _extract_tails_from_smiles(smiles: str) -> List[str]:
         return []
     tails = []
     seen = set()
-    aro_o_c = Chem.MolFromSmarts("c[OX2][CX4]")
-    for ar, o, c0 in mol.GetSubstructMatches(aro_o_c):
-        if c0 in seen:
-            continue
-        tail_atoms = []
-        stack = [c0]
-        local_seen = set()
-        while stack:
-            a = stack.pop()
-            if a in local_seen:
+    # Match BOTH aromatic-O-alkyl ethers (benzene cores: c-O-CH2…) AND aliphatic
+    # C-O-alkyl ethers (pentaerythritol PE-Tris arms: C12-O-CH2-hub). For each ether,
+    # walk the alkyl chain from the sp3-carbon side, away from the O. The molecule-core
+    # side is rejected by stopping at a quaternary carbon (4 C-neighbours = the
+    # pentaerythritol hub); branched tails (degree-3 branch, e.g. 2-ethylhexyl) pass.
+    # sp3-only (no =O/=C) keeps tails pure alkyl and excludes esters/alkenes.
+    ether = Chem.MolFromSmarts("[#6][OX2][#6]")
+    for c_a, o, c_b in mol.GetSubstructMatches(ether):
+        for c0 in (c_a, c_b):
+            if c0 in seen:
                 continue
-            local_seen.add(a)
-            atom = mol.GetAtomWithIdx(a)
-            if atom.GetAtomicNum() != 6 or atom.GetIsAromatic():
-                continue
-            # Don't follow back through the linker O or into nitrogens
-            tail_atoms.append(a)
-            for n in atom.GetNeighbors():
-                ni = n.GetIdx()
-                if ni == o or n.GetIsAromatic() or n.GetAtomicNum() != 6:
+            a0 = mol.GetAtomWithIdx(c0)
+            if a0.GetIsAromatic() or a0.GetAtomicNum() != 6:
+                continue   # tail starts at the sp3 alkyl carbon
+            tail_atoms = []
+            stack = [c0]
+            local_seen = set()
+            bad = False
+            while stack:
+                a = stack.pop()
+                if a in local_seen:
                     continue
-                stack.append(ni)
-        if tail_atoms:
+                local_seen.add(a)
+                atom = mol.GetAtomWithIdx(a)
+                if atom.GetAtomicNum() != 6 or atom.GetIsAromatic():
+                    continue
+                if any(b.GetBondTypeAsDouble() == 2.0 for b in atom.GetBonds()):
+                    bad = True; break          # carbonyl/alkene → not a clean alkyl tail
+                c_nbrs = sum(1 for nb in atom.GetNeighbors()
+                             if nb.GetAtomicNum() == 6 and not nb.GetIsAromatic())
+                if a != c0 and c_nbrs >= 4:
+                    bad = True; break          # quaternary hub → this side is the core
+                tail_atoms.append(a)
+                for n in atom.GetNeighbors():
+                    ni = n.GetIdx()
+                    if ni == o or n.GetIsAromatic() or n.GetAtomicNum() != 6:
+                        continue
+                    stack.append(ni)
+            if bad or not tail_atoms:
+                continue
             try:
                 # rootedAtAtom=c0 forces the canonical SMILES to start at the
                 # alpha-C, so prepending `O` reattaches at the original site.
