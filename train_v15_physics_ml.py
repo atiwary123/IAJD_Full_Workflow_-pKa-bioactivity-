@@ -200,7 +200,11 @@ def main():
           flush=True)
 
     # Match the 247-row subset back to df_bio for physics-feature computation
-    bio_used = df_bio.dropna(subset=["log10_flux_total"]).reset_index(drop=True)
+    bio_used = df_bio.copy()
+    # audit §4d: drop flagged-unreliable SMILES so bio_used matches load_v13 / the LOO subset.
+    if "audit_status" in bio_used.columns:
+        bio_used = bio_used[~bio_used["audit_status"].astype(str).str.contains("UNRESOLVED|FLAG", na=False)]
+    bio_used = bio_used.dropna(subset=["log10_flux_total"]).reset_index(drop=True)
     bio_used = bio_used[bio_used["SMILES_canonical"].notna()].reset_index(drop=True)
     assert len(bio_used) == len(ml_loo), \
            f"row count mismatch: {len(bio_used)} vs {len(ml_loo)}"

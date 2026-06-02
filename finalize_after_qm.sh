@@ -56,8 +56,10 @@ echo "[finalize] rebuild: ensemble / per-organ / binary" | tee -a "$LOG"
 $PY -u train_bioact_ensemble.py                           >> "$LOG" 2>&1
 $PY -u train_per_organ.py                                 >> "$LOG" 2>&1
 $PY -u train_binary_classifier.py                         >> "$LOG" 2>&1
-echo "[finalize] rebuild: adaptive stacker (production, last)" | tee -a "$LOG"
+echo "[finalize] rebuild: adaptive stacker (production)" | tee -a "$LOG"
 $PY -u adaptive_stacker.py                                >> "$LOG" 2>&1
+echo "[finalize] rebuild: v15 hybrid (on real-QM stacker, last)" | tee -a "$LOG"
+$PY -u train_v15_physics_ml.py                            >> "$LOG" 2>&1
 
 echo "[finalize] DONE $(date)" | tee -a "$LOG"
 touch physics_logs/finalize_after_qm.DONE

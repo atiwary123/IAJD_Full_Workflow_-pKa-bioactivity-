@@ -344,6 +344,14 @@ def build_adaptive_stacker():
     if X_qmmd is not None:
         qmmd_head = xgb.XGBRegressor(**QMMD_HP).fit(X_qmmd, y_all, verbose=False)
 
+    # Static 4-head meta-stacker on [direct, analog, lion, admet] LOO preds, kept
+    # in the bundle so legacy consumers (train_v15_physics_ml, iajd_predict's
+    # static fallback) still find a "stacker" key; adaptive_params drives the
+    # preferred path.
+    static_stacker = xgb.XGBRegressor(**STACKER_HP).fit(
+        np.column_stack([direct_loo, analog_loo, lion_loo, admet_loo]),
+        y_all, verbose=False)
+
     # Save bundle
     stack_features = ["direct", "analog", "lion", "admet", "agile", "cpp"]
     if X_qmmd is not None:
@@ -358,6 +366,7 @@ def build_adaptive_stacker():
         "agile_scaler": agile_scaler,
         "cpp_head": cpp_head,
         "qmmd_head": qmmd_head,
+        "stacker": static_stacker,
         "block_lion": (BLOCK_LION.start, BLOCK_LION.stop),
         "block_admet": (BLOCK_ADMET.start, BLOCK_ADMET.stop),
         "adaptive_params": {
