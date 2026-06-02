@@ -13,7 +13,7 @@ XGBoost routes it through its default branch.
 A macOS reboot wipes `/tmp`. The original engines lived there, so they vanish on
 restart. To restore everything:
 
-```bash
+```bash- 
 cd ~/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3
 bash setup_physics_env.sh          # reinstall xtb + gromacs (persistent now)
 ./.venv/bin/python physics_status.py   # confirm green
