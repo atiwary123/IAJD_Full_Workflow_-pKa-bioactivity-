@@ -67,6 +67,13 @@ while true; do
   qm_done=no; grep -q "Done in" "$QM_LOG" 2>/dev/null && qm_done=yes
   fin_done=no; [ -f "$FIN_DONE" ] && fin_done=yes
 
+  # 0) keep the Mac awake — system sleep freezes xtb/QM AND this watcher's sleeps
+  #    (an idle-only caffeinate does NOT survive lid-close; assert system sleep too).
+  if ! pgrep -f "caffeinate -s" >/dev/null 2>&1; then
+    log "CORRECT: no system-sleep caffeinate -> launch 'caffeinate -s -i -m' (overnight keep-awake)"
+    nohup caffeinate -s -i -m >/dev/null 2>&1 &
+  fi
+
   # 1) keep the protective combo alive
   [ "$grd" = no ] && relaunch_guard
   [ "$jan" = no ] && relaunch_janitor
