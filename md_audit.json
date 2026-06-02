@@ -42,5 +42,29 @@
         }
       }
     }
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 0.1,
+    "error": "exception:SameFileError:PosixPath('/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/martini/ff/martini_v3.0.0_solvents_v1.itp') and PosixPath('/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/physics_cache/md_runs/CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC)c(OCCOCCOCCOC(=O)CCCN(/neutral/martini_v3.0.0_solvents_v1.itp') are the same file",
+    "audit": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 41.6,
+    "error": "exception:TimeoutExpired:Command '['/opt/homebrew/bin/gmx', 'mdrun', '-s', '/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/physics_cache/md_runs/CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOC/neutral/equil.tpr', '-deffnm', 'equil', '-pin', 'off', '-ntmpi', '1', '-ntomp', '2']' timed out after 30 seconds",
+    "audit": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC)c(OCCOCCOCCOC)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 43.8,
+    "error": "exception:TimeoutExpired:Command '['/opt/homebrew/bin/gmx', 'mdrun', '-s', '/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/physics_cache/md_runs/CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC)c(OCCOCCOCCOC)c(OCCOCC/neutral/equil.tpr', '-deffnm', 'equil', '-pin', 'off', '-ntmpi', '1', '-ntomp', '2']' timed out after 30 seconds",
+    "audit": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 44.6,
+    "error": "exception:TimeoutExpired:Command '['/opt/homebrew/bin/gmx', 'mdrun', '-s', '/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/physics_cache/md_runs/CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC)c(OCCOCCOCCOC(=O)CCCN(/neutral/equil.tpr', '-deffnm', 'equil', '-pin', 'off', '-ntmpi', '1', '-ntomp', '2']' timed out after 30 seconds",
+    "audit": null
   }
 ]
