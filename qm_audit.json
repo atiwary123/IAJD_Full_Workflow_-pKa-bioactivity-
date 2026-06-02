@@ -1533,5 +1533,10 @@
     "smiles_canonical": "CCCCCCCCCCCCOCC(COCCCCCCCCCCCC)(COCCCCCCCCCCCC)COC(=O)CCCCN1CCN(CCOC)CC1",
     "elapsed_s": 461.6,
     "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCOCC(COCCCCCCCC)(COCCCCCCCC)COC(=O)CCCCN1CCN(CCOC)CC1",
+    "elapsed_s": 302.5,
+    "error": null
   }
 ]
