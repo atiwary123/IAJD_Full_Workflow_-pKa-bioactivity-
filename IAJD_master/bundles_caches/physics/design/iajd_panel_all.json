@@ -1,0 +1,326 @@
+{
+  "family": "all",
+  "flux_col": "log10_flux_spleen",
+  "order": [
+    369,
+    273,
+    288,
+    300,
+    248,
+    83,
+    325,
+    280,
+    333,
+    297,
+    313,
+    251,
+    373,
+    276,
+    318,
+    294,
+    299,
+    97,
+    348,
+    372,
+    301,
+    317,
+    332,
+    365,
+    278,
+    283,
+    249,
+    319,
+    334,
+    93,
+    347,
+    178,
+    309,
+    82,
+    253,
+    320,
+    366,
+    308,
+    326,
+    92,
+    314,
+    312,
+    367,
+    331,
+    290
+  ],
+  "results": {
+    "369": {
+      "c0_nm_inv": 1.272029306614134,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 9.163608563431051
+    },
+    "300": {
+      "c0_nm_inv": 0.48944670356835773,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 6.596597095626461
+    },
+    "273": {
+      "c0_nm_inv": -0.21076434325610288,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 5.209515014542631
+    },
+    "288": {
+      "c0_nm_inv": 0.5599928494921307,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 7.961280262427479
+    },
+    "83": {
+      "c0_nm_inv": -3.6622721579652087,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 7.313867220369153
+    },
+    "248": {
+      "c0_nm_inv": -0.03781960497469349,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 5.857332496431268
+    },
+    "280": {
+      "c0_nm_inv": -0.9602100774076135,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 5.54282542695918
+    },
+    "325": {
+      "c0_nm_inv": 1.5627779552764358,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 8.545307116465825
+    },
+    "297": {
+      "c0_nm_inv": -2.5184379287412253,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 6.320146286111054
+    },
+    "333": {
+      "c0_nm_inv": -1.2333701514948288,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 8.260071387985075
+    },
+    "313": {
+      "c0_nm_inv": -1.0899562903943918,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 7.686636269262293
+    },
+    "251": {
+      "c0_nm_inv": -0.6785893217163272,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 6.866877814337498
+    },
+    "373": {
+      "c0_nm_inv": 0.46403650232957255,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 8.904895787855207
+    },
+    "294": {
+      "c0_nm_inv": -4.332009491201506,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 7.472756449317212
+    },
+    "276": {
+      "c0_nm_inv": 1.0396784596637212,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 7.100370545117562
+    },
+    "299": {
+      "c0_nm_inv": -0.5144901172954489,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 5.69284691927723
+    },
+    "318": {
+      "c0_nm_inv": 1.4229520128840512,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 8.736396502276643
+    },
+    "97": {
+      "c0_nm_inv": 0.5008695201460638,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 7.835634564816176
+    },
+    "348": {
+      "c0_nm_inv": 0.8724276656393386,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 9.027349607774756
+    },
+    "372": {
+      "c0_nm_inv": 0.9367906168961103,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 8.380211241711606
+    },
+    "301": {
+      "c0_nm_inv": -1.137430497705112,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 7.580924975675619
+    },
+    "317": {
+      "c0_nm_inv": 1.275793086580953,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 8.645422269349092
+    },
+    "332": {
+      "c0_nm_inv": 1.9227355588936097,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 8.170261715394957
+    },
+    "278": {
+      "c0_nm_inv": 1.4233724851466054,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 7.380211241711606
+    },
+    "283": {
+      "c0_nm_inv": -1.523838084490905,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 5.627365856592733
+    },
+    "365": {
+      "c0_nm_inv": 0.021869424985549796,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 8.455606112581867
+    },
+    "319": {
+      "c0_nm_inv": -1.253154074997798,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 8.787460474518415
+    },
+    "249": {
+      "c0_nm_inv": 1.1875103985468047,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 8.01843725841121
+    },
+    "334": {
+      "c0_nm_inv": 0.10330464156707153,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 8.588831725594208
+    },
+    "178": {
+      "c0_nm_inv": -0.4642797285682028,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 7.718501688867274
+    },
+    "347": {
+      "c0_nm_inv": 2.268664975820182,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 8.695700519771172
+    },
+    "309": {
+      "c0_nm_inv": -1.0362634367568009,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 7.342422680822207
+    },
+    "93": {
+      "c0_nm_inv": 2.03149430251559,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 8.303163596372855
+    },
+    "320": {
+      "c0_nm_inv": 1.0788654078436215,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 8.281033367247728
+    },
+    "82": {
+      "c0_nm_inv": 0.17470317571616067,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 5.518513939877887
+    },
+    "253": {
+      "c0_nm_inv": -0.07475096539631482,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 6.342422680822207
+    },
+    "366": {
+      "c0_nm_inv": -0.08402185408479883,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 9.043833654133147
+    },
+    "308": {
+      "c0_nm_inv": -0.604870690531876,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 7.113943352306837
+    },
+    "326": {
+      "c0_nm_inv": -1.161174222399227,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 8.369215857410143
+    },
+    "92": {
+      "c0_nm_inv": -4.9545088450762735,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 5.850646235183066
+    },
+    "314": {
+      "c0_nm_inv": 0.5193744732355458,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 8.701567985055927
+    },
+    "312": {
+      "c0_nm_inv": -0.3874952821747055,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 8.376576957056512
+    },
+    "367": {
+      "c0_nm_inv": 2.3631930282759837,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 8.739440480328264
+    },
+    "290": {
+      "c0_nm_inv": 1.2763881099020724,
+      "status": "cached:ok",
+      "physics_converged": false,
+      "flux": 7.471291711058939
+    },
+    "331": {
+      "c0_nm_inv": 1.4926784409215883,
+      "status": "cached:ok",
+      "physics_converged": true,
+      "flux": 8.26245108973043
+    }
+  },
+  "elapsed_min": 0.0,
+  "provisional": true,
+  "note": "c0 PROVISIONAL until Module E; panel value is order + relative shifts"
+}
