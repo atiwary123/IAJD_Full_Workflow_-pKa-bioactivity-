@@ -149,6 +149,10 @@ FAMILY_ASSEMBLERS = {
     "PE-Tris":        (assemble_pe_tris,    3),
     "PE-Gallic":      (assemble_pe_tris,    3),    # same template
     "Dialkoxybenzyl": (assemble_sss_nonsym, 2),
+    # G1-Janus 2-tier dendrimer: 2 outer alkyl tails; CG built by a dedicated
+    # martini.build_cg._assemble_g1_janus (the SMILES proposer reuses the sSS
+    # template as a placeholder — generation of G1-Janus is not wired).
+    "G1-Janus-Dendrimer": (assemble_sss_nonsym, 2),
 }
 
 

@@ -91,8 +91,68 @@ def _append_fragment(topo: AssembledTopology, frag: Fragment, *,
     return offset
 
 
+def _assemble_g1_janus(seed, *, protonated: bool) -> AssembledTopology:
+    """G1-Janus first-generation dendrimer: a 2-tier architecture the single-core
+    Seed model can't express, so it's built explicitly:
+
+        outer benzene (2 alkyl tails) -- benzyl -- amide -- inner benzene
+            inner benzene bears 3 triethylene-glycol (TEG) arms; one TEG arm carries
+            the ester -> (CH2)n bridge -> amine head.
+
+    Hydrophobic outer tails + hydrophilic inner TEG/amine = the Janus shape that drives
+    c0. The TEG dendron is family-constant so it is parametrised here, not from the Seed.
+    PROVISIONAL like all IAJD CG mappings (unvalidated vs atomistic).
+    """
+    topo = AssembledTopology(name="IAJD_G1Janus", beads=[], bonds=[], angles=[],
+                             constraints=[], total_charge=0.0, fragment_offsets=[])
+    # 1. outer benzene (3,5-disubst) + 2 alkyl tails
+    outer = make_core("sSS-Nonsym")          # benzyl_core_35disubst
+    _append_fragment(topo, outer)
+    o_off = topo.fragment_offsets[-1][1]
+    outer_ring = [o_off, o_off + 1, o_off + 2]
+    outer_benzyl = o_off + outer.linker_out
+    for ti, tsmi in enumerate(list(seed.tails)[:2]):
+        n_c, br = _tail_descriptors(tsmi)
+        if n_c == 0:
+            continue
+        topo.beads.append((f"OO{ti+1}", "N4a", 60.0, 0.0)); eidx = len(topo.beads) - 1
+        topo.bonds.append((outer_ring[ti], eidx, 0.270, 7500.0))
+        _append_fragment(topo, make_tail(n_c, branched=br), anchor_bead=eidx,
+                          anchor_bond_length=0.470, anchor_bond_k=5000.0)
+    # 2. amide linker off the benzyl
+    amide = make_linker("amide")
+    _append_fragment(topo, amide, anchor_bead=outer_benzyl)
+    amide_bead = topo.fragment_offsets[-1][1] + amide.linker_out
+    # 3. inner benzene (3,4,5-trisubst) — amide attaches to its benzyl position
+    inner = make_core("GA-Tris")             # benzyl_core_3trisubst
+    _append_fragment(topo, inner, anchor_bead=amide_bead)
+    i_off = topo.fragment_offsets[-1][1]
+    inner_ring = [i_off, i_off + 1, i_off + 2]
+    # 4. three TEG arms on the inner ring; the third carries the ester+bridge+head
+    for j in range(3):
+        topo.beads.append((f"E{j}a", "N4a", 60.0, 0.0)); e0 = len(topo.beads) - 1
+        topo.bonds.append((inner_ring[j], e0, 0.270, 7000.0))
+        topo.beads.append((f"E{j}b", "SP1", 54.0, 0.0)); e1 = len(topo.beads) - 1
+        topo.bonds.append((e0, e1, 0.300, 5000.0))
+        topo.beads.append((f"E{j}c", "SP1", 54.0, 0.0)); e2 = len(topo.beads) - 1
+        topo.bonds.append((e1, e2, 0.300, 5000.0))
+        if j == 2:
+            topo.beads.append(("HEs", "N4a", 60.0, 0.0)); est = len(topo.beads) - 1   # ester
+            topo.bonds.append((e2, est, 0.300, 5000.0))
+            prev = est
+            for k in range(max(1, (seed.linker_n + 3) // 4)):
+                topo.beads.append((f"BR{k+1}", "SC1", 54.0, 0.0)); bidx = len(topo.beads) - 1
+                topo.bonds.append((prev, bidx, 0.270, 5000.0)); prev = bidx
+            head = make_head("DMA", protonated=protonated)   # G1-Janus head is DMA (label "DMBA" is wrong)
+            _append_fragment(topo, head, anchor_bead=prev,
+                              anchor_bond_length=0.300, anchor_bond_k=7000.0)
+    return topo
+
+
 def assemble(seed, *, protonated: bool) -> AssembledTopology:
     """Build a MARTINI topology from an iajd_grammar Seed."""
+    if seed.family == "G1-Janus-Dendrimer":
+        return _assemble_g1_janus(seed, protonated=protonated)
     topo = AssembledTopology(
         name=f"IAJD_{seed.family.replace('-', '')}",
         beads=[], bonds=[], angles=[], constraints=[],
