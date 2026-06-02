@@ -1343,5 +1343,55 @@
     "smiles_canonical": "CCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCO)CC2)cc(OCCCCCCCCCCCCCCCC)c1",
     "elapsed_s": 193.0,
     "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC)c(OCCOCCOCCOC)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 578.7,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 508.6,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 546.9,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 743.2,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOCc3ccccc3)c(OCCOCCOCCOCc3ccccc3)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 854.9,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOCc3ccccc3)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOCc3ccccc3)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 1049.3,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(CNC(=O)c2cc(OCCOCCOCCOCc3ccccc3)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)cc(OCCCCCCCCCCCC)c1",
+    "elapsed_s": 726.2,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(OCCCCCCCCCCCC)cc(C(=O)OCC(COC(=O)c2cc(OCCCCCCCCCCCC)cc(OCCCCCCCCCCCC)c2)(COC(=O)c2cc(OCCOCCOCCOC)c(OCCOCCOCCOC)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)COC(=O)c2cc(OCCOCCOCCOC)c(OCCOCCOCCOC)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)c1",
+    "elapsed_s": 11753.3,
+    "error": "exception:FileNotFoundError:[Errno 2] No such file or directory: '/tmp/claude-501/qm_neutral_0sauuyoq/prot_cid1'"
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(OCCCCCCCCCCCC)cc(C(=O)OCC(COC(=O)c2cc(OCCCCCCCCCCCC)cc(OCCCCCCCCCCCC)c2)(COC(=O)c2cc(OCCOCCOCCOC)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC)c2)COC(=O)c2cc(OCCOCCOCCOC)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC)c2)c1",
+    "elapsed_s": 4832.6,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(OCCCCCCCCCCCC)cc(C(=O)OCC(COC(=O)c2cc(OCCCCCCCCCCCC)cc(OCCCCCCCCCCCC)c2)(COC(=O)c2cc(OCCOCCOCCOC)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)COC(=O)c2cc(OCCOCCOCCOC)c(OCCOCCOCCOC(=O)CCCN(C)C)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)c1",
+    "elapsed_s": 5456.1,
+    "error": null
   }
 ]
