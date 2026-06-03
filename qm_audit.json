@@ -1538,5 +1538,25 @@
     "smiles_canonical": "CCCCCCCCOCC(COCCCCCCCC)(COCCCCCCCC)COC(=O)CCCCN1CCN(CCOC)CC1",
     "elapsed_s": 302.5,
     "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCOCC(COCCCCCCC)(COCCCCCCC)COC(=O)CCCCN1CCN(CCOC)CC1",
+    "elapsed_s": 193.3,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCC(CC)COc1cc(OCC(CC)CCCC)cc(C(=O)OCCCCN2CCN(CCO)CC2)c1",
+    "elapsed_s": 179.0,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCCCCCCCOc1cc(OCCCCCCCCCCCCC)cc(C(=O)OCCCCN2CCN(CCOCCO)CC2)c1",
+    "elapsed_s": 452.0,
+    "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCOCCO)CC2)ccc1OCCCCCCCCCCCCC",
+    "elapsed_s": 363.1,
+    "error": null
   }
 ]

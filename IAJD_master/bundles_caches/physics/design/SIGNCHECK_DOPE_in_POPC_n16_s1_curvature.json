@@ -1,0 +1,33 @@
+{
+  "guest": "DOPE",
+  "method": "host_POPC_upper_leaflet_SIGNCHECK",
+  "seed": 1,
+  "n_guest_upper": 16,
+  "n_per_leaflet": 48,
+  "prod_ns": 60.0,
+  "temp_K": 300.0,
+  "c0_nm_inv": 0.3950260642585873,
+  "error": null,
+  "x_upper": 0.3333333333333333,
+  "n_guest": 16,
+  "n_popc": 80,
+  "box_nm": [
+    5.6,
+    5.6,
+    12.13
+  ],
+  "md_status": "ok",
+  "apl_nm2": 0.66888310546875,
+  "thickness_PP_nm": 3.8799479166666666,
+  "bilayer_intact": true,
+  "surface_tension_mNm": -4.233475949972465,
+  "n_frames": 421,
+  "tau_upper_bar_nm2": -107.43387346633465,
+  "tau_lower_bar_nm2": -245.09384885445178,
+  "tau_guest_bar_nm2": 167.88607730989958,
+  "kappa_mono_J": 4.25e-20,
+  "R0_nm": 2.531478528832953,
+  "tensionless": false,
+  "c0_physics_converged": false,
+  "elapsed_min": 175.5
+}
