@@ -1,0 +1,103 @@
+{
+  "generated": "2026-06-03T16:18:15.376144+00:00",
+  "dataset": "IAJD_Bioact_v13_clean.AUDIT_FIXED.xlsx",
+  "flux_target": "log10_flux_total",
+  "settings": {
+    "prod_ns": 60.0,
+    "n_iajd": 8,
+    "n_per_leaflet": 48,
+    "temp": 300,
+    "kappa_mono_J": 4.25e-20,
+    "seeds_requested": 5,
+    "min_reps_for_trust": 3
+  },
+  "counts": {
+    "molecules_with_c0": 235,
+    "converged_molecules": 111,
+    "replicated_molecules(>=2_conv)": 0,
+    "resolved_from_zero_2sigma": 0,
+    "module_e_runs": 1,
+    "module_e_pass": [],
+    "families_validated": [],
+    "c0_trusted_molecules": 0
+  },
+  "median_per_molecule_SE_nm_inv": null,
+  "signal": {
+    "replicate_averaged": {
+      "rho": null,
+      "ci": [
+        null,
+        null
+      ],
+      "n": 0
+    },
+    "single_run_seed1": {
+      "rho": null,
+      "ci": [
+        null,
+        null
+      ],
+      "n": 0
+    },
+    "all_converged_averaged": {
+      "rho": 0.34740082675616446,
+      "ci": [
+        0.20126441131895859,
+        0.4806721701126678
+      ],
+      "n": 111
+    },
+    "confound_controls": {
+      "pKa": {
+        "partial_rho": 0.37241860575481733,
+        "n": 105
+      },
+      "MolWt": {
+        "partial_rho": 0.36057950567973895,
+        "n": 111
+      }
+    }
+  },
+  "module_e": [
+    {
+      "iajd": 369,
+      "iajd_num": 369,
+      "smiles": "CCCCC(CC)CCOc1cc(COC(=O)CN2CCN(CCOCCO)CC2)cc(OCCC(CC)CCCC)c1OCCC(CC)CCCC",
+      "aa_ns": 8.0,
+      "cg_ns": 20.0,
+      "status": "ok",
+      "gaff": "ok",
+      "aa": {
+        "status": "ok",
+        "rg_nm": NaN,
+        "prod_ns": 8.0,
+        "tpr": "/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/physics_cache/cg_validation/IAJD369/aa_md/prod.tpr",
+        "xtc": "/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/physics_cache/cg_validation/IAJD369/aa_md/prod.xtc"
+      },
+      "rg_atomistic": 0.5477202881377456,
+      "cg": {
+        "status": "ok",
+        "rg_nm": NaN,
+        "prod_ns": 20.0,
+        "tpr": "/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/physics_cache/cg_validation/IAJD369/cg_md/prod.tpr",
+        "xtc": "/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/physics_cache/cg_validation/IAJD369/cg_md/prod.xtc"
+      },
+      "rg_cg": 0.7044257409070569,
+      "rg_atomistic_sd": 0.05916139619053858,
+      "rg_cg_sd": 0.05073654740318445,
+      "rg_atomistic_geom": 0.5812455731437093,
+      "rg_cg_geom": 0.7044257371732503,
+      "rel_err": 0.2861048899651158,
+      "gate_pass": false,
+      "cg_mapping_validated": false,
+      "rg_method": "PBC-unwrapped minimum-image, .gro topology (tpr v138 unparsable)"
+    }
+  ],
+  "honesty": [
+    "Replicates make per-molecule c0 PRECISE (c0 \u00b1 SE); they do not make it TRUSTED.",
+    "c0_trusted requires a Module-E-validated CG mapping; expect most families to FAIL the Rg gate (the one prior test, IAJD369, failed at +25%).",
+    "Family-propagation of a Module-E PASS is an assumption, flagged per row (cg_validation_basis).",
+    "Un-mappable architectures are recorded as decompose/build failures, not fabricated.",
+    "c0_resolved_2sigma means 'distinguishable from zero', NOT 'fine-ranking resolved'."
+  ]
+}
