@@ -1558,5 +1558,10 @@
     "smiles_canonical": "CCCCCCCCCCCCCCCCCCOc1cc(COC(=O)CCCN2CCN(CCOCCO)CC2)ccc1OCCCCCCCCCCCCC",
     "elapsed_s": 363.1,
     "error": null
+  },
+  {
+    "smiles_canonical": "CCCCCCCCCCCCOc1cc(OCCCCCCCCCCCC)cc(C(=O)OCC(COC(=O)c2cc(OCCCCCCCCCCCC)cc(OCCCCCCCCCCCC)c2)(COC(=O)c2cc(OCCOCCOCCOC)c(OCCOCCOCCOC)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)COC(=O)c2cc(OCCOCCOCCOC)c(OCCOCCOCCOC)c(OCCOCCOCCOC(=O)CCCN(C)C)c2)c1",
+    "elapsed_s": 7994.7,
+    "error": "exception:FileNotFoundError:[Errno 2] No such file or directory: '/tmp/claude-501/qm_neutral_j8rc9fzt/neutral_cid0'"
   }
 ]

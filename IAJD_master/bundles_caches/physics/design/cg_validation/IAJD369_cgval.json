@@ -1,11 +1,32 @@
 {
   "iajd_num": 369,
   "smiles": "CCCCC(CC)CCOc1cc(COC(=O)CN2CCN(CCOCCO)CC2)cc(OCCC(CC)CCCC)c1OCCC(CC)CCCC",
-  "aa_ns": 20.0,
+  "aa_ns": 8.0,
   "cg_ns": 20.0,
-  "status": "setup_only",
+  "status": "ok",
   "gaff": "ok",
-  "aa_setup": "ok",
-  "aa_em_grompp": "ok",
-  "cg_setup": "ok"
+  "aa": {
+    "status": "ok",
+    "rg_nm": NaN,
+    "prod_ns": 8.0,
+    "tpr": "/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/physics_cache/cg_validation/IAJD369/aa_md/prod.tpr",
+    "xtc": "/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/physics_cache/cg_validation/IAJD369/aa_md/prod.xtc"
+  },
+  "rg_atomistic": 0.5477202881377456,
+  "cg": {
+    "status": "ok",
+    "rg_nm": NaN,
+    "prod_ns": 20.0,
+    "tpr": "/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/physics_cache/cg_validation/IAJD369/cg_md/prod.tpr",
+    "xtc": "/Users/aryamantiwary/Downloads/IAJD_FULL_WORKFLOW_CONDENSED-3/physics_cache/cg_validation/IAJD369/cg_md/prod.xtc"
+  },
+  "rg_cg": 0.7044257409070569,
+  "rg_atomistic_sd": 0.05916139619053858,
+  "rg_cg_sd": 0.05073654740318445,
+  "rg_atomistic_geom": 0.5812455731437093,
+  "rg_cg_geom": 0.7044257371732503,
+  "rel_err": 0.2861048899651158,
+  "gate_pass": false,
+  "cg_mapping_validated": false,
+  "rg_method": "PBC-unwrapped minimum-image, .gro topology (tpr v138 unparsable)"
 }
