@@ -1,5 +1,5 @@
 {
-  "generated": "2026-06-03T16:18:15.376144+00:00",
+  "generated": "2026-06-03T16:30:23.168851+00:00",
   "dataset": "IAJD_Bioact_v13_clean.AUDIT_FIXED.xlsx",
   "flux_target": "log10_flux_total",
   "settings": {
@@ -23,7 +23,8 @@
   },
   "median_per_molecule_SE_nm_inv": null,
   "signal": {
-    "replicate_averaged": {
+    "n_compared": 0,
+    "single_run_seed1": {
       "rho": null,
       "ci": [
         null,
@@ -31,7 +32,7 @@
       ],
       "n": 0
     },
-    "single_run_seed1": {
+    "replicate_averaged": {
       "rho": null,
       "ci": [
         null,
