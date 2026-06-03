@@ -115,11 +115,11 @@
   }
  },
  "30": {
-  "new": "CCCCCCCCCCCCCCCCCCCOCC(COCCOC(=O)CCCN(C)C)(COCCOC(=O)CCCN(C)C)COC(=O)CCCCCCCCCCCCCCCCC",
-  "status": "FORMULA_RESOLVED_CONN_LOW",
-  "conf": "LOW",
-  "ev": "formula C58H114N2O9 CERTAIN (10118 #30 MW983.555 + SI MALDI calcd C58H115N2O9=[M+H]+); DoU=3 => acyclic, 3 esters, 2 DMBA, Aromatic=0. Composition forces long ether/ester alkyl tails. Connectivity (tail split / core) underdetermined by descriptors -> needs SI figure. Best-guess pentaerythritol Janus provided; EXCLUDE from structure-features.",
-  "exclude": true,
+  "new": "CCCCCCCCCCCCOCC(COCCCCCCCCCCCC)(COCCCCCCCCCCCC)COC(=O)C(C)(COC(=O)CCCN(C)C)COC(=O)CCCN(C)C",
+  "status": "RESOLVED_SI+10118",
+  "conf": "HIGH",
+  "ev": "SI Scheme S8 cmpd64 (pentaerythritol-tris-C12-ether + bis-MPA + 2xDMBA); MALDI+10118 vector exact",
+  "exclude": false,
   "labels": {
    "architecture": "G1-Janus-aliphatic-PE.2arm.DMBA2 (connectivity unverified)"
   }

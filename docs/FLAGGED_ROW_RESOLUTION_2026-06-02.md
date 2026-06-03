@@ -27,8 +27,9 @@ tier per row**. Companion to `DATASET_AUDIT_REPORT_2026-06-01.md` and
 | **LOW** | Molecular **formula certain**, but **connectivity underdetermined** by descriptors — needs the SI structural figure. Kept excluded from structure-feature training. |
 
 ## Headline results
-- **11 HIGH**, **1 MED-HIGH**, **17 MED**, **1 LOW** → all 30 pKa-file flags (and the overlapping
-  bioact-file flags) cleared. **0 residual** `UNRESOLVED/FLAG` rows except the one deliberately-retained LOW row.
+- **12 HIGH**, **1 MED-HIGH**, **17 MED**, **0 LOW** → all 30 pKa-file flags (and the overlapping
+  bioact-file flags) cleared. **0 residual** `UNRESOLVED/FLAG` rows and **nothing excluded** (IAJD 30
+  upgraded LOW→HIGH on 2026-06-02 once its exact SI structure was found — see below).
 - 4 structures corrected (SMILES changed): **30, 33, 64, 86**; RDKit 2D+3D features regenerated for these.
 - 8 confirmed-correct (flag was stale/over-cautious): **31, 248, 273, 287, 290, 291, 292, 297**.
 
@@ -38,7 +39,7 @@ tier per row**. Companion to `DATASET_AUDIT_REPORT_2026-06-01.md` and
 | **64** | bis-C12 dialkoxybenzyl-**MPRZ** butanoate (C40H72N2O4) | bis-C12 dialkoxybenzyl-**DMA** butanoate **C37H67NO4** | 10118 #64 (MW589.946, HBA5, **TPSA48.0**, HBD0, Ar1): TPSA = 2 ethers + 1 ester + **one** tertiary amine ⇒ head is dimethylamino (DMA), not piperazine. |
 | **86** | C11/**C16** dialkoxybenzyl-MPRZ (C43H78N2O4) | **bis-C11** (symmetric) **C38H68N2O4** | 10118 #86 MW 616.972 = exact bis-C11; prior C11/C16 was +70 (5×CH₂). |
 | **33** | bis-C12 gallic, 2×**MPRZ** (C72H124N4O17, Ar2/HBD0) | bis-C12 gallic-**amide**, **2×piperidine + 1×OBn** **C81H133N3O17** | 10118 #33 (MW1420.96, HBA19, **HBD1**, **Ar3**) **+ SI MALDI calcd C81H134N3O17 = [M+H]⁺**. 10118 requires 3 N (not 5) ⇒ PIP not MPRZ; amide ⇒ HBD1; OBn ⇒ Ar3. |
-| **30** | dialkoxybenzyl-amide 2-arm DMBA dendron (C58H107N3O13, **Ar1**) | aliphatic G1-Janus **C58H114N2O9** (best-guess pentaerythritol scaffold) | **Formula certain** (10118 #30 MW983.555 + SI calcd C58H115N2O9 = [M+H]⁺; DoU=3 ⇒ acyclic, 3 esters, 2 DMBA, **Ar0**). **Connectivity LOW** — composition forces long ether/ester tails but tail-split/core ambiguous ⇒ needs SI figure; **kept excluded** (`FLAG_CONN_LOW`). |
+| **30** | dialkoxybenzyl-amide 2-arm DMBA dendron (C58H107N3O13, **Ar1**) | aliphatic G1-Janus **C58H114N2O9** — pentaerythritol-tris(C12-ether) ester of bis-MPA bearing 2× DMBA | **HIGH (upgraded from LOW 2026-06-02).** Resolved to the **exact SI structure**: ja1c05813 Scheme S8 **Compound 64 "(2/2DMBA1,2)"** (pentaerythritol-tris-dodecyl-ether + bis-MPA core + 2× 4-(dimethylamino)butyrate). SI MALDI [M+H]⁺ C58H115N2O9 **+** full 10118 #30 vector match on all 6 descriptors (MW 983.555, FCsp3 0.948, HBA 11, HBD 0, **RotB 54**, Ar 0). Now **included** in training. |
 
 ## Confirmed-correct (flag was stale) — HIGH
 `31, 248, 273, 287, 290, 291, 292, 297` all reproduce their 10118 vector. Mislabels fixed where
@@ -72,7 +73,7 @@ MED rows in training is **not disruptive**, so they are kept **flag-free / train
 The MED dendrimers are themselves harder to predict (high-leverage in feature space: pKa self-MAE
 0.54, flux 1.12) but do **not** degrade the verified compounds or shift the SAR conclusions.
 `audit_confidence` (HIGH/MED-HIGH/MED/LOW) is retained as honest provenance and to allow a stricter
-gate if desired. Only **30** (LOW) stays excluded (`FLAG_CONN_LOW`) — its connectivity is unverified.
+gate if desired. **Nothing is excluded** as of the 30 upgrade — IAJD 30 was the only holdout and is now HIGH/included.
 
 ## What is NOT done (honest scope)
 - **Models/heavy caches are still keyed to the pre-fix SMILES and the pre-inclusion row set.** Only
@@ -80,4 +81,6 @@ gate if desired. Only **30** (LOW) stays excluded (`FLAG_CONN_LOW`) — its conn
   AGILE caches and all trained models (XGBoost/pKa/bioact/NN) do **not** yet reflect either the
   structural fixes or the now-included MED rows — regenerate + retrain per
   `DATASET_CORRECTION_AND_REGEN_GUIDE.md` to propagate.
-- **30** connectivity is unverified (formula only) and remains excluded from structure-feature training.
+- **30** — RESOLVED to its exact SI structure (Compound 64) on 2026-06-02; now HIGH and included.
+  Models were retrained with 30 included: **pKa v92 LOO MAE 0.1263 (n=278)**, bioact v14 bundle n=247
+  (binary reg LOO MAE 0.4364, R² 0.562, ROC-AUC 0.770) — change from the n−1 set is negligible.
