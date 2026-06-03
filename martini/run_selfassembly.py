@@ -260,11 +260,21 @@ def _grompp_mdrun(workdir: Path, mdp: Path, gro: Path, top: Path, *,
     # GMX_PIN=off so concurrent jobs don't all pin to the same physical cores
     # (which would oversubscribe a few cores and idle the rest). Serial = pin on.
     pin_mode = os.environ.get("GMX_PIN", "on")
-    ok2, out2 = _gmx(
-        ["mdrun", "-s", str(tpr), "-deffnm", step_name,
-         "-pin", pin_mode, "-ntmpi", "1", "-ntomp", n_threads],
-        cwd=workdir, timeout_s=timeout_s,
-    )
+    mdrun_args = ["mdrun", "-s", str(tpr), "-deffnm", step_name,
+                  "-pin", pin_mode, "-ntmpi", "1", "-ntomp", n_threads]
+    # Optional GPU offload (RunPod 1-GPU pods). Set GMX_MDRUN_GPU to the mdrun
+    # offload flags and they are appended to the *dynamics* steps only — steepest-
+    # descent EM does not support "-update gpu". MARTINI uses reaction-field (NOT
+    # PME), so the correct value is "-nb gpu" (optionally "-update gpu"); do NOT
+    # pass "-pme gpu". Empty (default) = CPU-only, byte-identical to the prior
+    # behaviour, so the laptop / CPU-pod path is unchanged. Many concurrent
+    # --jobs share one GPU fine for these small CG systems (GROMACS time-slices
+    # the device); the vCPU pool remains the throughput workhorse.
+    if step_name in ("equil", "prod"):
+        gpu_flags = os.environ.get("GMX_MDRUN_GPU", "").split()
+        if gpu_flags:
+            mdrun_args += gpu_flags
+    ok2, out2 = _gmx(mdrun_args, cwd=workdir, timeout_s=timeout_s)
     return ok2, out1 + out2
 
 
