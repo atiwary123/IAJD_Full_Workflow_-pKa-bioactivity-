@@ -1,0 +1,559 @@
+{
+  "bioact": {
+    "coverage": {
+      "n": 247,
+      "real_qm": 247
+    },
+    "corr_vs_log10_flux_total": {
+      "qm_q_ionizableN": {
+        "spearman": -0.019,
+        "p": 0.7715505815609738,
+        "n": 247
+      },
+      "qm_dipole_D": {
+        "spearman": -0.06,
+        "p": 0.34491627004829184,
+        "n": 247
+      },
+      "qm_polarizability": {
+        "spearman": -0.22,
+        "p": 0.0005096352524610507,
+        "n": 247
+      },
+      "qm_homo_lumo_eV": {
+        "spearman": 0.088,
+        "p": 0.168498000035226,
+        "n": 247
+      },
+      "qm_dGsolv_kJmol": {
+        "spearman": 0.06,
+        "p": 0.3453567194356162,
+        "n": 247
+      },
+      "qm_dGsolv_head": {
+        "spearman": -0.143,
+        "p": 0.03394534637563341,
+        "n": 219
+      },
+      "qm_dGsolv_tail": {
+        "spearman": 0.158,
+        "p": 0.012721040529726642,
+        "n": 247
+      },
+      "qm_Ehedup": {
+        "spearman": 0.089,
+        "p": 0.16550351962537457,
+        "n": 247
+      }
+    }
+  },
+  "pKa": {
+    "coverage": {
+      "n": 278,
+      "real_qm": 262
+    },
+    "corr_vs_pKa": {
+      "qm_q_ionizableN": {
+        "spearman": -0.066,
+        "p": 0.2908031758629254,
+        "n": 262
+      },
+      "qm_dipole_D": {
+        "spearman": 0.027,
+        "p": 0.6611802332945621,
+        "n": 262
+      },
+      "qm_polarizability": {
+        "spearman": -0.055,
+        "p": 0.3718610382786045,
+        "n": 262
+      },
+      "qm_homo_lumo_eV": {
+        "spearman": 0.069,
+        "p": 0.2660895274749838,
+        "n": 262
+      },
+      "qm_dGsolv_kJmol": {
+        "spearman": 0.061,
+        "p": 0.3261515661744785,
+        "n": 262
+      },
+      "qm_dGsolv_head": {
+        "spearman": -0.172,
+        "p": 0.011603357112855598,
+        "n": 214
+      },
+      "qm_dGsolv_tail": {
+        "spearman": 0.125,
+        "p": 0.0439811748521,
+        "n": 261
+      },
+      "qm_Ehedup": {
+        "spearman": -0.071,
+        "p": 0.25253612598151354,
+        "n": 261
+      }
+    }
+  },
+  "old_to_new_qm_delta": {
+    "n_compounds": 48,
+    "per_compound": [
+      {
+        "IAJD": 1,
+        "qm_q_ionizableN": 0.001,
+        "qm_dipole_D": 4.235,
+        "qm_polarizability": 24.203,
+        "qm_homo_lumo_eV": -0.083,
+        "qm_dGsolv_kJmol": 11.948,
+        "qm_dGsolv_head": 0.0,
+        "qm_dGsolv_tail": 4.206,
+        "qm_Ehedup": -29.921
+      },
+      {
+        "IAJD": 2,
+        "qm_q_ionizableN": -0.007,
+        "qm_dipole_D": -2.257,
+        "qm_polarizability": 23.468,
+        "qm_homo_lumo_eV": 0.254,
+        "qm_dGsolv_kJmol": 15.107,
+        "qm_dGsolv_head": 0.0,
+        "qm_dGsolv_tail": 23.77,
+        "qm_Ehedup": -1.287
+      },
+      {
+        "IAJD": 3,
+        "qm_q_ionizableN": -0.015,
+        "qm_dipole_D": 8.268,
+        "qm_polarizability": 12.163,
+        "qm_homo_lumo_eV": -0.454,
+        "qm_dGsolv_kJmol": -4.417,
+        "qm_dGsolv_tail": 21.483,
+        "qm_Ehedup": -1.542
+      },
+      {
+        "IAJD": 4,
+        "qm_q_ionizableN": -0.128,
+        "qm_dipole_D": -0.561,
+        "qm_polarizability": 12.702,
+        "qm_homo_lumo_eV": 0.233,
+        "qm_dGsolv_kJmol": -19.891,
+        "qm_dGsolv_tail": 16.284,
+        "qm_Ehedup": -49.538
+      },
+      {
+        "IAJD": 6,
+        "qm_q_ionizableN": 0.034,
+        "qm_dipole_D": 4.419,
+        "qm_polarizability": -26.616,
+        "qm_homo_lumo_eV": 0.698,
+        "qm_dGsolv_kJmol": 40.315,
+        "qm_dGsolv_head": 0.0,
+        "qm_dGsolv_tail": 27.897,
+        "qm_Ehedup": 15.269
+      },
+      {
+        "IAJD": 7,
+        "qm_q_ionizableN": 0.002,
+        "qm_dipole_D": 5.294,
+        "qm_polarizability": -25.883,
+        "qm_homo_lumo_eV": 0.191,
+        "qm_dGsolv_kJmol": -15.436,
+        "qm_dGsolv_head": 0.0,
+        "qm_dGsolv_tail": 35.747,
+        "qm_Ehedup": 15.25
+      },
+      {
+        "IAJD": 8,
+        "qm_q_ionizableN": 0.078,
+        "qm_dipole_D": -6.152,
+        "qm_polarizability": -13.079,
+        "qm_homo_lumo_eV": -0.002,
+        "qm_dGsolv_kJmol": -1.68,
+        "qm_dGsolv_tail": 13.803,
+        "qm_Ehedup": 36.543
+      },
+      {
+        "IAJD": 10,
+        "qm_q_ionizableN": 0.006,
+        "qm_dipole_D": -4.35,
+        "qm_polarizability": 76.068,
+        "qm_homo_lumo_eV": -0.446,
+        "qm_dGsolv_kJmol": 35.204,
+        "qm_Ehedup": -82.678
+      },
+      {
+        "IAJD": 11,
+        "qm_q_ionizableN": -0.062,
+        "qm_dipole_D": 5.514,
+        "qm_polarizability": 76.787,
+        "qm_homo_lumo_eV": -0.861,
+        "qm_dGsolv_kJmol": 36.561
+      },
+      {
+        "IAJD": 12
+      },
+      {
+        "IAJD": 13
+      },
+      {
+        "IAJD": 14,
+        "qm_q_ionizableN": 0.06,
+        "qm_dipole_D": -0.04,
+        "qm_polarizability": 29.047,
+        "qm_homo_lumo_eV": -0.347,
+        "qm_dGsolv_kJmol": -27.999,
+        "qm_Ehedup": 90.446
+      },
+      {
+        "IAJD": 15
+      },
+      {
+        "IAJD": 16
+      },
+      {
+        "IAJD": 17
+      },
+      {
+        "IAJD": 18,
+        "qm_q_ionizableN": -0.005,
+        "qm_dipole_D": -0.734,
+        "qm_polarizability": 2.118,
+        "qm_homo_lumo_eV": -0.378,
+        "qm_dGsolv_kJmol": 3.946,
+        "qm_dGsolv_tail": 74.909
+      },
+      {
+        "IAJD": 19,
+        "qm_q_ionizableN": -0.002,
+        "qm_dipole_D": 1.864,
+        "qm_polarizability": -12.871,
+        "qm_homo_lumo_eV": -0.015,
+        "qm_dGsolv_kJmol": -17.758,
+        "qm_dGsolv_tail": -7.507,
+        "qm_Ehedup": -35.374
+      },
+      {
+        "IAJD": 20,
+        "qm_q_ionizableN": 0.001,
+        "qm_dipole_D": -3.772,
+        "qm_polarizability": -13.491,
+        "qm_homo_lumo_eV": 0.258,
+        "qm_dGsolv_kJmol": 25.344,
+        "qm_dGsolv_tail": 7.944,
+        "qm_Ehedup": -10.605
+      },
+      {
+        "IAJD": 21,
+        "qm_q_ionizableN": -0.014,
+        "qm_dipole_D": 2.44,
+        "qm_polarizability": -12.833,
+        "qm_homo_lumo_eV": -0.449,
+        "qm_dGsolv_kJmol": 6.533,
+        "qm_dGsolv_tail": 20.462,
+        "qm_Ehedup": -5.751
+      },
+      {
+        "IAJD": 22,
+        "qm_q_ionizableN": 0.003,
+        "qm_dipole_D": -0.624,
+        "qm_polarizability": -13.24,
+        "qm_homo_lumo_eV": -0.361,
+        "qm_dGsolv_kJmol": 33.489,
+        "qm_dGsolv_tail": 11.938,
+        "qm_Ehedup": 15.501
+      },
+      {
+        "IAJD": 23,
+        "qm_q_ionizableN": -0.003,
+        "qm_dipole_D": 6.954,
+        "qm_polarizability": -12.918,
+        "qm_homo_lumo_eV": -0.107,
+        "qm_dGsolv_kJmol": -13.181,
+        "qm_dGsolv_tail": 4.332,
+        "qm_Ehedup": -6.743
+      },
+      {
+        "IAJD": 25,
+        "qm_q_ionizableN": 0.062,
+        "qm_dipole_D": -3.802,
+        "qm_polarizability": -13.505,
+        "qm_homo_lumo_eV": -0.192,
+        "qm_dGsolv_kJmol": -24.935,
+        "qm_dGsolv_tail": 1.854,
+        "qm_Ehedup": 22.364
+      },
+      {
+        "IAJD": 30,
+        "qm_q_ionizableN": 0.0,
+        "qm_dipole_D": -2.247,
+        "qm_polarizability": -21.566,
+        "qm_homo_lumo_eV": 0.058,
+        "qm_dGsolv_kJmol": 33.377,
+        "qm_dGsolv_tail": 37.907,
+        "qm_Ehedup": 46.883
+      },
+      {
+        "IAJD": 33,
+        "qm_q_ionizableN": 0.005,
+        "qm_dipole_D": -3.107,
+        "qm_polarizability": 87.594,
+        "qm_homo_lumo_eV": 0.581,
+        "qm_dGsolv_kJmol": 5.324,
+        "qm_dGsolv_tail": -10.625,
+        "qm_Ehedup": 6.088
+      },
+      {
+        "IAJD": 34,
+        "qm_q_ionizableN": -0.005,
+        "qm_dipole_D": 2.37,
+        "qm_polarizability": -13.048,
+        "qm_homo_lumo_eV": -0.099,
+        "qm_dGsolv_kJmol": 10.749,
+        "qm_dGsolv_tail": 11.938,
+        "qm_Ehedup": 21.947
+      },
+      {
+        "IAJD": 35,
+        "qm_q_ionizableN": 0.002,
+        "qm_dipole_D": 2.321,
+        "qm_polarizability": -13.18,
+        "qm_homo_lumo_eV": -0.226,
+        "qm_dGsolv_kJmol": -6.103,
+        "qm_dGsolv_tail": -0.074,
+        "qm_Ehedup": -38.662
+      },
+      {
+        "IAJD": 36,
+        "qm_q_ionizableN": -0.015,
+        "qm_dipole_D": 6.652,
+        "qm_polarizability": -12.571,
+        "qm_homo_lumo_eV": -0.006,
+        "qm_dGsolv_kJmol": 6.095,
+        "qm_dGsolv_tail": 11.938,
+        "qm_Ehedup": 86.245
+      },
+      {
+        "IAJD": 44,
+        "qm_q_ionizableN": -0.003,
+        "qm_dipole_D": 5.691,
+        "qm_polarizability": 23.913,
+        "qm_homo_lumo_eV": 0.092,
+        "qm_dGsolv_kJmol": -9.848,
+        "qm_dGsolv_head": 0.0,
+        "qm_dGsolv_tail": 4.206,
+        "qm_Ehedup": -61.139
+      },
+      {
+        "IAJD": 45,
+        "qm_q_ionizableN": -0.01,
+        "qm_dipole_D": 2.855,
+        "qm_polarizability": 24.022,
+        "qm_homo_lumo_eV": 0.095,
+        "qm_dGsolv_kJmol": 12.011,
+        "qm_dGsolv_head": 0.0,
+        "qm_dGsolv_tail": 4.206,
+        "qm_Ehedup": -36.619
+      },
+      {
+        "IAJD": 46,
+        "qm_q_ionizableN": -0.001,
+        "qm_dipole_D": -5.198,
+        "qm_polarizability": 3.033,
+        "qm_homo_lumo_eV": -0.5,
+        "qm_dGsolv_kJmol": -14.216,
+        "qm_dGsolv_tail": 74.909,
+        "qm_Ehedup": -32.183
+      },
+      {
+        "IAJD": 86,
+        "qm_q_ionizableN": 0.009,
+        "qm_dipole_D": 0.94,
+        "qm_polarizability": -58.215,
+        "qm_homo_lumo_eV": -0.033,
+        "qm_dGsolv_kJmol": 4.772,
+        "qm_dGsolv_head": 0.0,
+        "qm_dGsolv_tail": 3.392,
+        "qm_Ehedup": -7.362
+      },
+      {
+        "IAJD": 87,
+        "qm_q_ionizableN": 0.03,
+        "qm_dipole_D": -1.299,
+        "qm_polarizability": -0.423,
+        "qm_homo_lumo_eV": -0.193,
+        "qm_dGsolv_kJmol": -2.969,
+        "qm_dGsolv_head": 5.047,
+        "qm_dGsolv_tail": -6.854,
+        "qm_Ehedup": -21.625
+      },
+      {
+        "IAJD": 110,
+        "qm_q_ionizableN": -0.131,
+        "qm_dipole_D": -5.051,
+        "qm_polarizability": 0.9,
+        "qm_homo_lumo_eV": 0.732,
+        "qm_dGsolv_kJmol": 10.19,
+        "qm_dGsolv_tail": 13.367,
+        "qm_Ehedup": -49.673
+      },
+      {
+        "IAJD": 111,
+        "qm_q_ionizableN": -0.117,
+        "qm_dipole_D": 2.146,
+        "qm_polarizability": 0.281,
+        "qm_homo_lumo_eV": 0.486,
+        "qm_dGsolv_kJmol": 2.411,
+        "qm_dGsolv_tail": 12.574,
+        "qm_Ehedup": -84.13
+      },
+      {
+        "IAJD": 131,
+        "qm_q_ionizableN": -0.122,
+        "qm_dipole_D": 0.194,
+        "qm_polarizability": 0.815,
+        "qm_homo_lumo_eV": 0.684,
+        "qm_dGsolv_kJmol": 6.383,
+        "qm_dGsolv_tail": 3.718,
+        "qm_Ehedup": -84.293
+      },
+      {
+        "IAJD": 155,
+        "qm_q_ionizableN": -0.115,
+        "qm_dipole_D": 2.148,
+        "qm_polarizability": 0.941,
+        "qm_homo_lumo_eV": 0.647,
+        "qm_dGsolv_kJmol": 3.648,
+        "qm_dGsolv_tail": 1.782,
+        "qm_Ehedup": -4.841
+      },
+      {
+        "IAJD": 156,
+        "qm_q_ionizableN": -0.098,
+        "qm_dipole_D": -0.284,
+        "qm_polarizability": 0.763,
+        "qm_homo_lumo_eV": -0.041,
+        "qm_dGsolv_kJmol": 10.721,
+        "qm_dGsolv_tail": 5.721,
+        "qm_Ehedup": -3.37
+      },
+      {
+        "IAJD": 157,
+        "qm_q_ionizableN": -0.122,
+        "qm_dipole_D": -10.003,
+        "qm_polarizability": 1.166,
+        "qm_homo_lumo_eV": 0.21,
+        "qm_dGsolv_kJmol": 28.639,
+        "qm_dGsolv_tail": 8.37,
+        "qm_Ehedup": -42.727
+      },
+      {
+        "IAJD": 158,
+        "qm_q_ionizableN": -0.12,
+        "qm_dipole_D": -1.137,
+        "qm_polarizability": 0.696,
+        "qm_homo_lumo_eV": 0.362,
+        "qm_dGsolv_kJmol": 19.739,
+        "qm_dGsolv_tail": 9.589,
+        "qm_Ehedup": -16.77
+      },
+      {
+        "IAJD": 159,
+        "qm_q_ionizableN": -0.111,
+        "qm_dipole_D": -2.217,
+        "qm_polarizability": 0.366,
+        "qm_homo_lumo_eV": 0.203,
+        "qm_dGsolv_kJmol": 17.421,
+        "qm_dGsolv_tail": -12.363,
+        "qm_Ehedup": -66.645
+      },
+      {
+        "IAJD": 248,
+        "qm_q_ionizableN": -0.006,
+        "qm_dipole_D": 1.049,
+        "qm_polarizability": -16.435,
+        "qm_homo_lumo_eV": -0.327,
+        "qm_dGsolv_kJmol": 5.299,
+        "qm_dGsolv_head": 22.909,
+        "qm_dGsolv_tail": 0.0,
+        "qm_Ehedup": 13.318
+      },
+      {
+        "IAJD": 273,
+        "qm_q_ionizableN": 0.001,
+        "qm_dipole_D": -3.268,
+        "qm_polarizability": -0.008,
+        "qm_homo_lumo_eV": -0.282,
+        "qm_dGsolv_kJmol": 2.184,
+        "qm_dGsolv_head": 34.688,
+        "qm_dGsolv_tail": 0.494,
+        "qm_Ehedup": 18.451
+      },
+      {
+        "IAJD": 287,
+        "qm_q_ionizableN": -0.018,
+        "qm_dipole_D": -2.808,
+        "qm_polarizability": 30.613,
+        "qm_homo_lumo_eV": -0.247,
+        "qm_dGsolv_kJmol": 3.057,
+        "qm_dGsolv_head": 34.688,
+        "qm_dGsolv_tail": -11.687,
+        "qm_Ehedup": -22.555
+      },
+      {
+        "IAJD": 291,
+        "qm_q_ionizableN": 0.015,
+        "qm_dipole_D": -0.152,
+        "qm_polarizability": 23.827,
+        "qm_homo_lumo_eV": -0.018,
+        "qm_dGsolv_kJmol": 16.188,
+        "qm_dGsolv_head": 51.252,
+        "qm_dGsolv_tail": -10.123,
+        "qm_Ehedup": 41.533
+      },
+      {
+        "IAJD": 294,
+        "qm_q_ionizableN": 0.003,
+        "qm_dipole_D": -1.178,
+        "qm_polarizability": 16.459,
+        "qm_homo_lumo_eV": 0.057,
+        "qm_dGsolv_kJmol": -19.101,
+        "qm_dGsolv_head": -14.485,
+        "qm_dGsolv_tail": 0.0,
+        "qm_Ehedup": 11.369
+      },
+      {
+        "IAJD": 308,
+        "qm_q_ionizableN": 0.013,
+        "qm_dipole_D": 0.761,
+        "qm_polarizability": 16.436,
+        "qm_homo_lumo_eV": 0.053,
+        "qm_dGsolv_kJmol": -18.935,
+        "qm_dGsolv_head": -14.485,
+        "qm_dGsolv_tail": 0.0,
+        "qm_Ehedup": -7.344
+      },
+      {
+        "IAJD": 309,
+        "qm_q_ionizableN": -0.01,
+        "qm_dipole_D": 1.508,
+        "qm_polarizability": 27.683,
+        "qm_homo_lumo_eV": 0.462,
+        "qm_dGsolv_kJmol": 8.801,
+        "qm_dGsolv_head": 6.246,
+        "qm_dGsolv_tail": 0.0,
+        "qm_Ehedup": 38.575
+      },
+      {
+        "IAJD": 310,
+        "qm_q_ionizableN": -0.008,
+        "qm_dipole_D": -0.895,
+        "qm_polarizability": 28.2,
+        "qm_homo_lumo_eV": -0.195,
+        "qm_dGsolv_kJmol": -9.078,
+        "qm_dGsolv_head": 16.564,
+        "qm_dGsolv_tail": 0.0,
+        "qm_Ehedup": 3.572
+      }
+    ]
+  }
+}

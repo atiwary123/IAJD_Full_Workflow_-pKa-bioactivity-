@@ -4,153 +4,153 @@
       "pooled_mae": 0.5075284716674993,
       "pooled_r2": 0.4297312275270171,
       "per_family_mae": {
-        "PE-Tris": 0.7706716592971985,
-        "Dialkoxybenzyl": 0.2805580953668767,
-        "sSS-Nonsym": 0.428920515180385,
-        "G1-Janus-Dendrimer": 0.6357420254336019,
         "PE-Gallic": 0.7235854706475283,
-        "GA-Tris": 0.39409183099072437
+        "GA-Tris": 0.39409183099072437,
+        "Dialkoxybenzyl": 0.2805580953668767,
+        "G1-Janus-Dendrimer": 0.6357420254336019,
+        "sSS-Nonsym": 0.428920515180385,
+        "PE-Tris": 0.7706716592971985
       }
     },
     "0.05": {
       "pooled_mae": 0.5009146857576251,
       "pooled_r2": 0.4456681254625603,
       "per_family_mae": {
-        "PE-Tris": 0.7556257935107377,
-        "Dialkoxybenzyl": 0.27385737963844853,
-        "sSS-Nonsym": 0.4241268726868774,
-        "G1-Janus-Dendrimer": 0.6354794278916659,
         "PE-Gallic": 0.7172317883724522,
-        "GA-Tris": 0.3848904363538195
+        "GA-Tris": 0.3848904363538195,
+        "Dialkoxybenzyl": 0.27385737963844853,
+        "G1-Janus-Dendrimer": 0.6354794278916659,
+        "sSS-Nonsym": 0.4241268726868774,
+        "PE-Tris": 0.7556257935107377
       }
     },
     "0.1": {
       "pooled_mae": 0.4945491579284886,
       "pooled_r2": 0.4605072240177709,
       "per_family_mae": {
-        "PE-Tris": 0.7405799277242767,
-        "Dialkoxybenzyl": 0.2671566639100206,
-        "sSS-Nonsym": 0.4195097659135006,
-        "G1-Janus-Dendrimer": 0.6352168303497298,
         "PE-Gallic": 0.7141416153922194,
-        "GA-Tris": 0.37568904171691486
+        "GA-Tris": 0.37568904171691486,
+        "Dialkoxybenzyl": 0.2671566639100206,
+        "G1-Janus-Dendrimer": 0.6352168303497298,
+        "sSS-Nonsym": 0.4195097659135006,
+        "PE-Tris": 0.7405799277242767
       }
     },
     "0.2": {
       "pooled_mae": 0.48286959237486954,
       "pooled_r2": 0.4868920229871938,
       "per_family_mae": {
-        "PE-Tris": 0.7104881961513548,
-        "Dialkoxybenzyl": 0.2537552324531641,
-        "sSS-Nonsym": 0.4114128812205656,
-        "G1-Janus-Dendrimer": 0.6392603353087017,
         "PE-Gallic": 0.7079612694317544,
-        "GA-Tris": 0.3572862524431047
+        "GA-Tris": 0.3572862524431047,
+        "Dialkoxybenzyl": 0.2537552324531641,
+        "G1-Janus-Dendrimer": 0.6392603353087017,
+        "sSS-Nonsym": 0.4114128812205656,
+        "PE-Tris": 0.7104881961513548
       }
     },
     "0.3": {
       "pooled_mae": 0.47347931912130337,
       "pooled_r2": 0.5088856244352862,
       "per_family_mae": {
-        "PE-Tris": 0.681614627865417,
-        "Dialkoxybenzyl": 0.24640942739625213,
-        "sSS-Nonsym": 0.4053944869393537,
-        "G1-Janus-Dendrimer": 0.6450167276873596,
         "PE-Gallic": 0.7017809234712892,
-        "GA-Tris": 0.3448675123815828
+        "GA-Tris": 0.3448675123815828,
+        "Dialkoxybenzyl": 0.24640942739625213,
+        "G1-Janus-Dendrimer": 0.6450167276873596,
+        "sSS-Nonsym": 0.4053944869393537,
+        "PE-Tris": 0.681614627865417
       }
     },
     "0.4": {
       "pooled_mae": 0.46632825992196275,
       "pooled_r2": 0.5264880283620477,
       "per_family_mae": {
-        "PE-Tris": 0.6549750259052063,
-        "Dialkoxybenzyl": 0.25022723475724196,
-        "sSS-Nonsym": 0.40099103160630345,
-        "G1-Janus-Dendrimer": 0.650773120066017,
         "PE-Gallic": 0.695600577510824,
-        "GA-Tris": 0.33831406828629074
+        "GA-Tris": 0.33831406828629074,
+        "Dialkoxybenzyl": 0.25022723475724196,
+        "G1-Janus-Dendrimer": 0.650773120066017,
+        "sSS-Nonsym": 0.40099103160630345,
+        "PE-Tris": 0.6549750259052063
       }
     },
     "0.5": {
       "pooled_mae": 0.4614021642853993,
       "pooled_r2": 0.5396992347674783,
       "per_family_mae": {
-        "PE-Tris": 0.6283354239449961,
-        "Dialkoxybenzyl": 0.25404504211823165,
-        "sSS-Nonsym": 0.40005166834961203,
-        "G1-Janus-Dendrimer": 0.6565295124446746,
         "PE-Gallic": 0.6940326625512919,
-        "GA-Tris": 0.33176062419099867
+        "GA-Tris": 0.33176062419099867,
+        "Dialkoxybenzyl": 0.25404504211823165,
+        "G1-Janus-Dendrimer": 0.6565295124446746,
+        "sSS-Nonsym": 0.40005166834961203,
+        "PE-Tris": 0.6283354239449961
       }
     },
     "0.6": {
       "pooled_mae": 0.4576357175489045,
       "pooled_r2": 0.5485192436515783,
       "per_family_mae": {
-        "PE-Tris": 0.6020717316713498,
-        "Dialkoxybenzyl": 0.25786284947922133,
-        "sSS-Nonsym": 0.40045338583462453,
-        "G1-Janus-Dendrimer": 0.6622859048233322,
         "PE-Gallic": 0.6995470525338022,
-        "GA-Tris": 0.32520718009570654
+        "GA-Tris": 0.32520718009570654,
+        "Dialkoxybenzyl": 0.25786284947922133,
+        "G1-Janus-Dendrimer": 0.6622859048233322,
+        "sSS-Nonsym": 0.40045338583462453,
+        "PE-Tris": 0.6020717316713498
       }
     },
     "0.7": {
       "pooled_mae": 0.45497943172366534,
       "pooled_r2": 0.5529480550143476,
       "per_family_mae": {
-        "PE-Tris": 0.5760886511584451,
-        "Dialkoxybenzyl": 0.26168065684021125,
-        "sSS-Nonsym": 0.40176406231547707,
-        "G1-Janus-Dendrimer": 0.6680422972019896,
         "PE-Gallic": 0.705061442516313,
-        "GA-Tris": 0.32524446437485255
+        "GA-Tris": 0.32524446437485255,
+        "Dialkoxybenzyl": 0.26168065684021125,
+        "G1-Janus-Dendrimer": 0.6680422972019896,
+        "sSS-Nonsym": 0.40176406231547707,
+        "PE-Tris": 0.5760886511584451
       }
     },
     "0.8": {
       "pooled_mae": 0.45339955755299904,
       "pooled_r2": 0.552985668855786,
       "per_family_mae": {
-        "PE-Tris": 0.551172335892855,
-        "Dialkoxybenzyl": 0.2709593704777976,
-        "sSS-Nonsym": 0.40378642715713275,
-        "G1-Janus-Dendrimer": 0.6737986895806471,
         "PE-Gallic": 0.7105758324988233,
-        "GA-Tris": 0.32853395449489803
+        "GA-Tris": 0.32853395449489803,
+        "Dialkoxybenzyl": 0.2709593704777976,
+        "G1-Janus-Dendrimer": 0.6737986895806471,
+        "sSS-Nonsym": 0.40378642715713275,
+        "PE-Tris": 0.551172335892855
       }
     },
     "0.9": {
       "pooled_mae": 0.45389096652681626,
       "pooled_r2": 0.5486320851758939,
       "per_family_mae": {
-        "PE-Tris": 0.5308718192544571,
-        "Dialkoxybenzyl": 0.2893648250584964,
-        "sSS-Nonsym": 0.4069942796662606,
-        "G1-Janus-Dendrimer": 0.6795550819593047,
         "PE-Gallic": 0.716090222481334,
-        "GA-Tris": 0.3348425225862161
+        "GA-Tris": 0.3348425225862161,
+        "Dialkoxybenzyl": 0.2893648250584964,
+        "G1-Janus-Dendrimer": 0.6795550819593047,
+        "sSS-Nonsym": 0.4069942796662606,
+        "PE-Tris": 0.5308718192544571
       }
     },
     "1.0": {
       "pooled_mae": 0.45561771391113365,
       "pooled_r2": 0.5398873039746708,
       "per_family_mae": {
-        "PE-Tris": 0.5132027898021282,
-        "Dialkoxybenzyl": 0.308295525320425,
-        "sSS-Nonsym": 0.4111981412916536,
-        "G1-Janus-Dendrimer": 0.6853114743379621,
         "PE-Gallic": 0.7216046124638444,
-        "GA-Tris": 0.34357908283804484
+        "GA-Tris": 0.34357908283804484,
+        "Dialkoxybenzyl": 0.308295525320425,
+        "G1-Janus-Dendrimer": 0.6853114743379621,
+        "sSS-Nonsym": 0.4111981412916536,
+        "PE-Tris": 0.5132027898021282
       }
     }
   },
   "best_alpha": {
-    "PE-Tris": 1.0,
-    "Dialkoxybenzyl": 0.3,
-    "sSS-Nonsym": 0.5,
-    "G1-Janus-Dendrimer": 0.1,
     "PE-Gallic": 0.5,
-    "GA-Tris": 0.6
+    "GA-Tris": 0.6,
+    "Dialkoxybenzyl": 0.3,
+    "G1-Janus-Dendrimer": 0.1,
+    "sSS-Nonsym": 0.5,
+    "PE-Tris": 1.0
   }
 }

@@ -3,22 +3,6 @@
     "pooled_mae": 0.4576357175489045,
     "pooled_r2": 0.5485192436515783,
     "per_family": {
-      "PE-Tris": {
-        "n": 41,
-        "mae": 0.6020717316713498
-      },
-      "Dialkoxybenzyl": {
-        "n": 10,
-        "mae": 0.25786284947922133
-      },
-      "sSS-Nonsym": {
-        "n": 144,
-        "mae": 0.40045338583462453
-      },
-      "G1-Janus-Dendrimer": {
-        "n": 21,
-        "mae": 0.6622859048233322
-      },
       "PE-Gallic": {
         "n": 11,
         "mae": 0.6995470525338022
@@ -26,6 +10,22 @@
       "GA-Tris": {
         "n": 20,
         "mae": 0.32520718009570654
+      },
+      "Dialkoxybenzyl": {
+        "n": 10,
+        "mae": 0.25786284947922133
+      },
+      "G1-Janus-Dendrimer": {
+        "n": 21,
+        "mae": 0.6622859048233322
+      },
+      "sSS-Nonsym": {
+        "n": 144,
+        "mae": 0.40045338583462453
+      },
+      "PE-Tris": {
+        "n": 41,
+        "mae": 0.6020717316713498
       }
     },
     "config": "alpha=0.6 uniform, all blocks on"
@@ -34,22 +34,6 @@
     "pooled_mae": 0.4309315963358629,
     "pooled_r2": 0.5868687344631023,
     "per_family": {
-      "PE-Tris": {
-        "n": 41,
-        "mae": 0.4949116349719097
-      },
-      "Dialkoxybenzyl": {
-        "n": 10,
-        "mae": 0.23324246920529035
-      },
-      "sSS-Nonsym": {
-        "n": 144,
-        "mae": 0.3978343670243313
-      },
-      "G1-Janus-Dendrimer": {
-        "n": 21,
-        "mae": 0.6243765619875936
-      },
       "PE-Gallic": {
         "n": 11,
         "mae": 0.6283729376272408
@@ -57,31 +41,47 @@
       "GA-Tris": {
         "n": 20,
         "mae": 0.32520718009570654
+      },
+      "Dialkoxybenzyl": {
+        "n": 10,
+        "mae": 0.23324246920529035
+      },
+      "G1-Janus-Dendrimer": {
+        "n": 21,
+        "mae": 0.6243765619875936
+      },
+      "sSS-Nonsym": {
+        "n": 144,
+        "mae": 0.3978343670243313
+      },
+      "PE-Tris": {
+        "n": 41,
+        "mae": 0.4949116349719097
       }
     },
     "best_alpha": {
-      "PE-Tris": 1.0,
-      "Dialkoxybenzyl": 0.3,
-      "sSS-Nonsym": 0.5,
-      "G1-Janus-Dendrimer": 0.1,
       "PE-Gallic": 0.5,
-      "GA-Tris": 0.6
+      "GA-Tris": 0.6,
+      "Dialkoxybenzyl": 0.3,
+      "G1-Janus-Dendrimer": 0.1,
+      "sSS-Nonsym": 0.5,
+      "PE-Tris": 1.0
     },
     "block_b_active": {
-      "PE-Tris": false,
-      "Dialkoxybenzyl": false,
-      "sSS-Nonsym": false,
-      "G1-Janus-Dendrimer": false,
       "PE-Gallic": false,
-      "GA-Tris": true
+      "GA-Tris": true,
+      "Dialkoxybenzyl": false,
+      "G1-Janus-Dendrimer": false,
+      "sSS-Nonsym": false,
+      "PE-Tris": false
     },
     "block_c_active": {
-      "PE-Tris": true,
-      "Dialkoxybenzyl": false,
-      "sSS-Nonsym": false,
-      "G1-Janus-Dendrimer": false,
       "PE-Gallic": false,
-      "GA-Tris": true
+      "GA-Tris": true,
+      "Dialkoxybenzyl": false,
+      "G1-Janus-Dendrimer": false,
+      "sSS-Nonsym": false,
+      "PE-Tris": true
     }
   },
   "improvement": {
