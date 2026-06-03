@@ -1,0 +1,43 @@
+{
+  "data_source": "IAJD_Bioact_v13_clean.xlsx",
+  "n_train": 247,
+  "n_features": 106,
+  "v14_pooled_mae": 0.4309315963358629,
+  "baseline_pooled_mae": 0.4576357175489045,
+  "v14_pooled_r2": 0.5868687344631023,
+  "blockD_finite_frac": 0.0,
+  "per_family": {
+    "PE-Gallic": {
+      "n": 11,
+      "mae": 0.6283729376272408
+    },
+    "GA-Tris": {
+      "n": 20,
+      "mae": 0.32520718009570654
+    },
+    "Dialkoxybenzyl": {
+      "n": 10,
+      "mae": 0.23324246920529035
+    },
+    "G1-Janus-Dendrimer": {
+      "n": 21,
+      "mae": 0.6243765619875936
+    },
+    "sSS-Nonsym": {
+      "n": 144,
+      "mae": 0.3978343670243313
+    },
+    "PE-Tris": {
+      "n": 41,
+      "mae": 0.4949116349719097
+    }
+  },
+  "qm_feature_names": [
+    "qm_q_ionizableN",
+    "qm_dipole_D",
+    "qm_dGsolv_kJmol",
+    "qm_homo_lumo_eV"
+  ],
+  "qm_importance_sum_BEFORE": 0.0,
+  "blockD_importance_sum_BEFORE": 0.0
+}

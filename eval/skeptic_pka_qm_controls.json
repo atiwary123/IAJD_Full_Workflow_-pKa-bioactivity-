@@ -1,0 +1,21 @@
+{
+  "pKa": {
+    "n": 262,
+    "base_mae": 0.15512118252179097,
+    "qm_mae": 0.16238944941804612,
+    "real_delta": 0.007268266896255149,
+    "boot_delta_mean": 0.007268266896255122,
+    "boot_ci": [
+      -0.005531081885781941,
+      0.019952730702989845
+    ],
+    "boot_P_delta_ge_0": 0.8655,
+    "shuffledQM_delta_mean": 0.011514290827831248,
+    "shuffledQM_delta_min": 1.3156337592412637e-06,
+    "shuffledQM_delta_max": 0.02048066670658022,
+    "real_delta_better_than_shuffled_frac": 0.15,
+    "randomcol_delta_mean": 0.00998824697596426,
+    "randomcol_delta_min": 0.002249633992901262,
+    "randomcol_delta_max": 0.020599878544115824
+  }
+}

@@ -51,6 +51,16 @@ from xgboost import XGBRegressor, XGBClassifier
 from sklearn.metrics import mean_absolute_error, r2_score
 
 WORK = Path(__file__).resolve().parent
+# Repo root must be importable when this module is run AS A SCRIPT
+# (`python IAJD_master/code/bioact_v14_pipeline.py`). Run that way, sys.path[0]
+# is this file's dir (IAJD_master/code), NOT repo root — so root-level modules
+# like physics_cache_io (the Block D' QM/MD source) fail to import and
+# compute_block_dprime silently degrades Block D' to all-NaN. That bug fit two
+# full overnight bundles with QM-blind Block D' before it was caught. Put repo
+# root on the path so the import resolves regardless of how we're launched.
+_REPO_ROOT = WORK.parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 _default_out = WORK.parent / 'bundles_caches'
 OUT  = Path(os.environ.get('IAJD_OUT_DIR', str(_default_out)))
 OUT.mkdir(parents=True, exist_ok=True)
@@ -394,8 +404,13 @@ def compute_block_dprime(df, mols, smis):
     """
     try:
         from physics_cache_io import load_physics, BLOCK_DPRIME_KEYS
-    except ImportError:
+    except ImportError as e:
         # No physics module available — return all-NaN block of the right shape.
+        # Make this LOUD: a silent all-NaN here trained two QM-blind bundles that
+        # were believed to carry QM. If you see this, Block D' has NO physics.
+        print(f'  [Block D\'] *** WARNING: physics_cache_io import FAILED ({e}); '
+              f'Block D\' will be ALL-NaN (no QM/MD). sys.path[0]={sys.path[0]}',
+              flush=True)
         return np.full((len(df), len(BLOCK_DPRIME_NAMES)), np.nan)
     X = np.full((len(df), len(BLOCK_DPRIME_NAMES)), np.nan)
     for i, (_, row) in enumerate(df.iterrows()):
@@ -708,6 +723,11 @@ def assemble_X(df, mols, fps, smis,
     if include_dprime:
         XDp = compute_block_dprime(df, mols, smis)
         blocks.append(XDp)
+        # QM occupies local cols 8:12 of Block D'. Report coverage so a
+        # silent all-NaN (e.g. physics import failure) can never pass unnoticed.
+        qm_cov = float(np.isfinite(XDp[:, 8:12]).mean())
+        print(f'  Block D\' QM coverage: {qm_cov:.1%} finite '
+              f'({"REAL QM live" if qm_cov > 0.5 else "*** ALL-NaN — QM NOT integrated ***"})')
     X = np.hstack(blocks)
     if include_dprime:
         print(f'  Assembled X: shape={X.shape}  (incl. Block D\'={blocks[-1].shape[1]} cols)')

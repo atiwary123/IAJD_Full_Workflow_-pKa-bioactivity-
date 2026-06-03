@@ -1,0 +1,34 @@
+{
+  "n_used": 262,
+  "n_qm_missing_excluded": 16,
+  "primary": {
+    "label": "PRIMARY structural+molgpka",
+    "n_feat_base": 43,
+    "n_feat_qm": 51,
+    "baseline_mae": 0.1478293231789392,
+    "with_qm_mae": 0.15236490984909407,
+    "delta": 0.004535586670154856,
+    "qm_helps": false,
+    "per_family": "PE-Gallic(n=48): +0.017; PE-Tris(n=41): +0.008; GA-Tris(n=12): +0.037; sSS-Nonsym(n=143): -0.006; Dialkoxybenzyl(n=10): -0.005; G1-Janus(n=8): +0.058"
+  },
+  "robust": {
+    "label": "ROBUST all-numeric(incl sp_)+molgpka",
+    "n_feat_base": 65,
+    "n_feat_qm": 73,
+    "baseline_mae": 0.1471122294709883,
+    "with_qm_mae": 0.1498124793831629,
+    "delta": 0.0027002499121746015,
+    "qm_helps": false,
+    "per_family": "PE-Gallic(n=48): +0.014; PE-Tris(n=41): +0.011; GA-Tris(n=12): +0.039; sSS-Nonsym(n=143): -0.007; Dialkoxybenzyl(n=10): +0.003; G1-Janus(n=8): +0.016"
+  },
+  "qm_nan": {
+    "qm_q_ionizableN": 0,
+    "qm_dipole_D": 0,
+    "qm_polarizability": 0,
+    "qm_homo_lumo_eV": 0,
+    "qm_dGsolv_kJmol": 0,
+    "qm_dGsolv_head": 48,
+    "qm_dGsolv_tail": 1,
+    "qm_Ehedup": 1
+  }
+}

@@ -4,13 +4,22 @@ Real xTB QM (8 descriptors) was recomputed for the **corrected** IAJD dataset an
 datasets. This is the "anything interesting" report. Companion to `docs/DATASET_REGEN_EXECUTION_2026-06-01.md`.
 **Be skeptical-honest:** several family signals are small-n; correlation ≠ causation.
 
+> **CORRECTION (2026-06-03):** an earlier version of this report claimed the bioact stack was
+> "re-finalized with real QM in Block D' (0% emulator-filled)." **That was false.** The trained
+> bundle's Block D' was actually **100% NaN** — a `sys.path`/ImportError bug made
+> `bioact_v14_pipeline.compute_block_dprime` silently return all-NaN whenever the pipeline ran as a
+> script, so the model never saw a QM value (QM importance was exactly 0). This was found and fixed
+> on 2026-06-03; QM is now genuinely live. Full account + honest before/after:
+> `docs/QM_INTEGRATION_2026-06-03.md`.
+
 ## Status
 - **QM complete: 49 corrected compounds computed, every non-flagged training SMILES now has real QM.**
   Coverage after append: **bioact 273/273 (100%)**, **pKa 262/278 (94%)** — the 16 pKa blanks are still-flagged
   (UNRESOLVED) rows, deliberately left blank (never proxied).
 - QM descriptors appended to all 4 datasets (`IAJD_Bioact_v13_clean{,.AUDIT_FIXED}.xlsx`,
   `IAJD_pKa_v21_final{,.AUDIT_FIXED}.xlsx`) as `qm_*` columns + a `qm_source` flag.
-- Full bioact stack re-finalized with **real QM in Block D'** (0% emulator-filled, was 65%).
+- Bioact stack retrained with **real QM in Block D'** — but only after the 2026-06-03 `sys.path`
+  fix (see correction above). Before the fix, Block D' was 100% NaN and QM was unused.
 
 ## Headline finding — the SMILES audit changed *shape & solvation*, not charge
 Comparing each corrected compound's QM to its **pre-audit (wrong-SMILES)** QM (n=43–48):

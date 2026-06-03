@@ -1,0 +1,37 @@
+{
+  "v14_pooled_mae": 0.42732196382179094,
+  "baseline_pooled_mae": 0.45085515627910644,
+  "v14_pooled_r2": 0.5935726183614003,
+  "qm_cols_finite_frac": 1.0,
+  "blockD_finite_frac": 0.3562753036437247,
+  "qm_importance_sum_AFTER": 0.009580039884895086,
+  "blockD_importance_sum_AFTER": 0.09719295939430594,
+  "per_family": {
+    "PE-Gallic": {
+      "n": 11,
+      "mae": 0.5843851834477312
+    },
+    "G1-Janus-Dendrimer": {
+      "n": 21,
+      "mae": 0.6266618381280791
+    },
+    "Dialkoxybenzyl": {
+      "n": 10,
+      "mae": 0.25248998854971366
+    },
+    "PE-Tris": {
+      "n": 41,
+      "mae": 0.5183233122349787
+    },
+    "sSS-Nonsym": {
+      "n": 144,
+      "mae": 0.383625068258239
+    },
+    "GA-Tris": {
+      "n": 20,
+      "mae": 0.34711119645249944
+    }
+  },
+  "v14_pooled_mae_BEFORE": 0.4309315963358629,
+  "delta_pooled_mae": -0.003609632514071981
+}

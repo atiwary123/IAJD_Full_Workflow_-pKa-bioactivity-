@@ -1,0 +1,48 @@
+{
+  "n": 219,
+  "base_mae": 0.5231604719668654,
+  "qm_mae": 0.4762183152627798,
+  "real_delta": -0.046942156704085636,
+  "boot_delta_mean": -0.04694215670408572,
+  "boot_ci": [
+    -0.07549503040725053,
+    -0.017919807301900268
+  ],
+  "boot_P_delta_ge_0": 0.0005,
+  "shuffledQM_delta_mean": -0.00041982743779134246,
+  "shuffledQM_min": -0.016668553896647786,
+  "shuffledQM_max": 0.025981053497089346,
+  "frac_shuffled_beat_real": 0.0,
+  "randomcol_delta_mean": -0.00601915498390071,
+  "randomcol_min": -0.02845988764327262,
+  "randomcol_max": 0.012900200718221955,
+  "per_family": {
+    "sSS-Nonsym": {
+      "n": 144,
+      "delta": -0.04052569053141636
+    },
+    "PE-Tris": {
+      "n": 41,
+      "delta": -0.07003316638793244
+    },
+    "GA-Tris": {
+      "n": 20,
+      "delta": -0.04444411648702834
+    },
+    "Dialkoxybenzyl": {
+      "n": 10,
+      "delta": -0.04468090001360864
+    },
+    "G1-Janus-Dendrimer": {
+      "n": 4,
+      "delta": -0.059395432472229004
+    }
+  },
+  "leave_one_family_out_overall_delta": {
+    "sSS-Nonsym": -0.05926177175561076,
+    "PE-Tris": -0.04162344099039067,
+    "GA-Tris": -0.04719321602238297,
+    "Dialkoxybenzyl": -0.04705035080410852,
+    "G1-Janus-Dendrimer": -0.04671046785258548
+  }
+}
